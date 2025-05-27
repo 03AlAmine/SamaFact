@@ -506,42 +506,55 @@ const Fact = () => {
     }
   });
 
-  const saveInvoiceToFirestore = async () => {
-    setIsSaving(true);
-    try {
-      const invoiceData = {
-        numero: data.facture.Numéro[0],
-        date: data.facture.Date[0],
-        clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
-        clientNom: data.client.Nom[0],
-        clientAdresse: data.client.Adresse[0],
-        items: data.items.Designation.map((_, index) => ({
-          designation: data.items.Designation[index],
-          quantite: data.items.Quantite[index],
-          prixUnitaire: data.items["Prix Unitaire"][index],
-          tva: data.items.TVA[index],
-          montantHT: data.items["Montant HT"]?.[index] || "0,00",
-          montantTVA: data.items["Montant TVA"]?.[index] || "0,00",
-          prixTotal: data.items["Prix Total"][index]
-        })),
-        totalHT: data.totals["Total HT"][0],
-        totalTVA: data.totals["Total TVA"][0],
-        totalTTC: data.totals["Total TTC"][0],
-        createdAt: new Date().toISOString(),
-        statut: "en attente"
-      };
+const saveInvoiceToFirestore = async () => {
+  try {
+    const invoiceData = {
+      numero: data.facture.Numéro[0],
+      date: data.facture.Date[0],
+      clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
+      clientNom: data.client.Nom[0],
+      clientAdresse: data.client.Adresse[0],
+      items: data.items.Designation.map((_, index) => ({
+        designation: data.items.Designation[index],
+        quantite: data.items.Quantite[index],
+        prixUnitaire: data.items["Prix Unitaire"][index],
+        tva: data.items.TVA[index],
+        montantHT: data.items["Montant HT"]?.[index] || "0,00",
+        montantTVA: data.items["Montant TVA"]?.[index] || "0,00",
+        prixTotal: data.items["Prix Total"][index]
+      })),
+      totalHT: data.totals["Total HT"][0],
+      totalTVA: data.totals["Total TVA"][0],
+      totalTTC: data.totals["Total TTC"][0],
+      createdAt: new Date().toISOString(),
+      statut: "en attente"
+    };
 
-      const docRef = await addDoc(collection(db, "factures"), invoiceData);
-      alert(`Facture ${data.facture.Numéro[0]} sauvegardée avec succès (ID: ${docRef.id})`);
-      return true;
-    } catch (error) {
-      console.error("Erreur lors de la sauvegarde de la facture:", error);
-      alert("Erreur lors de la sauvegarde de la facture");
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    const docRef = await addDoc(collection(db, "factures"), invoiceData);
+    return docRef.id;
+  } catch (error) {
+    throw error; // on laisse handleSave gérer l’erreur
+  }
+};
+const handleSave = async () => {
+  if (!data.client.Nom[0] || data.items.Designation.length === 0) {
+    alert("Veuillez sélectionner un client et ajouter au moins un article");
+    return;
+  }
+
+  try {
+    setIsSaving(true);
+    //const docId = await saveInvoiceToFirestore();
+    setIsSaved(true);
+    alert(`Facture enregistrée avec succès !`);
+  } catch (error) {
+    console.error("Erreur d'enregistrement :", error);
+    alert("Erreur lors de l'enregistrement");
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -561,6 +574,8 @@ const Fact = () => {
 
     fetchClients();
   }, []);
+  const [isSaved, setIsSaved] = useState(false);
+
 
   if (loading) {
     return (
@@ -624,25 +639,37 @@ const Fact = () => {
             <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
           </button>
 
-          <PDFDownloadLink
-            document={<InvoicePDF data={data} />}
-            fileName={`facture_${data.facture.Numéro[0]}.pdf`}
+          <button
             className="button success-button"
-            onClick={async (e) => {
-              if (!data.client.Nom[0] || data.items.Designation.length === 0) {
-                e.preventDefault();
-                alert("Veuillez sélectionner un client et ajouter au moins un article");
-                return;
-              }
-              await saveInvoiceToFirestore();
-            }}
+            onClick={handleSave}
+            disabled={isSaving}
           >
-            {({ loading: pdfLoading }) => (
-              pdfLoading || isSaving
-                ? <><i className="fas fa-spinner fa-spin"></i> Génération en cours...</>
-                : <><i className="fas fa-save"></i> Sauvegarder et Télécharger</>
+            {isSaving ? (
+              <><i className="fas fa-spinner fa-spin"></i> Enregistrement...</>
+            ) : (
+              <><i className="fas fa-save"></i> Enregistrer</>
             )}
-          </PDFDownloadLink>
+          </button>
+
+          {/* Bouton TÉLÉCHARGER */}
+          {isSaved ? (
+            <PDFDownloadLink
+              document={<InvoicePDF data={data} />}
+              fileName={`facture_${data.facture.Numéro[0]}.pdf`}
+              className="button success-button"
+            >
+              {({ loading: pdfLoading }) =>
+                pdfLoading
+                  ? <><i className="fas fa-spinner fa-spin"></i> Génération...</>
+                  : <><i className="fas fa-file-download"></i> Télécharger</>
+              }
+            </PDFDownloadLink>
+
+          ) : (
+            <button className="button info-button secondary-button" disabled>
+              <i className="fas fa-download"></i> Télécharger
+            </button>
+          )}
         </div>
 
         {showPreview && (
