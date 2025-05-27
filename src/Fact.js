@@ -1,24 +1,159 @@
-// En haut du fichier, ajoutez l'import
-import Sidebar from "./Sidebar";
-
-// Remplacez la partie sidebar dans le return par :
-
-
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Page, Text, View, Document, PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from './firebase';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { pdfStyles } from './pdfStyles';
-import './css/Fact.css'; // Import du CSS externe
+import './css/Fact.css';
+import Sidebar from "./Sidebar";
 
+// Composant InvoicePDF
+const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
+  const ribData = {
+    CBAO: {
+      banque: "CBAO",
+      rib: "SN08 00801 023010100001 23",
+
+    },
+    BIS: {
+      banque: "BIS",
+      rib: "SN08 01010 023010100002 34",
+    }
+  };
+
+  return (
+    <Document>
+      <Page size="A4" style={pdfStyles.page}>
+        <View style={pdfStyles.header}>
+          <View style={pdfStyles.companyInfo}>
+            <Text style={pdfStyles.companyName}>VOTRE ENTREPRISE</Text>
+            {/* <Text style={pdfStyles.companyAddress}>
+              Adresse de votre entreprise\n
+              Code postal Ville\n
+              Tél : Votre téléphone\n
+              Email : votre@email.com
+            </Text> */}
+          </View>
+
+          <View style={pdfStyles.invoiceTitleContainer}>
+            <Text style={pdfStyles.invoiceTitle}>FACTURE</Text>
+          </View>
+        </View>
+
+
+        <View style={{ marginTop: -20, alignItems: 'flex-end' }}>
+          {/*<Text style={pdfStyles.sectionTitle}>Informations facture</Text> */}
+          <View style={{ padding: 10 }}>
+            <Text style={{ marginBottom: 5 }}>
+              <Text style={{ fontWeight: 'bold' }}></Text> {data.facture.Numéro[0]}
+            </Text>
+            <Text>
+              <Text style={{ fontWeight: 'bold' }}>Date:</Text> {new Date(data.facture.Date[0]).toLocaleDateString('fr-FR')}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ marginTop: 20 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10 }}>
+            <View>
+              <Text style={{ marginBottom: 5 }}>{data.client?.Nom?.[0] || "Non spécifié"}</Text>
+              <Text>{data.client?.Adresse?.[0] || "Non spécifié"}</Text>
+            </View>
+
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={pdfStyles.sectionTitle}>Total TTC</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 14 }}>
+                {data.totals?.["Total TTC"]?.[0] || "0,00"} XOF
+              </Text>
+            </View>
+          </View>
+        </View>
+
+
+        <View style={{ marginTop: 20 }}>
+          <Text style={pdfStyles.sectionTitle}>Objet : {objet || "Non spécifié"}</Text>
+        </View>
+
+        <View style={{ marginTop: 20 }}>
+          <Text style={pdfStyles.sectionTitle}>Cher client </Text>
+          <View style={{ marginTop: 10 }}>
+            {/* En-tête du tableau */}
+            <View style={pdfStyles.tableRow}>
+              <Text style={[pdfStyles.tableHeader, { width: '40%' }]}>Désignation</Text>
+              <Text style={[pdfStyles.tableHeader, { width: '10%', textAlign: 'right' }]}>QTE</Text>
+              <Text style={[pdfStyles.tableHeader, { width: '15%', textAlign: 'right' }]}>PU HT</Text>
+              <Text style={[pdfStyles.tableHeader, { width: '10%', textAlign: 'right' }]}>TVA</Text>
+              <Text style={[pdfStyles.tableHeader, { width: '25%', textAlign: 'right' }]}>PT HT</Text>
+            </View>
+
+
+            {/* Lignes des articles */}
+            {data.items.Designation?.map((designation, index) => (
+              <View key={index} style={pdfStyles.tableRow}>
+                <Text style={{ width: '40%' }}>{designation}</Text>
+                <Text style={{ width: '10%', textAlign: 'right' }}>{data.items.Quantite[index]}</Text>
+                <Text style={{ width: '15%', textAlign: 'right' }}>{data.items["Prix Unitaire"][index]} FCFA</Text>
+                <Text style={{ width: '10%', textAlign: 'right' }}>{data.items.TVA[index]}</Text>
+                <Text style={{ width: '25%', textAlign: 'right' }}>{data.items["Prix Total"][index]} FCFA</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Totaux alignés à droite */}
+        <View style={[pdfStyles.totalsContainer, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+
+          {/* Bloc Notes à gauche */}
+          <View style={{ maxWidth: '40%' }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Notes</Text>
+            <Text>Nous vous remercions de votre confiance</Text>
+          </View>
+
+          {/* Bloc Totaux à droite */}
+          <View style={{ width: '50%', backgroundColor: '#f0f8ff', }}>
+            <View style={pdfStyles.totalRow}>
+              <Text style={pdfStyles.totalLabel}>Total HT</Text>
+              <Text style={pdfStyles.totalValue}>{data.totals?.["Total HT"]?.[0] || "0,00"} FCFA</Text>
+            </View>
+            <View style={pdfStyles.totalRow}>
+              <Text style={pdfStyles.totalLabel}>TVA (EXO)</Text>
+              <Text style={pdfStyles.totalValue}>{data.totals?.["Total TVA"]?.[0] || "0,00"} FCFA</Text>
+            </View>
+            <View style={[pdfStyles.totalRow, { paddingTop: 5 }]}>
+              <Text style={[pdfStyles.totalLabel, { fontWeight: 'bold' }]}>Montant NET TTC (XOF)</Text>
+              <Text style={[pdfStyles.totalValue, { fontWeight: 'bold' }]}>
+                {data.totals?.["Total TTC"]?.[0] || "0,00"} FCFA
+              </Text>
+            </View>
+          </View>
+
+        </View>
+
+
+        <View style={pdfStyles.footer}>
+          <Text>LEADER INTERIM ET SERVICES</Text>
+          <Text>Ouest Foire rte de l'aéroport</Text>
+          <Text>RC:SN 2015 B24288; NINEA: 0057262212 A2</Text>
+          <View style={{ marginTop: 5 }}>
+            <Text style={{ fontWeight: 'bold' }}>RIB {ribData[ribType].banque}: {ribData[ribType].rib}</Text>
+          </View>
+          <Text>Téléphone: 338208846 - Email: infos@leaderinterime.com</Text>
+        </View>
+      </Page>
+    </Document>
+  );
+};
 // Composant InvoiceForm
-const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore }) => {
+const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, isS }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "",
     "Prix Unitaire": "",
     TVA: "20"
   });
+  const [selectedRib, setSelectedRib] = useState("CBAO");
+  const [objet, setObjet] = useState("");
+
 
   const handleClientChange = (e) => {
     const selectedClientId = e.target.value;
@@ -133,15 +268,12 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore }) => {
 
   return (
     <div className="dashboard-layoute">
-      {/* Ajout du Sidebar */}
       <Sidebar
-        sidebarOpen={true} // ou un état que vous gérez
-        activeTab="factures" // ou l'onglet approprié
-        setActiveTab={() => { }} // fonction vide si non utilisée
-        setSidebarOpen={() => { }} // fonction vide si non utilisée
+        sidebarOpen={true}
+        activeTab="factures"
+        setActiveTab={() => { }}
+        setSidebarOpen={() => { }}
       />
-
-
 
       <div className="container">
         <h1 className="header">Création de Facture</h1>
@@ -154,7 +286,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore }) => {
             <select
               className="select"
               onChange={handleClientChange}
-              value={data.client?.Nom?.[0] || ""}
+              value={clients.find(c => c.nom === data.client?.Nom?.[0])?.id || ""}
             >
               <option value="">Sélectionner un client</option>
               {clients.map(client => (
@@ -331,6 +463,34 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore }) => {
             <i className="fas fa-plus"></i> Ajouter l'article
           </button>
         </div>
+        <div className="section" style={{ marginTop: '2rem' }}>
+          <h2>Coordonnées Bancaires</h2>
+          <div className="form-group">
+            <label className="label">Banque pour le paiement:</label>
+            <select
+              value={selectedRib}
+              onChange={(e) => setSelectedRib(e.target.value)}
+              className="select"
+            >
+              <option value="CBAO">CBAO</option>
+              <option value="BIS">BIS</option>
+            </select>
+          </div>
+        </div>
+        <div className="section" style={{ marginTop: '2rem' }}>
+          <h2>Objet de la facture</h2>
+          <div className="form-group">
+            <input
+              type="text"
+              value={objet}
+              onChange={(e) => setObjet(e.target.value)}
+              placeholder="Objet de la facture"
+              className="input"
+            />
+          </div>
+        </div>
+
+
 
         <div className="section">
           <h2>Articles ajoutés</h2>
@@ -398,81 +558,62 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore }) => {
           )}
         </div>
 
+        <div className="preview-container">
+          <div className="button-group">
+            <button
+              className="button primary-button"
+              onClick={() => setShowPreview(!showPreview)}
+            >
+              <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
+            </button>
+
+            <button
+              className="button success-button"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <><i className="fas fa-spinner fa-spin"></i> Enregistrement...</>
+              ) : (
+                <><i className="fas fa-save"></i> Enregistrer</>
+              )}
+            </button>
+
+            {/* Bouton TÉLÉCHARGER */}
+            {isSaved ? (
+              <PDFDownloadLink
+                document={<InvoicePDF data={data} />}
+                fileName={`facture_${data.facture.Numéro[0]}.pdf`}
+                className="button success-button"
+              >
+                {({ loading: pdfLoading }) =>
+                  pdfLoading
+                    ? <><i className="fas fa-spinner fa-spin"></i> Génération...</>
+                    : <><i className="fas fa-file-download"></i> Télécharger</>
+                }
+              </PDFDownloadLink>
+
+            ) : (
+              <button className="button info-button secondary-button" disabled>
+                <i className="fas fa-download"></i> Télécharger
+              </button>
+            )}
+          </div>
+
+          {showPreview && (
+            <PDFViewer
+              width="100%"
+              height="800px"
+              style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
+            >
+              <InvoicePDF data={data} ribType={selectedRib} objet={objet} />
+            </PDFViewer>
+          )}
+        </div>
       </div>
     </div>
-
   );
 };
-// Composant InvoicePDF
-const InvoicePDF = ({ data }) => (
-  <Document>
-    <Page size="A4" style={pdfStyles.page}>
-      <View style={pdfStyles.header}>
-        <View style={pdfStyles.companyInfo}>
-          <Text style={pdfStyles.companyName}>VOTRE ENTREPRISE</Text>
-          <Text style={pdfStyles.companyAddress}>
-            Adresse de votre entreprise\n
-            Code postal Ville\n
-            Tél : Votre téléphone\n
-            Email : votre@email.com
-          </Text>
-        </View>
-
-        <View style={pdfStyles.invoiceTitleContainer}>
-          <Text style={pdfStyles.invoiceTitle}>FACTURE</Text>
-        </View>
-      </View>
-
-      <View style={{ marginTop: 20 }}>
-        <Text style={pdfStyles.sectionTitle}>Client</Text>
-        <View style={{ padding: 10 }}>
-          <Text style={{ marginBottom: 5 }}><Text style={{ fontWeight: 'bold' }}>Nom:</Text> {data.client?.Nom?.[0] || "Non spécifié"}</Text>
-          <Text><Text style={{ fontWeight: 'bold' }}>Adresse:</Text> {data.client?.Adresse?.[0] || "Non spécifié"}</Text>
-        </View>
-      </View>
-
-      <View style={{ marginTop: 20 }}>
-        <Text style={pdfStyles.sectionTitle}>Informations facture</Text>
-        <View style={{ padding: 10 }}>
-          <Text style={{ marginBottom: 5 }}><Text style={{ fontWeight: 'bold' }}>Numéro:</Text> {data.facture.Numéro[0]}</Text>
-          <Text><Text style={{ fontWeight: 'bold' }}>Date:</Text> {new Date(data.facture.Date[0]).toLocaleDateString('fr-FR')}</Text>
-        </View>
-      </View>
-
-      <View style={{ marginTop: 20 }}>
-        <Text style={pdfStyles.sectionTitle}>Détail des articles</Text>
-        <View style={{ padding: 10 }}>
-          {data.items.Designation?.map((designation, index) => (
-            <View key={index} style={{ marginBottom: 10 }}>
-              <Text style={{ fontWeight: 'bold' }}>{designation}</Text>
-              <Text>Quantité: {data.items.Quantite[index]}</Text>
-              <Text>Prix Unitaire: {data.items["Prix Unitaire"][index]}FCFA</Text>
-              <Text>TVA: {data.items.TVA[index]}</Text>
-              <Text>Total: {data.items["Prix Total"][index]}FCFA</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <View style={pdfStyles.totalsContainer}>
-        <View style={pdfStyles.totalsBox}>
-          <Text style={pdfStyles.sectionTitle}>Totaux</Text>
-          <View style={{ marginTop: 10 }}>
-            <Text>Total HT: {data.totals?.["Total HT"]?.[0] || "0,00"}FCFA</Text>
-            <Text>Total TVA: {data.totals?.["Total TVA"]?.[0] || "0,00"}FCFA</Text>
-            <Text style={{ fontWeight: 'bold', marginTop: 5 }}>
-              Total TTC: {data.totals?.["Total TTC"]?.[0] || "0,00"}FCFA
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={pdfStyles.footer}>
-        <Text>Merci pour votre confiance</Text>
-      </View>
-    </Page>
-  </Document>
-);
 
 // Composant principal Fact
 const Fact = () => {
@@ -480,17 +621,16 @@ const Fact = () => {
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const location = useLocation();
 
-  const [data, setData] = useState({
-    facture: {
-      Numéro: ["FA" + new Date().getFullYear() + (Math.floor(Math.random() * 9000) + 1000)],
-      Date: [new Date().toISOString().split('T')[0]]
-    },
-    client: {
-      Nom: [],
-      Adresse: []
-    },
-    items: {
+  //const navigate = useNavigate();
+
+  // Fonction pour transformer les données de Firebase en format attendu par le composant
+  const transformFactureData = (facture) => {
+    if (!facture) return null;
+
+    const items = {
       Designation: [],
       Quantite: [],
       "Prix Unitaire": [],
@@ -498,63 +638,132 @@ const Fact = () => {
       "Montant HT": [],
       "Montant TVA": [],
       "Prix Total": []
-    },
-    totals: {
-      "Total HT": ["0,00"],
-      "Total TVA": ["0,00"],
-      "Total TTC": ["0,00"]
-    }
-  });
-
-const saveInvoiceToFirestore = async () => {
-  try {
-    const invoiceData = {
-      numero: data.facture.Numéro[0],
-      date: data.facture.Date[0],
-      clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
-      clientNom: data.client.Nom[0],
-      clientAdresse: data.client.Adresse[0],
-      items: data.items.Designation.map((_, index) => ({
-        designation: data.items.Designation[index],
-        quantite: data.items.Quantite[index],
-        prixUnitaire: data.items["Prix Unitaire"][index],
-        tva: data.items.TVA[index],
-        montantHT: data.items["Montant HT"]?.[index] || "0,00",
-        montantTVA: data.items["Montant TVA"]?.[index] || "0,00",
-        prixTotal: data.items["Prix Total"][index]
-      })),
-      totalHT: data.totals["Total HT"][0],
-      totalTVA: data.totals["Total TVA"][0],
-      totalTTC: data.totals["Total TTC"][0],
-      createdAt: new Date().toISOString(),
-      statut: "en attente"
     };
 
-    const docRef = await addDoc(collection(db, "factures"), invoiceData);
-    return docRef.id;
-  } catch (error) {
-    throw error; // on laisse handleSave gérer l’erreur
-  }
-};
-const handleSave = async () => {
-  if (!data.client.Nom[0] || data.items.Designation.length === 0) {
-    alert("Veuillez sélectionner un client et ajouter au moins un article");
-    return;
-  }
+    if (facture.items && facture.items.length > 0) {
+      facture.items.forEach(item => {
+        items.Designation.push(item.designation);
+        items.Quantite.push(item.quantite);
+        items["Prix Unitaire"].push(item.prixUnitaire);
+        items.TVA.push(item.tva);
+        items["Montant HT"].push(item.montantHT);
+        items["Montant TVA"].push(item.montantTVA);
+        items["Prix Total"].push(item.prixTotal);
+      });
+    }
 
-  try {
-    setIsSaving(true);
-    //const docId = await saveInvoiceToFirestore();
-    setIsSaved(true);
-    alert(`Facture enregistrée avec succès !`);
-  } catch (error) {
-    console.error("Erreur d'enregistrement :", error);
-    alert("Erreur lors de l'enregistrement");
-  } finally {
-    setIsSaving(false);
-  }
-};
+    return {
+      facture: {
+        Numéro: [facture.numero || ""],
+        Date: [facture.date || new Date().toISOString().split('T')[0]]
+      },
+      client: {
+        Nom: [facture.clientNom || ""],
+        Adresse: [facture.clientAdresse || ""]
+      },
+      items: items,
+      totals: {
+        "Total HT": [facture.totalHT || "0,00"],
+        "Total TVA": [facture.totalTVA || "0,00"],
+        "Total TTC": [facture.totalTTC || "0,00"]
+      }
+    };
+  };
 
+  // Initialiser les données avec soit les données passées en navigation, soit des données vierges
+  const [data, setData] = useState(() => {
+    const defaultData = {
+      facture: {
+        Numéro: ["FA" + new Date().getFullYear() + (Math.floor(Math.random() * 9000) + 1000)],
+        Date: [new Date().toISOString().split('T')[0]]
+      },
+      client: {
+        Nom: [],
+        Adresse: []
+      },
+      items: {
+        Designation: [],
+        Quantite: [],
+        "Prix Unitaire": [],
+        TVA: [],
+        "Montant HT": [],
+        "Montant TVA": [],
+        "Prix Total": []
+      },
+      totals: {
+        "Total HT": ["0,00"],
+        "Total TVA": ["0,00"],
+        "Total TTC": ["0,00"]
+      }
+    };
+
+    // Si on a des données de facture passées en navigation (pour modification)
+    if (location.state && location.state.facture) {
+      return transformFactureData(location.state.facture) || defaultData;
+    }
+
+    return defaultData;
+  });
+
+  const saveInvoiceToFirestore = async () => {
+    try {
+      const invoiceData = {
+        numero: data.facture.Numéro[0],
+        date: data.facture.Date[0],
+        clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
+        clientNom: data.client.Nom[0],
+        clientAdresse: data.client.Adresse[0],
+        items: data.items.Designation.map((_, index) => ({
+          designation: data.items.Designation[index],
+          quantite: data.items.Quantite[index],
+          prixUnitaire: data.items["Prix Unitaire"][index],
+          tva: data.items.TVA[index],
+          montantHT: data.items["Montant HT"]?.[index] || "0,00",
+          montantTVA: data.items["Montant TVA"]?.[index] || "0,00",
+          prixTotal: data.items["Prix Total"][index]
+        })),
+        totalHT: data.totals["Total HT"][0],
+        totalTVA: data.totals["Total TVA"][0],
+        totalTTC: data.totals["Total TTC"][0],
+        createdAt: new Date().toISOString(),
+        statut: "en attente"
+      };
+
+      let docId;
+      // Si on est en mode édition (facture existante)
+      if (location.state && location.state.facture && location.state.facture.id) {
+        await updateDoc(doc(db, "factures", location.state.facture.id), invoiceData);
+        docId = location.state.facture.id;
+      } else {
+        // Mode création
+        const docRef = await addDoc(collection(db, "factures"), invoiceData);
+        docId = docRef.id;
+      }
+
+      return docId;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleSave = async () => {
+    if (!data.client.Nom[0] || data.items.Designation.length === 0) {
+      alert("Veuillez sélectionner un client et ajouter au moins un article");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await saveInvoiceToFirestore();
+      setIsSaved(true);
+      alert(`Facture ${location.state && location.state.facture ? 'modifiée' : 'enregistrée'} avec succès !`);
+    } catch (error) {
+      console.error("Erreur d'enregistrement :", error);
+      alert("Erreur lors de l'enregistrement");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -574,8 +783,6 @@ const handleSave = async () => {
 
     fetchClients();
   }, []);
-  const [isSaved, setIsSaved] = useState(false);
-
 
   if (loading) {
     return (
@@ -607,7 +814,6 @@ const handleSave = async () => {
         </div>
         <div>Chargement des clients...</div>
 
-        {/* Animation CSS dans une balise <style> */}
         <style>
           {`
           @keyframes spin {
@@ -620,7 +826,6 @@ const handleSave = async () => {
     );
   }
 
-
   return (
     <div style={{ backgroundColor: 'var(--light-color)', minHeight: '100vh' }}>
       <InvoiceForm
@@ -628,63 +833,14 @@ const handleSave = async () => {
         setData={setData}
         clients={clients}
         saveInvoiceToFirestore={saveInvoiceToFirestore}
+        handleSave={handleSave}
+        isSaving={isSaving}
+        isSaved={isSaved}
+        showPreview={showPreview}
+        setShowPreview={setShowPreview}
       />
-
-      <div className="preview-container">
-        <div className="button-group">
-          <button
-            className="button primary-button"
-            onClick={() => setShowPreview(!showPreview)}
-          >
-            <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
-          </button>
-
-          <button
-            className="button success-button"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <><i className="fas fa-spinner fa-spin"></i> Enregistrement...</>
-            ) : (
-              <><i className="fas fa-save"></i> Enregistrer</>
-            )}
-          </button>
-
-          {/* Bouton TÉLÉCHARGER */}
-          {isSaved ? (
-            <PDFDownloadLink
-              document={<InvoicePDF data={data} />}
-              fileName={`facture_${data.facture.Numéro[0]}.pdf`}
-              className="button success-button"
-            >
-              {({ loading: pdfLoading }) =>
-                pdfLoading
-                  ? <><i className="fas fa-spinner fa-spin"></i> Génération...</>
-                  : <><i className="fas fa-file-download"></i> Télécharger</>
-              }
-            </PDFDownloadLink>
-
-          ) : (
-            <button className="button info-button secondary-button" disabled>
-              <i className="fas fa-download"></i> Télécharger
-            </button>
-          )}
-        </div>
-
-        {showPreview && (
-          <PDFViewer
-            width="100%"
-            height="800px"
-            style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
-          >
-            <InvoicePDF data={data} />
-          </PDFViewer>
-        )}
-      </div>
     </div>
   );
 };
-
 
 export default Fact;

@@ -180,6 +180,8 @@ body {
   z-index: 5;
   position: sticky;
   top: 0;
+  margin-top: 12px;
+  border-radius: var(--border-radius);
 }
 
 .navbar-left {

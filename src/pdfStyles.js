@@ -49,19 +49,24 @@ export const pdfStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2c3e50',
     marginBottom: 10,
-    borderBottom: '1px solid #eee',
+    //borderBottom: '1px solid #eee',
     paddingBottom: 5
   },
   totalsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20
-  },
-  totalsBox: {
+    marginTop: 20,
+    paddingTop: 10,
+    //backgroundColor: '#f0f8ff',
+    width: '100%', /* AliceBlue, un bleu très clair */
+
+  }, totalsBox: {
     width: '48%',
     padding: 10,
     backgroundColor: '#f8f9fa',
-    borderRadius: 4
+    borderRadius: 4,
+    right: 0,
+
   },
   footer: {
     position: 'absolute',
@@ -71,7 +76,37 @@ export const pdfStyles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 8,
     color: '#7f8c8d',
-    borderTop: '1px solid #eee',
+    borderTop: '2px solid rgb(121, 220, 143)',
     paddingTop: 10
-  }
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottom: '1px solid #eee',
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    backgroundColor: '#218838',
+    color: 'white',
+  },
+  tableHeader: {
+    fontWeight: 'bold',
+    fontSize: 10,
+    // borderBottom: '1px solid #000',
+    paddingBottom: 3,
+    paddingTop: 3,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  totalLabel: {
+    width: '50%',
+    textAlign: 'right',
+    paddingRight: 10,
+  },
+  totalValue: {
+    width: '50%',
+    textAlign: 'right',
+  },
 });
+

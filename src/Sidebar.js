@@ -13,29 +13,31 @@ import './css/side.css'; // Assure-toi d'avoir un fichier CSS pour le style de l
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
     return (
         <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-<Link
-  to="/"
-  onClick={() => setActiveTab("dashboard")}
-  className="sidebar-header"
-  style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
->
-  <img src={logo} alt="Logo Ment@Bill" style={{ height: '50px' }} />
-  <h2 style={{ margin: 0 }}>Ment@Bill</h2>
-</Link>
+            <Link
+                to="/"
+                onClick={() => setActiveTab("dashboard")}
+                className="sidebar-header"
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
+            >
+                <img src={logo} alt="Logo Ment@Bill" style={{ height: '50px' }} />
+                <h2 style={{ margin: 0 }}>Ment@Bill</h2>
+            </Link>
 
 
             <nav className="sidebar-nav">
                 <ul>
-                    <li className={activeTab === "dashboard" ? "active" : ""}>
-                        <Link
-                            to="/"
-                            onClick={() => setActiveTab("dashboard")}
-                            className="nav-link"
-                        >
+                    <Link
+                        to="/"
+                        onClick={() => setActiveTab("dashboard")}
+                        className="nav-link"
+                    >
+                        <li className={activeTab === "dashboard" ? "active" : ""}>
+
                             <MdDashboard className="nav-icon" />
                             {sidebarOpen && <span>Tableau de bord</span>}
-                        </Link>
-                    </li>
+                        </li>
+                    </Link>
+
                     <li
                         className={activeTab === "clients" ? "active" : ""}
                         onClick={() => setActiveTab("clients")}

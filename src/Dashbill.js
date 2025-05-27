@@ -343,10 +343,21 @@ const Dashbill = () => {
                         </div>
 
                         <div className="recent-invoices">
-                            <h2 className="section-title">
-                                <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
-                                Dernières factures
-                            </h2>
+                            <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                                <h2 className="section-title" style={{ display: "flex", alignItems: "center", margin: 0 }}>
+                                    <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
+                                    Dernières factures
+                                </h2>
+
+                                <div className="invoices-actions" style={{ display: "flex", gap: "10px" }}>
+                                    <button onClick={() => navigate("/bill")} className="create-invoice-btn">
+                                        <FaPlus style={{ marginRight: "8px" }} />
+                                        Créer une facture
+                                    </button>
+                                </div>
+                            </div>
+
+
                             {factures.length > 0 ? (
                                 <div className="invoices-list">
                                     {getLastThreeInvoices().map(invoice => (
@@ -1093,15 +1104,15 @@ const Dashbill = () => {
         <div className="dashboard-layout">
             {/* Sidebar */}
             <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-<Link
-  to="/"
-  onClick={() => setActiveTab("dashboard")}
-  className="sidebar-header"
-  style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
->
-  <img src={logo} alt="Logo Ment@Bill" style={{ height: '50px' }} />
-  <h2 style={{ margin: 0 }}>Ment@Bill</h2>
-</Link>
+                <Link
+                    to="/"
+                    onClick={() => setActiveTab("dashboard")}
+                    className="sidebar-header"
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
+                >
+                    <img src={logo} alt="Logo Ment@Bill" style={{ height: '50px' }} />
+                    <h2 style={{ margin: 0 }}>Ment@Bill</h2>
+                </Link>
 
 
                 <nav className="sidebar-nav">
