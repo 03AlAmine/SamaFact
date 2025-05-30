@@ -18,7 +18,7 @@ function App() {
           <Route path="/register" element={<Register />} />
          {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/factures" element={<PrivateRoute><Fact /></PrivateRoute>} />
+          <Route path="/bill" element={<PrivateRoute><Fact /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
