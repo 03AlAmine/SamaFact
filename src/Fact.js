@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Page, Text, View, Document, PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
-import { pdfStyles } from './pdfStyles';
+import { pdfStyles } from './styles/pdfStyles';
 import './css/Fact.css';
 import Sidebar from "./Sidebar";
 

@@ -1,33 +1,63 @@
-/* styles.css */
+/* styles.css - Fichier fusionné */
 :root {
-  --primary-color: #4a6fa5;
+  /* Couleurs principales */
+  --primary-color: #4361ee;
   --primary-light: #6b8cae;
   --primary-dark: #2a4868;
-  --secondary-color: #ff7e5f;
+  --primary-hover: #3a56d4;
+  
+  /* Couleurs secondaires */
+  --secondary-colore: #ff7e5f;
+  --secondary-color: #eee;
   --secondary-light: #ff9e88;
   --secondary-dark: #e65f3e;
+  --secondary-bg: #f8f9fa;
+  
+  /* Couleurs d'état */
   --success-color: #28a745;
+  --success-light: #2ec4b6;
   --warning-color: #ffc107;
   --danger-color: #dc3545;
+  --error-color: #ff4d6d;
+  
+  /* Nuances de gris et couleurs neutres */
   --light-color: #f8f9fa;
   --dark-color: #343a40;
+  --text-dark: #1a1a2e;
+  --text-medium: #2b2d42;
+  --text-light: #8d99ae;
   --gray-light: #e9ecef;
   --gray-medium: #adb5bd;
   --gray-dark: #495057;
-  --border-radius: 12px;
-  --border-radius-sm: 6px;
-  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --box-shadow-md: 0 6px 12px rgba(0, 0, 0, 0.15);
-  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-
-  /* Nouveaux styles */
+  --white: #ffffff;
+  --white-transparent: rgba(255, 255, 255, 0.9);
+  --border-color: #e9ecef;
+  
+  /* Dégradés */
   --primary-gradient: linear-gradient(135deg, #4a6fa5 0%, #6b8cae 100%);
   --secondary-gradient: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
   --success-gradient: linear-gradient(135deg, #28a745 0%, #5cb85c 100%);
   --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ffd966 100%);
   --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+  
+  /* Bordures */
+  --border-radius: 12px;
+  --border-radius-sm: 6px;
+  
+  /* Ombres */
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --box-shadow-md: 0 6px 12px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
   --box-shadow-soft: 0 10px 20px rgba(0, 0, 0, 0.08);
   --box-shadow-card: 0 5px 15px rgba(0, 0, 0, 0.05);
+  
+  /* Transitions et effets */
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
   --hover-effect: translateY(-3px);
 }
 
@@ -110,7 +140,7 @@ body {
 }
 
 .sidebar-nav li {
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -125,8 +155,10 @@ body {
 
 .sidebar-nav li.active {
   background-color: rgba(255, 255, 255, 0.2);
-  box-shadow: inset 3px 0 0 var(--secondary-color);
+  box-shadow: inset 3px 0 0 var(--secondary-colore);
 }
+
+
 
 .sidebar-nav .nav-icon {
   margin-right: 15px;
@@ -264,6 +296,7 @@ body {
   padding: 0.5rem 0.75rem;
   border-radius: 50px;
   transition: var(--transition);
+  text-decoration: none;
 }
 
 .user-profile:hover {
@@ -1100,24 +1133,7 @@ body {
   }
 }
 
-/* Styles pour les onglets */
-.sidebar-nav li {
-  padding: 0.75rem 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: var(--transition);
-  border-left: 3px solid transparent;
-}
 
-.sidebar-nav li:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-nav li.active {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-left: 3px solid var(--secondary-color);
-}
 
 .sidebar-nav .nav-icon {
   margin-right: 10px;

@@ -1,20 +1,30 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./Dashbill"; // Assure-toi que le chemin est correct
-import Bill from "./Fact"; // Exemple d'autre composant
-import Side from "./Sidebar"; // Exemple d'autre composant
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './auth/AuthContext';
+import PrivateRoute from './auth/PrivateRoute';
+import Login from './auth/Login';
+import Register from './auth/Register';
+import Fact from './Fact';
+import Profile from './profil/Profile';
+import Home from './Dashbill';
+//import ForgotPassword from './auth/ForgotPassword';
 
-
-const App = () => {
+function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/bill" element={<Bill />} />
-        <Route path="/side" element={<Side />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+         {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
+          <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/factures" element={<PrivateRoute><Fact /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
-};
+}
+
 
 export default App;

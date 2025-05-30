@@ -1182,8 +1182,13 @@ const Dashbill = () => {
                             <span className="notification-badge">3</span>
                         </button>
                         <div className="user-profile">
-                            <FaUserCircle className="user-avatar" />
-                            <span>Admin</span>
+                            <Link
+                                to="/profile"
+                                className="user-profile "
+                            >
+                                <FaUserCircle className="user-avatar" />
+                                <span>Admin</span>
+                            </Link>
                         </div>
                     </div>
                 </header>

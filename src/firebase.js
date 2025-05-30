@@ -2,6 +2,8 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Configuration Firebase
 const firebaseConfig = {
@@ -19,8 +21,9 @@ const app = initializeApp(firebaseConfig);
 // eslint-disable-next-line no-unused-vars
 const analytics = getAnalytics(app);
 
-// 🔥 Initialisation de Firestore
 const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
 
 // ✅ Exportation
-export { db };
+export { db, auth, storage };
