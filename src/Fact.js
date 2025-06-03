@@ -2,10 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Page, Text, View, Document, PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, where, query } from 'firebase/firestore';
 import { pdfStyles } from './styles/pdfStyles';
 import './css/Fact.css';
 import Sidebar from "./Sidebar";
+import { useAuth } from './auth/AuthContext';
+
+
 
 // Composant InvoicePDF
 const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
@@ -617,6 +620,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
 
 // Composant principal Fact
 const Fact = () => {
+  const { currentUser } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
@@ -705,7 +709,7 @@ const Fact = () => {
     return defaultData;
   });
 
-  const saveInvoiceToFirestore = async () => {
+ const saveInvoiceToFirestore = async () => {
     try {
       const invoiceData = {
         numero: data.facture.Numéro[0],
@@ -726,7 +730,9 @@ const Fact = () => {
         totalTVA: data.totals["Total TVA"][0],
         totalTTC: data.totals["Total TTC"][0],
         createdAt: new Date().toISOString(),
-        statut: "en attente"
+        statut: "en attente",
+        userId: currentUser.uid, // Ajout de l'ID de l'utilisateur
+        companyId: currentUser.companyId // Ajout de l'ID de la compagnie
       };
 
       let docId;
@@ -767,8 +773,14 @@ const Fact = () => {
 
   useEffect(() => {
     const fetchClients = async () => {
+      if (!currentUser) return;
+
       try {
-        const querySnapshot = await getDocs(collection(db, "clients"));
+        // Modifiez cette requête pour filtrer par companyId
+        const clientsRef = collection(db, "clients");
+        const q = query(clientsRef, where("companyId", "==", currentUser.companyId));
+        
+        const querySnapshot = await getDocs(q);
         const clientsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -782,7 +794,15 @@ const Fact = () => {
     };
 
     fetchClients();
-  }, []);
+  }, [currentUser]); // Dépendance à currentUser
+
+  if (!currentUser) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <p>Veuillez vous connecter pour accéder à cette page</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

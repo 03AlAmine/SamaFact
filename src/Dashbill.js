@@ -17,7 +17,14 @@ import {
     FaBuilding,
     FaChartBar,
     FaUserCircle,
-    FaUsers
+    FaUsers,
+    FaCog,
+    FaSignOutAlt,
+    FaChevronDown,
+    FaChevronRight,
+    FaCreditCard,
+    FaUser
+
 } from 'react-icons/fa';
 import { MdDashboard } from "react-icons/md";
 
@@ -31,11 +38,11 @@ import { teamService } from "./services/teamService";
 // ... autres imports
 
 const Dashbill = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, logout } = useAuth();
     const companyId = currentUser?.companyId;
-    
+
     // ... autres états
-        const [client, setClient] = useState({
+    const [client, setClient] = useState({
         nom: "",
         adresse: "",
         email: "",
@@ -75,7 +82,7 @@ const Dashbill = () => {
     // Charger les clients
     useEffect(() => {
         if (!companyId) return;
-        
+
         const unsubscribe = clientService.getClients(companyId, (clientsData) => {
             setClients(clientsData);
             setStats(prev => ({ ...prev, totalClients: clientsData.length }));
@@ -83,7 +90,7 @@ const Dashbill = () => {
         return () => unsubscribe();
     }, [companyId]);
 
-        const loadFactures = async (clientId) => {
+    const loadFactures = async (clientId) => {
         try {
             const facturesData = await clientService.loadClientInvoices(clientId);
             setFactures(facturesData);
@@ -98,7 +105,7 @@ const Dashbill = () => {
     // Charger les factures
     useEffect(() => {
         if (!companyId) return;
-        
+
         if (activeTab === "factures" || activeTab === "dashboard") {
             const unsubscribe = invoiceService.getInvoices(companyId, (invoicesData) => {
                 setFactures(invoicesData);
@@ -130,7 +137,7 @@ const Dashbill = () => {
     // Charger les équipes
     useEffect(() => {
         if (!companyId) return;
-        
+
         teamService.getTeams(companyId).then(equipesData => {
             setEquipes(equipesData);
             setStats(prev => ({ ...prev, totalEquipes: equipesData.length }));
@@ -155,7 +162,7 @@ const Dashbill = () => {
             alert(result.message);
         }
     };
-    
+
 
     const handleUpdate = async (e) => {
         e.preventDefault();
@@ -1156,31 +1163,83 @@ const Dashbill = () => {
 
             {/* Main Content */}
             <div className="main-content">
-                {/* Navbar */}
-                <header className="navbar">
+                {/* Navbar Premium */}
+                <header className="navbar-premium">
                     <div className="navbar-left">
-                        <FaSearch className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher..."
-                            className="search-input"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                        <div className="company-brand">
+                            <FaBuilding className="company-icon" />
+                            <div className="company-details">
+                                <span className="company-name">{currentUser?.companyName || "Mon Entreprise"}</span>
+                                <span className="company-status">Premium</span>
+                            </div>
+                        </div>
+
+                        <div className="search-container">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher clients, factures..."
+                                className="search-input"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <div className="search-shortcut">⌘K</div>
+                        </div>
                     </div>
+
                     <div className="navbar-right">
                         <button className="notification-btn">
                             <FaBell />
-                            <span className="notification-badge">3</span>
+                            <span className="notification-badge pulse">3</span>
                         </button>
-                        <div className="user-profile">
-                            <Link
-                                to="/profile"
-                                className="user-profile "
-                            >
-                                <FaUserCircle className="user-avatar" />
-                                <span>Admin</span>
-                            </Link>
+
+                        <div className="user-profile-dropdown">
+                            <div className="user-profile-trigger">
+                                <div className="user-avatar-wrapper">
+                                    <FaUserCircle className="user-avatar" />
+                                    <div className="user-status"></div>
+                                </div>
+                                <div className="user-info">
+                                    <span className="user-name">{currentUser?.name || "Admin"}</span>
+                                    <span className="user-role">Administrateur</span>
+                                </div>
+                                <FaChevronDown className="dropdown-arrow" />
+                            </div>
+
+                            <div className="dropdown-menu">
+                                <div className="dropdown-header">
+                                    <div className="user-avatar-wrapper large">
+                                        <FaUserCircle className="user-avatar" />
+                                    </div>
+                                    <div className="user-info">
+                                        <span className="user-name">{currentUser?.name || "Admin"}</span>
+                                        <span className="user-email">{currentUser?.email || "admin@entreprise.com"}</span>
+                                    </div>
+                                </div>
+
+                                <Link to="/profile" className="dropdown-item">
+                                    <FaUser className="dropdown-icon" />
+                                    <span>Mon Profil</span>
+                                    <FaChevronRight className="dropdown-arrow-right" />
+                                </Link>
+                                <Link to="/settings" className="dropdown-item">
+                                    <FaCog className="dropdown-icon" />
+                                    <span>Paramètres</span>
+                                    <FaChevronRight className="dropdown-arrow-right" />
+                                </Link>
+                                <Link to="/billing" className="dropdown-item">
+                                    <FaCreditCard className="dropdown-icon" />
+                                    <span>Abonnement</span>
+                                    <FaChevronRight className="dropdown-arrow-right" />
+                                </Link>
+
+                                <div className="dropdown-divider"></div>
+
+                                <button className="dropdown-item logout-btn" onClick={() => logout()}>
+                                    <FaSignOutAlt className="dropdown-icon" />
+                                    <span>Déconnexion</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </header>
