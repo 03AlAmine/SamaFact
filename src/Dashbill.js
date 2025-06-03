@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { db } from "./firebase";
-import { collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
     FaFileInvoiceDollar,
     FaChartLine,
@@ -18,13 +17,15 @@ import {
     FaUserCircle,
     FaUsers
 } from 'react-icons/fa';
+import { MdDashboard } from "react-icons/md";
 
 import "./css/Dashbill.css";
 import logo from './assets/logo.png';
-import { Link } from "react-router-dom";
 
-
-import { MdDashboard } from "react-icons/md";
+// Importez vos services
+import { clientService } from "./services/clientService";
+import { invoiceService } from "./services/invoiceService";
+import { teamService } from "./services/teamService";
 
 const Dashbill = () => {
     // États pour les clients
@@ -59,48 +60,32 @@ const Dashbill = () => {
     // Statistiques
     const [stats, setStats] = useState({
         totalClients: 0,
-        totalFactures: 42,
-        revenusMensuels: 12500,
-        facturesImpayees: 3,
+        totalFactures: 0,
+        revenusMensuels: 0,
+        facturesImpayees: 0,
         totalEquipes: 0
     });
 
-    // Charger les clients depuis Firebase
+    // Charger les clients depuis Firebase via clientService
     useEffect(() => {
-        const q = query(collection(db, "clients"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const clientsData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+        const unsubscribe = clientService.getClients((clientsData) => {
             setClients(clientsData);
             setStats(prev => ({ ...prev, totalClients: clientsData.length }));
         });
         return () => unsubscribe();
     }, []);
 
-    // Charger les équipes (simulé pour l'exemple)
+    // Charger les équipes via teamService
     useEffect(() => {
-        // En production, vous chargeriez cela depuis Firebase
-        const equipesSimulees = [
-            { id: "1", nom: "Équipe Commerciale", description: "Ventes et marketing", responsable: "Jean Dupont" },
-            { id: "2", nom: "Équipe Technique", description: "Développement produit", responsable: "Marie Martin" },
-            { id: "3", nom: "Équipe Support", description: "Support client", responsable: "Pierre Lambert" }
-        ];
-        setEquipes(equipesSimulees);
-        setStats(prev => ({ ...prev, totalEquipes: equipesSimulees.length }));
+        teamService.getTeams().then(equipesData => {
+            setEquipes(equipesData);
+            setStats(prev => ({ ...prev, totalEquipes: equipesData.length }));
+        });
     }, []);
 
     const loadFactures = async (clientId) => {
         try {
-            const q = query(collection(db, "factures"), where("clientId", "==", clientId));
-            const querySnapshot = await getDocs(q);
-
-            const facturesData = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
+            const facturesData = await clientService.loadClientInvoices(clientId);
             setFactures(facturesData);
             setSelectedClient(clients.find(c => c.id === clientId));
             setIsEditing(false);
@@ -109,23 +94,19 @@ const Dashbill = () => {
             alert("Erreur lors du chargement des factures");
         }
     };
-    // Charger toutes les factures depuis Firebase
+
+    // Charger toutes les factures depuis Firebase via invoiceService
     useEffect(() => {
         if (activeTab === "factures" || activeTab === "dashboard") {
-            const q = query(collection(db, "factures"));
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                const facturesData = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setFactures(facturesData);
+            const unsubscribe = invoiceService.getInvoices((invoicesData) => {
+                setFactures(invoicesData);
 
                 // Mettez à jour les statistiques
                 setStats(prev => ({
                     ...prev,
-                    totalFactures: facturesData.length,
-                    facturesImpayees: facturesData.filter(f => f.statut === "en attente").length,
-                    revenusMensuels: facturesData
+                    totalFactures: invoicesData.length,
+                    facturesImpayees: invoicesData.filter(f => f.statut === "en attente").length,
+                    revenusMensuels: invoicesData
                         .filter(f => new Date(f.date).getMonth() === new Date().getMonth())
                         .reduce((sum, f) => sum + parseFloat(f.totalTTC || 0), 0)
                 }));
@@ -137,7 +118,7 @@ const Dashbill = () => {
     const handleDeleteFacture = async (factureId) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
             try {
-                await deleteDoc(doc(db, "factures", factureId));
+                await invoiceService.deleteInvoice(factureId);
                 alert("Facture supprimée avec succès !");
                 setFactures(factures.filter(f => f.id !== factureId));
             } catch (error) {
@@ -158,41 +139,38 @@ const Dashbill = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await addDoc(collection(db, "clients"), client);
-            alert("Client ajouté avec succès !");
+        const result = await clientService.addClient(client);
+        if (result.success) {
+            alert(result.message);
             setClient({ nom: "", adresse: "", email: "", telephone: "", societe: "" });
-        } catch (error) {
-            console.error("Erreur:", error);
-            alert("Erreur lors de l'ajout du client.");
+        } else {
+            alert(result.message);
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
-        try {
-            await updateDoc(doc(db, "clients", editingClient.id), editingClient);
-            alert("Client modifié avec succès !");
+        const result = await clientService.updateClient(editingClient.id, editingClient);
+        if (result.success) {
+            alert(result.message);
             setEditingClient(null);
             setIsEditing(false);
-        } catch (error) {
-            console.error("Erreur:", error);
-            alert("Erreur lors de la modification du client.");
+        } else {
+            alert(result.message);
         }
     };
 
     const handleDelete = async (clientId) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) {
-            try {
-                await deleteDoc(doc(db, "clients", clientId));
-                alert("Client supprimé avec succès !");
+            const result = await clientService.deleteClient(clientId);
+            if (result.success) {
+                alert(result.message);
                 if (selectedClient && selectedClient.id === clientId) {
                     setSelectedClient(null);
                     setFactures([]);
                 }
-            } catch (error) {
-                console.error("Erreur:", error);
-                alert("Erreur lors de la suppression du client.");
+            } else {
+                alert(result.message);
             }
         }
     };
@@ -215,12 +193,13 @@ const Dashbill = () => {
     const handleEquipeSubmit = async (e) => {
         e.preventDefault();
         try {
-            // En production, vous utiliseriez addDoc pour Firebase
-            const newEquipe = { ...equipe, id: Date.now().toString() };
-            setEquipes([...equipes, newEquipe]);
-            setStats(prev => ({ ...prev, totalEquipes: prev.totalEquipes + 1 }));
-            alert("Équipe ajoutée avec succès !");
-            setEquipe({ nom: "", description: "", responsable: "" });
+            const result = await teamService.addTeam(equipe);
+            if (result.success) {
+                setEquipes([...equipes, { ...equipe, id: result.id }]);
+                setStats(prev => ({ ...prev, totalEquipes: prev.totalEquipes + 1 }));
+                alert(result.message);
+                setEquipe({ nom: "", description: "", responsable: "" });
+            }
         } catch (error) {
             console.error("Erreur:", error);
             alert("Erreur lors de l'ajout de l'équipe.");
@@ -230,26 +209,30 @@ const Dashbill = () => {
     const handleEquipeUpdate = async (e) => {
         e.preventDefault();
         try {
-            // En production, vous utiliseriez updateDoc pour Firebase
-            setEquipes(equipes.map(eq =>
-                eq.id === editingEquipe.id ? editingEquipe : eq
-            ));
-            alert("Équipe modifiée avec succès !");
-            setEditingEquipe(null);
-            setIsEditingEquipe(false);
+            const result = await teamService.updateTeam(editingEquipe.id, editingEquipe);
+            if (result.success) {
+                setEquipes(equipes.map(eq =>
+                    eq.id === editingEquipe.id ? editingEquipe : eq
+                ));
+                alert(result.message);
+                setEditingEquipe(null);
+                setIsEditingEquipe(false);
+            }
         } catch (error) {
             console.error("Erreur:", error);
             alert("Erreur lors de la modification de l'équipe.");
         }
     };
 
-    const handleEquipeDelete = (equipeId) => {
+    const handleEquipeDelete = async (equipeId) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer cette équipe ?")) {
             try {
-                // En production, vous utiliseriez deleteDoc pour Firebase
-                setEquipes(equipes.filter(eq => eq.id !== equipeId));
-                setStats(prev => ({ ...prev, totalEquipes: prev.totalEquipes - 1 }));
-                alert("Équipe supprimée avec succès !");
+                const result = await teamService.deleteTeam(equipeId);
+                if (result.success) {
+                    setEquipes(equipes.filter(eq => eq.id !== equipeId));
+                    setStats(prev => ({ ...prev, totalEquipes: prev.totalEquipes - 1 }));
+                    alert(result.message);
+                }
             } catch (error) {
                 console.error("Erreur:", error);
                 alert("Erreur lors de la suppression de l'équipe.");
@@ -294,9 +277,10 @@ const Dashbill = () => {
 
     const getLastThreeInvoices = () => {
         return [...factures]
-            .sort((a, b) => new Date(b.date) - new Date(a.date)) // Trie par date décroissante
-            .slice(0, 3); // Prend les 3 premières
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 3);
     };
+
     // Rendu du contenu en fonction de l'onglet actif
     const renderActiveTab = () => {
         switch (activeTab) {
@@ -356,7 +340,6 @@ const Dashbill = () => {
                                     </button>
                                 </div>
                             </div>
-
 
                             {factures.length > 0 ? (
                                 <div className="invoices-list">
@@ -696,7 +679,11 @@ const Dashbill = () => {
                                                                 <button className="action-btn edit-btn" title="Modifier">
                                                                     <FaEdit />
                                                                 </button>
-                                                                <button className="action-btn delete-btn" title="Supprimer">
+                                                                <button
+                                                                    className="action-btn delete-btn"
+                                                                    title="Supprimer"
+                                                                    onClick={() => handleDeleteFacture(f.id)}
+                                                                >
                                                                     <FaTrash />
                                                                 </button>
                                                                 <button className="action-btn view-btn" title="Voir">
@@ -989,12 +976,6 @@ const Dashbill = () => {
                                                     <span className="detail-label">Montant:</span>
                                                     <span className="detail-value">{f.totalTTC} FCFA</span>
                                                 </div>
-                                                {/*  <div className="client-detail">
-                                        <span className="detail-label">Statut:</span>
-                                      <span className={`invoice-status ${f.statut}`}>
-                                            {f.statut}
-                                        </span> 
-                                    </div> */}
                                             </div>
                                         </div>
                                     ))}
@@ -1110,10 +1091,9 @@ const Dashbill = () => {
                     className="sidebar-header"
                     style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
                 >
-                    <img src={logo} alt="Logo Ment@Bill" style={{ height: '50px' }} />
-                    <h2 style={{ margin: 0 }}>Ment@Bill</h2>
+                    <img src={logo} alt="Logo Ment@Fact" style={{ height: '50px' }} />
+                    <h2 style={{ margin: 0 }}>Ment@Fact</h2>
                 </Link>
-
 
                 <nav className="sidebar-nav">
                     <ul>
@@ -1136,6 +1116,9 @@ const Dashbill = () => {
                             onClick={() => setActiveTab("factures")}
                         >
                             <FaFileInvoiceDollar className="nav-icon" />
+
+
+
                             {sidebarOpen && <span>Factures</span>}
                         </li>
 

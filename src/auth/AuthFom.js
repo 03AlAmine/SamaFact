@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaLock, FaEnvelope, FaGoogle, FaFacebook, FaGithub, FaLinkedin } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser } from 'react-icons/fa';
 import './AuthForm.css';
 
 const AuthForm = ({ type }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
+    const [companyName, setCompanyName] = useState('');
+    const [userName, setUserName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login, signup } = useAuth();
@@ -17,48 +19,55 @@ const AuthForm = ({ type }) => {
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
         setError('');
+        setEmail('');
+        setPassword('');
+        setPasswordConfirm('');
+        setCompanyName('');
+        setUserName('');
     };
 
-async function handleSubmit(e) {
-    e.preventDefault();
+    async function handleSubmit(e, formType) {
+        e.preventDefault();
 
-    if (type === 'register' && password !== passwordConfirm) {
-        return setError("Les mots de passe ne correspondent pas");
-    }
-
-    try {
-        setError('');
-        setLoading(true);
-
-        if (type === 'login') {
-            await login(email, password);
-            navigate('/');
-        } else {
-            await signup(email, password);
-            navigate('/profile');
-        }
-    } catch (err) {
-        // Personnalisation du message d’erreur pour le login
-        if (type === 'login') {
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                setError("Email ou mot de passe incorrect");
-            } else {
-                setError("Échec de la connexion. Vérifiez vos identifiants");
+        if (formType === 'register') {
+            if (password !== passwordConfirm) {
+                return setError("Les mots de passe ne correspondent pas");
             }
-        } else {
-            setError(err.message || "Une erreur est survenue lors de l'inscription");
+            if (!companyName.trim()) {
+                return setError("Le nom de l'entreprise est requis");
+            }
         }
-    } finally {
-        setLoading(false);
-    }
-}
 
+        try {
+            setError('');
+            setLoading(true);
+
+            if (formType === 'login') {
+                await login(email, password);
+                navigate('/');
+            } else {
+                await signup(email, password, companyName, userName);
+                navigate('/profile');
+            }
+        } catch (err) {
+            if (formType === 'login') {
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    setError("Email ou mot de passe incorrect");
+                } else {
+                    setError("Échec de la connexion. Vérifiez vos identifiants");
+                }
+            } else {
+                setError(err.message || "Une erreur est survenue lors de l'inscription");
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
-        
         <div className={`auth-container ${activeForm}`}>
             <div className="auth-form-box auth-login">
-                <form  className="form-auth" onSubmit={type === 'login' ? handleSubmit : undefined}>
+                <form className="form-auth" onSubmit={(e) => handleSubmit(e, 'login')}>
                     {error && <div className="auth-error">{error}</div>}
 
                     <h1>Connexion</h1>
@@ -99,8 +108,33 @@ async function handleSubmit(e) {
             </div>
 
             <div className="auth-form-box auth-register">
-                <form onSubmit={type === 'register' ? handleSubmit : undefined}>
+                <form onSubmit={(e) => handleSubmit(e, 'register')}>
                     <h1>Inscription</h1>
+                    
+                    {/* Nouveaux champs entreprise */}
+                    <div className="auth-input-box">
+                        <input
+                            type="text"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="Nom de l'entreprise"
+                            required
+                        />
+                        <FaBuilding className="auth-icon" />
+                    </div>
+                    
+                    <div className="auth-input-box">
+                        <input
+                            type="text"
+                            value={userName}
+                            onChange={(e) => setUserName(e.target.value)}
+                            placeholder="Votre nom complet"
+                            required
+                        />
+                        <FaUser className="auth-icon" />
+                    </div>
+                    {/* Fin nouveaux champs */}
+
                     <div className="auth-input-box">
                         <input
                             type="email"
@@ -121,18 +155,16 @@ async function handleSubmit(e) {
                         />
                         <FaLock className="auth-icon" />
                     </div>
-                    {type === 'register' && (
-                        <div className="auth-input-box">
-                            <input
-                                type="password"
-                                value={passwordConfirm}
-                                onChange={(e) => setPasswordConfirm(e.target.value)}
-                                placeholder="Confirmez le mot de passe"
-                                required
-                            />
-                            <FaLock className="auth-icon" />
-                        </div>
-                    )}
+                    <div className="auth-input-box">
+                        <input
+                            type="password"
+                            value={passwordConfirm}
+                            onChange={(e) => setPasswordConfirm(e.target.value)}
+                            placeholder="Confirmez le mdp"
+                            required
+                        />
+                        <FaLock className="auth-icon" />
+                    </div>
                     <button disabled={loading} type="submit" className="auth-btn">
                         {loading ? 'Inscription en cours...' : "S'inscrire"}
                     </button>
