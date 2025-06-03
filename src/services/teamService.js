@@ -1,38 +1,47 @@
-// Pour l'exemple, nous simulons le service d'équipe
-// En production, vous utiliseriez Firebase comme pour les autres services
+import { db } from "../firebase";
+import { collection, addDoc, query, doc, deleteDoc, updateDoc, where, getDocs } from "firebase/firestore";
 
 export const teamService = {
-  getTeams: () => {
-    // Simuler une requête asynchrone
-    return Promise.resolve([
-      { id: "1", nom: "Équipe Commerciale", description: "Ventes et marketing", responsable: "Jean Dupont" },
-      { id: "2", nom: "Équipe Technique", description: "Développement produit", responsable: "Marie Martin" },
-      { id: "3", nom: "Équipe Support", description: "Support client", responsable: "Pierre Lambert" }
-    ]);
+  getTeams: async (companyId) => {
+    const q = query(collection(db, "teams"), where("companyId", "==", companyId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
   },
 
-  addTeam: async (teamData) => {
-    // Simuler une création
-    return Promise.resolve({ 
-      success: true, 
-      id: Date.now().toString(),
-      message: "Équipe ajoutée avec succès !" 
-    });
+  addTeam: async (companyId, teamData) => {
+    try {
+      await addDoc(collection(db, "teams"), {
+        ...teamData,
+        companyId,
+        createdAt: new Date()
+      });
+      return { success: true, message: "Équipe ajoutée avec succès !" };
+    } catch (error) {
+      console.error("Erreur:", error);
+      return { success: false, message: "Erreur lors de l'ajout de l'équipe." };
+    }
   },
 
   updateTeam: async (teamId, teamData) => {
-    // Simuler une mise à jour
-    return Promise.resolve({ 
-      success: true, 
-      message: "Équipe modifiée avec succès !" 
-    });
+    try {
+      await updateDoc(doc(db, "teams", teamId), teamData);
+      return { success: true, message: "Équipe modifiée avec succès !" };
+    } catch (error) {
+      console.error("Erreur:", error);
+      return { success: false, message: "Erreur lors de la modification de l'équipe." };
+    }
   },
 
   deleteTeam: async (teamId) => {
-    // Simuler une suppression
-    return Promise.resolve({ 
-      success: true, 
-      message: "Équipe supprimée avec succès !" 
-    });
+    try {
+      await deleteDoc(doc(db, "teams", teamId));
+      return { success: true, message: "Équipe supprimée avec succès !" };
+    } catch (error) {
+      console.error("Erreur:", error);
+      return { success: false, message: "Erreur lors de la suppression de l'équipe." };
+    }
   }
 };

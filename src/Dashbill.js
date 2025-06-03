@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useAuth } from './auth/AuthContext';
 import {
     FaFileInvoiceDollar,
     FaChartLine,
@@ -26,10 +28,14 @@ import logo from './assets/logo.png';
 import { clientService } from "./services/clientService";
 import { invoiceService } from "./services/invoiceService";
 import { teamService } from "./services/teamService";
+// ... autres imports
 
 const Dashbill = () => {
-    // États pour les clients
-    const [client, setClient] = useState({
+    const { currentUser } = useAuth();
+    const companyId = currentUser?.companyId;
+    
+    // ... autres états
+        const [client, setClient] = useState({
         nom: "",
         adresse: "",
         email: "",
@@ -66,24 +72,18 @@ const Dashbill = () => {
         totalEquipes: 0
     });
 
-    // Charger les clients depuis Firebase via clientService
+    // Charger les clients
     useEffect(() => {
-        const unsubscribe = clientService.getClients((clientsData) => {
+        if (!companyId) return;
+        
+        const unsubscribe = clientService.getClients(companyId, (clientsData) => {
             setClients(clientsData);
             setStats(prev => ({ ...prev, totalClients: clientsData.length }));
         });
         return () => unsubscribe();
-    }, []);
+    }, [companyId]);
 
-    // Charger les équipes via teamService
-    useEffect(() => {
-        teamService.getTeams().then(equipesData => {
-            setEquipes(equipesData);
-            setStats(prev => ({ ...prev, totalEquipes: equipesData.length }));
-        });
-    }, []);
-
-    const loadFactures = async (clientId) => {
+        const loadFactures = async (clientId) => {
         try {
             const facturesData = await clientService.loadClientInvoices(clientId);
             setFactures(facturesData);
@@ -95,13 +95,13 @@ const Dashbill = () => {
         }
     };
 
-    // Charger toutes les factures depuis Firebase via invoiceService
+    // Charger les factures
     useEffect(() => {
+        if (!companyId) return;
+        
         if (activeTab === "factures" || activeTab === "dashboard") {
-            const unsubscribe = invoiceService.getInvoices((invoicesData) => {
+            const unsubscribe = invoiceService.getInvoices(companyId, (invoicesData) => {
                 setFactures(invoicesData);
-
-                // Mettez à jour les statistiques
                 setStats(prev => ({
                     ...prev,
                     totalFactures: invoicesData.length,
@@ -113,7 +113,7 @@ const Dashbill = () => {
             });
             return () => unsubscribe();
         }
-    }, [activeTab]);
+    }, [companyId, activeTab]);
 
     const handleDeleteFacture = async (factureId) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
@@ -127,8 +127,16 @@ const Dashbill = () => {
             }
         }
     };
+    // Charger les équipes
+    useEffect(() => {
+        if (!companyId) return;
+        
+        teamService.getTeams(companyId).then(equipesData => {
+            setEquipes(equipesData);
+            setStats(prev => ({ ...prev, totalEquipes: equipesData.length }));
+        });
+    }, [companyId]);
 
-    // Gestion des clients
     const handleChange = (e) => {
         setClient({ ...client, [e.target.name]: e.target.value });
     };
@@ -139,7 +147,7 @@ const Dashbill = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await clientService.addClient(client);
+        const result = await clientService.addClient(companyId, client);
         if (result.success) {
             alert(result.message);
             setClient({ nom: "", adresse: "", email: "", telephone: "", societe: "" });
@@ -147,6 +155,7 @@ const Dashbill = () => {
             alert(result.message);
         }
     };
+    
 
     const handleUpdate = async (e) => {
         e.preventDefault();
@@ -193,7 +202,7 @@ const Dashbill = () => {
     const handleEquipeSubmit = async (e) => {
         e.preventDefault();
         try {
-            const result = await teamService.addTeam(equipe);
+            const result = await teamService.addTeam(companyId, equipe);
             if (result.success) {
                 setEquipes([...equipes, { ...equipe, id: result.id }]);
                 setStats(prev => ({ ...prev, totalEquipes: prev.totalEquipes + 1 }));

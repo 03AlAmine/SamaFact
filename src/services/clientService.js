@@ -2,9 +2,8 @@ import { db } from "../firebase";
 import { collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where } from "firebase/firestore";
 
 export const clientService = {
-  // Récupérer tous les clients
-  getClients: (callback) => {
-    const q = query(collection(db, "clients"));
+  getClients: (companyId, callback) => {
+    const q = query(collection(db, "clients"), where("companyId", "==", companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const clientsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -15,10 +14,13 @@ export const clientService = {
     return unsubscribe;
   },
 
-  // Ajouter un nouveau client
-  addClient: async (clientData) => {
+  addClient: async (companyId, clientData) => {
     try {
-      await addDoc(collection(db, "clients"), clientData);
+      await addDoc(collection(db, "clients"), {
+        ...clientData,
+        companyId,
+        createdAt: new Date()
+      });
       return { success: true, message: "Client ajouté avec succès !" };
     } catch (error) {
       console.error("Erreur:", error);
@@ -26,7 +28,6 @@ export const clientService = {
     }
   },
 
-  // Mettre à jour un client
   updateClient: async (clientId, clientData) => {
     try {
       await updateDoc(doc(db, "clients", clientId), clientData);
@@ -37,7 +38,6 @@ export const clientService = {
     }
   },
 
-  // Supprimer un client
   deleteClient: async (clientId) => {
     try {
       await deleteDoc(doc(db, "clients", clientId));
@@ -48,10 +48,13 @@ export const clientService = {
     }
   },
 
-  // Charger les factures d'un client
-  loadClientInvoices: async (clientId) => {
+  loadClientInvoices: async (companyId, clientId) => {
     try {
-      const q = query(collection(db, "factures"), where("clientId", "==", clientId));
+      const q = query(
+        collection(db, "factures"), 
+        where("companyId", "==", companyId),
+        where("clientId", "==", clientId)
+      );
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => ({
         id: doc.id,

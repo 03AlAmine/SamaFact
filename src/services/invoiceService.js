@@ -1,10 +1,9 @@
 import { db } from "../firebase";
-import { collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, where } from "firebase/firestore";
 
 export const invoiceService = {
-  // Récupérer toutes les factures
-  getInvoices: (callback) => {
-    const q = query(collection(db, "factures"));
+  getInvoices: (companyId, callback) => {
+    const q = query(collection(db, "factures"), where("companyId", "==", companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const invoicesData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -15,7 +14,6 @@ export const invoiceService = {
     return unsubscribe;
   },
 
-  // Supprimer une facture
   deleteInvoice: async (invoiceId) => {
     try {
       await deleteDoc(doc(db, "factures", invoiceId));
@@ -26,10 +24,13 @@ export const invoiceService = {
     }
   },
 
-  // Ajouter une facture
-  addInvoice: async (invoiceData) => {
+  addInvoice: async (companyId, invoiceData) => {
     try {
-      const docRef = await addDoc(collection(db, "factures"), invoiceData);
+      const docRef = await addDoc(collection(db, "factures"), {
+        ...invoiceData,
+        companyId,
+        createdAt: new Date()
+      });
       return { success: true, id: docRef.id, message: "Facture créée avec succès !" };
     } catch (error) {
       console.error("Erreur:", error);
@@ -37,7 +38,6 @@ export const invoiceService = {
     }
   },
 
-  // Mettre à jour une facture
   updateInvoice: async (invoiceId, invoiceData) => {
     try {
       await updateDoc(doc(db, "factures", invoiceId), invoiceData);
