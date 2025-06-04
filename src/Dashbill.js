@@ -35,6 +35,12 @@ import logo from './assets/logo.png';
 import { clientService } from "./services/clientService";
 import { invoiceService } from "./services/invoiceService";
 import { teamService } from "./services/teamService";
+import {
+    InvoiceChart,
+    ClientChart,
+    StatusChart,
+    MonthlyComparisonChart
+} from './components/Charts';
 // ... autres imports
 
 const Dashbill = () => {
@@ -338,6 +344,22 @@ const Dashbill = () => {
                                 <div className="stat-info">
                                     <h3>{stats.facturesImpayees}</h3>
                                     <p>Impayées</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="charts-row">
+                            <div className="chart-card">
+                                <h3>Chiffre d'affaires mensuel</h3>
+                                <div className="chart-container">
+                                    <InvoiceChart invoices={factures} />
+                                </div>
+                            </div>
+
+                            <div className="chart-card">
+                                <h3>Répartition des clients</h3>
+                                <div className="chart-container">
+                                    <ClientChart clients={clients} />
                                 </div>
                             </div>
                         </div>
@@ -1040,7 +1062,7 @@ const Dashbill = () => {
                                     <FaChartLine />
                                 </div>
                                 <div className="stat-info">
-                                    <h3>{stats.revenusMensuels.toLocaleString()} €</h3>
+                                    <h3>{stats.revenusMensuels.toLocaleString()} Fcfa</h3>
                                     <p>Revenus mensuels</p>
                                     <div className="stat-trend down">
                                         -3% ce mois-ci
@@ -1077,16 +1099,30 @@ const Dashbill = () => {
 
                         <div className="charts-container">
                             <div className="chart-card">
-                                <h3>Factures par mois</h3>
-                                <div className="chart-placeholder">
-                                    [Graphique des factures par mois]
+                                <h3>Chiffre d'affaires mensuel</h3>
+                                <div className="chart-container">
+                                    <InvoiceChart invoices={factures} />
+                                </div>
+                            </div>
+
+                            <div className="chart-card">
+                                <h3>Comparaison annuelle</h3>
+                                <div className="chart-container">
+                                    <MonthlyComparisonChart invoices={factures} />
                                 </div>
                             </div>
 
                             <div className="chart-card">
                                 <h3>Répartition des clients</h3>
-                                <div className="chart-placeholder">
-                                    [Graphique de répartition des clients]
+                                <div className="chart-container">
+                                    <ClientChart clients={clients} />
+                                </div>
+                            </div>
+
+                            <div className="chart-card">
+                                <h3>Statut des factures</h3>
+                                <div className="chart-container">
+                                    <StatusChart invoices={factures} />
                                 </div>
                             </div>
                         </div>

@@ -1442,3 +1442,42 @@ body {
   margin-top: 1rem;
   border-radius: var(--border-radius);
 }
+/* Styles pour les graphiques */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chart-container {
+  height: 300px;
+  margin-top: 1rem;
+  position: relative;
+}
+
+.chart-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-card);
+  transition: var(--transition);
+}
+
+.chart-card:hover {
+  box-shadow: var(--box-shadow-soft);
+}
+
+.chart-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .charts-row,
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
