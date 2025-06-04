@@ -29,7 +29,8 @@ import {
 import { MdDashboard } from "react-icons/md";
 
 import "./css/Dashbill.css";
-import logo from './assets/logo.png';
+//import logo from './assets/logo.png';
+import logo from './assets/Logo_Mf.png';
 
 // Importez vos services
 import { clientService } from "./services/clientService";

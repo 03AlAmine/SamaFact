@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser } from 'react-icons/fa';
 import './AuthForm.css';
+import logo from '../assets/Logo_Mf.png'; // ou le bon chemin
 
 const AuthForm = ({ type }) => {
     const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ const AuthForm = ({ type }) => {
     const { login, signup } = useAuth();
     const navigate = useNavigate();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
+
 
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
@@ -110,7 +112,7 @@ const AuthForm = ({ type }) => {
             <div className="auth-form-box auth-register">
                 <form onSubmit={(e) => handleSubmit(e, 'register')}>
                     <h1>Inscription</h1>
-                    
+
                     {/* Nouveaux champs entreprise */}
                     <div className="auth-input-box">
                         <input
@@ -122,7 +124,7 @@ const AuthForm = ({ type }) => {
                         />
                         <FaBuilding className="auth-icon" />
                     </div>
-                    
+
                     <div className="auth-input-box">
                         <input
                             type="text"
@@ -180,7 +182,12 @@ const AuthForm = ({ type }) => {
 
             <div className="auth-toggle-box">
                 <div className="auth-toggle-panel auth-toggle-left">
-                    <h1>Bienvenue !</h1>
+                    <img src={logo} alt="Logo" className="auth-logo" />
+                    <h1 className="auth-welcome-title">
+                        Bienvenue sur<br />
+                        <span className="h1-span">Ment@Fact</span>
+                    </h1>
+
                     <p>Vous n'avez pas encore de compte ?</p>
                     <button className="auth-btn auth-register-btn" onClick={toggleForm}>
                         S'inscrire
@@ -188,7 +195,11 @@ const AuthForm = ({ type }) => {
                 </div>
 
                 <div className="auth-toggle-panel auth-toggle-right">
-                    <h1>Content de vous revoir !</h1>
+                    <img src={logo} alt="Logo" className="auth-logo" />
+
+                    <h1>Content de vous revoir ! <br />
+                        <span className="h1-span">Ment@Fact</span>
+                    </h1>
                     <p>Vous avez déjà un compte ?</p>
                     <button className="auth-btn auth-login-btn" onClick={toggleForm}>
                         Se connecter
