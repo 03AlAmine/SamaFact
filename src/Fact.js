@@ -2,21 +2,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Page, Text, View, Document, PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, where, query } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, where, query, orderBy, limit } from 'firebase/firestore';
 import { pdfStyles } from './styles/pdfStyles';
 import './css/Fact.css';
 import Sidebar from "./Sidebar";
 import { useAuth } from './auth/AuthContext';
+import { Image } from '@react-pdf/renderer';
 
 
-
-// Composant InvoicePDF
+// Composant InvoicePDF (inchangé)
 const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
   const ribData = {
     CBAO: {
       banque: "CBAO",
       rib: "SN08 00801 023010100001 23",
-
     },
     BIS: {
       banque: "BIS",
@@ -29,14 +28,14 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
       <Page size="A4" style={pdfStyles.page}>
         <View style={pdfStyles.header}>
           <View style={pdfStyles.companyInfo}>
-            <Text style={pdfStyles.companyName}>VOTRE ENTREPRISE</Text>
-            {/* <Text style={pdfStyles.companyAddress}>
-              Adresse de votre entreprise\n
-              Code postal Ville\n
-              Tél : Votre téléphone\n
-              Email : votre@email.com
-            </Text> */}
+            {/* Logo de l'entreprise */}
+            <Image
+              style={pdfStyles.logo}
+              src="./Logo_LIS.png" // ou une URL si le logo est accessible en ligne
+            />
+            {/* <Text style={pdfStyles.companyName}>VOTRE ENTREPRISE</Text> */}
           </View>
+
 
           <View style={pdfStyles.invoiceTitleContainer}>
             <Text style={pdfStyles.invoiceTitle}>FACTURE</Text>
@@ -46,9 +45,9 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
 
         <View style={{ marginTop: -20, alignItems: 'flex-end' }}>
           {/*<Text style={pdfStyles.sectionTitle}>Informations facture</Text> */}
-          <View style={{ padding: 10 }}>
-            <Text style={{ marginBottom: 5 }}>
-              <Text style={{ fontWeight: 'bold' }}></Text> {data.facture.Numéro[0]}
+          <View style={{ padding: 10, marginTop: -70 }}>
+            <Text style={{ marginBottom: 5, fontSize: 25, color: '#2c3e50', fontWeight: 'bold' }}>
+              {data.facture.Numéro[0]}
             </Text>
             <Text>
               <Text style={{ fontWeight: 'bold' }}>Date:</Text> {new Date(data.facture.Date[0]).toLocaleDateString('fr-FR')}
@@ -84,20 +83,20 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
             <View style={pdfStyles.tableRow}>
               <Text style={[pdfStyles.tableHeader, { width: '40%' }]}>Désignation</Text>
               <Text style={[pdfStyles.tableHeader, { width: '10%', textAlign: 'right' }]}>QTE</Text>
-              <Text style={[pdfStyles.tableHeader, { width: '15%', textAlign: 'right' }]}>PU HT</Text>
-              <Text style={[pdfStyles.tableHeader, { width: '10%', textAlign: 'right' }]}>TVA</Text>
-              <Text style={[pdfStyles.tableHeader, { width: '25%', textAlign: 'right' }]}>PT HT</Text>
+              <Text style={[pdfStyles.tableHeader, { width: '19%', textAlign: 'right' }]}>PU HT</Text>
+              <Text style={[pdfStyles.tableHeader, { width: '8%', textAlign: 'right' }]}>TVA </Text>
+              <Text style={[pdfStyles.tableHeader, { width: '23%', textAlign: 'right' }]}>PT HT</Text>
             </View>
 
 
             {/* Lignes des articles */}
             {data.items.Designation?.map((designation, index) => (
-              <View key={index} style={pdfStyles.tableRow}>
+              <View key={index} style={pdfStyles.tableRow_1}>
                 <Text style={{ width: '40%' }}>{designation}</Text>
                 <Text style={{ width: '10%', textAlign: 'right' }}>{data.items.Quantite[index]}</Text>
-                <Text style={{ width: '15%', textAlign: 'right' }}>{data.items["Prix Unitaire"][index]} FCFA</Text>
-                <Text style={{ width: '10%', textAlign: 'right' }}>{data.items.TVA[index]}</Text>
-                <Text style={{ width: '25%', textAlign: 'right' }}>{data.items["Prix Total"][index]} FCFA</Text>
+                <Text style={{ width: '19%', textAlign: 'right' }}>{data.items["Prix Unitaire"][index]} </Text>
+                <Text style={{ width: '8%', textAlign: 'right' }}>{data.items.TVA[index]}</Text>
+                <Text style={{ width: '23%', textAlign: 'right' }}>{data.items["Prix Total"][index]} </Text>
               </View>
             ))}
           </View>
@@ -113,19 +112,19 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
           </View>
 
           {/* Bloc Totaux à droite */}
-          <View style={{ width: '50%', backgroundColor: '#f0f8ff', }}>
+          <View style={{ width: '50%', backgroundColor: '#f0f8ff', borderRadius: 4, padding: 10 }}>
             <View style={pdfStyles.totalRow}>
               <Text style={pdfStyles.totalLabel}>Total HT</Text>
-              <Text style={pdfStyles.totalValue}>{data.totals?.["Total HT"]?.[0] || "0,00"} FCFA</Text>
+              <Text style={pdfStyles.totalValue}>{data.totals?.["Total HT"]?.[0] || "0,00"} </Text>
             </View>
             <View style={pdfStyles.totalRow}>
               <Text style={pdfStyles.totalLabel}>TVA (EXO)</Text>
-              <Text style={pdfStyles.totalValue}>{data.totals?.["Total TVA"]?.[0] || "0,00"} FCFA</Text>
+              <Text style={pdfStyles.totalValue}>{data.totals?.["Total TVA"]?.[0] || "0,00"} </Text>
             </View>
             <View style={[pdfStyles.totalRow, { paddingTop: 5 }]}>
               <Text style={[pdfStyles.totalLabel, { fontWeight: 'bold' }]}>Montant NET TTC (XOF)</Text>
-              <Text style={[pdfStyles.totalValue, { fontWeight: 'bold' }]}>
-                {data.totals?.["Total TTC"]?.[0] || "0,00"} FCFA
+              <Text style={[pdfStyles.totalValue_1, { fontWeight: 'bold' }]}>
+                {data.totals?.["Total TTC"]?.[0] || "0,00"}
               </Text>
             </View>
           </View>
@@ -146,7 +145,8 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
     </Document>
   );
 };
-// Composant InvoiceForm
+
+// Composant InvoiceForm (inchangé)
 const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, isS }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
@@ -500,7 +500,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
           {data.items.Designation && data.items.Designation.length > 0 ? (
             <div className="table-container">
               <table className="table">
-                <thead>
+                <thead className="thead-article">
                   <tr>
                     <th>Désignation</th>
                     <th>Quantité</th>
@@ -623,14 +623,45 @@ const Fact = () => {
   const { currentUser } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const location = useLocation();
 
-  //const navigate = useNavigate();
+  // Fonction pour générer le numéro de facture séquentiel
+  const generateInvoiceNumber = async (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const prefix = `F-${year}${month}`;
 
-  // Fonction pour transformer les données de Firebase en format attendu par le composant
+    try {
+      const facturesRef = collection(db, "factures");
+      const q = query(
+        facturesRef,
+        where("numero", ">=", `${prefix}-`),
+        where("numero", "<", `${prefix}-z`),
+        orderBy("numero", "desc"),
+        limit(1)
+      );
+
+      const querySnapshot = await getDocs(q);
+      let lastNumber = 0;
+
+      if (!querySnapshot.empty) {
+        const lastInvoiceNum = querySnapshot.docs[0].data().numero;
+        const parts = lastInvoiceNum.split('-');
+        lastNumber = parseInt(parts[2]) || 0;
+      }
+
+      return `${prefix}-${lastNumber + 1}`;
+    } catch (error) {
+      console.error("Erreur génération numéro:", error);
+      return `${prefix}-1`; // Fallback
+    }
+  };
+
+  // Fonction pour transformer les données de Firebase
   const transformFactureData = (facture) => {
     if (!facture) return null;
 
@@ -674,42 +705,97 @@ const Fact = () => {
     };
   };
 
-  // Initialiser les données avec soit les données passées en navigation, soit des données vierges
-  const [data, setData] = useState(() => {
-    const defaultData = {
-      facture: {
-        Numéro: ["FA" + new Date().getFullYear() + (Math.floor(Math.random() * 9000) + 1000)],
-        Date: [new Date().toISOString().split('T')[0]]
-      },
-      client: {
-        Nom: [],
-        Adresse: []
-      },
-      items: {
-        Designation: [],
-        Quantite: [],
-        "Prix Unitaire": [],
-        TVA: [],
-        "Montant HT": [],
-        "Montant TVA": [],
-        "Prix Total": []
-      },
-      totals: {
-        "Total HT": ["0,00"],
-        "Total TVA": ["0,00"],
-        "Total TTC": ["0,00"]
+  // Initialisation des données
+  const [data, setData] = useState({
+    facture: {
+      Numéro: ["Chargement..."],
+      Date: [new Date().toISOString().split('T')[0]]
+    },
+    client: {
+      Nom: [],
+      Adresse: []
+    },
+    items: {
+      Designation: [],
+      Quantite: [],
+      "Prix Unitaire": [],
+      TVA: [],
+      "Montant HT": [],
+      "Montant TVA": [],
+      "Prix Total": []
+    },
+    totals: {
+      "Total HT": ["0,00"],
+      "Total TVA": ["0,00"],
+      "Total TTC": ["0,00"]
+    }
+  });
+
+  // Chargement initial des données
+  useEffect(() => {
+    const initializeData = async () => {
+      if (location.state && location.state.facture) {
+        setData(transformFactureData(location.state.facture));
+        setLoadingData(false);
+        return;
+      }
+
+      try {
+        const invoiceNumber = await generateInvoiceNumber();
+        setData(prev => ({
+          ...prev,
+          facture: {
+            Numéro: [invoiceNumber],
+            Date: [new Date().toISOString().split('T')[0]]
+          }
+        }));
+      } catch (error) {
+        console.error("Erreur initialisation:", error);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        setData(prev => ({
+          ...prev,
+          facture: {
+            Numéro: [`F-${year}${month}-TEMP`],
+            Date: [now.toISOString().split('T')[0]]
+          }
+        }));
+      } finally {
+        setLoadingData(false);
       }
     };
 
-    // Si on a des données de facture passées en navigation (pour modification)
-    if (location.state && location.state.facture) {
-      return transformFactureData(location.state.facture) || defaultData;
-    }
+    initializeData();
+  }, [location.state]);
 
-    return defaultData;
-  });
+  // Chargement des clients
+  useEffect(() => {
+    const fetchClients = async () => {
+      if (!currentUser) return;
 
- const saveInvoiceToFirestore = async () => {
+      try {
+        const clientsRef = collection(db, "clients");
+        const q = query(clientsRef, where("companyId", "==", currentUser.companyId));
+
+        const querySnapshot = await getDocs(q);
+        const clientsData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setClients(clientsData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching clients: ", error);
+        setLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, [currentUser]);
+
+  // Sauvegarde de la facture
+  const saveInvoiceToFirestore = async () => {
     try {
       const invoiceData = {
         numero: data.facture.Numéro[0],
@@ -731,17 +817,15 @@ const Fact = () => {
         totalTTC: data.totals["Total TTC"][0],
         createdAt: new Date().toISOString(),
         statut: "en attente",
-        userId: currentUser.uid, // Ajout de l'ID de l'utilisateur
-        companyId: currentUser.companyId // Ajout de l'ID de la compagnie
+        userId: currentUser.uid,
+        companyId: currentUser.companyId
       };
 
       let docId;
-      // Si on est en mode édition (facture existante)
       if (location.state && location.state.facture && location.state.facture.id) {
         await updateDoc(doc(db, "factures", location.state.facture.id), invoiceData);
         docId = location.state.facture.id;
       } else {
-        // Mode création
         const docRef = await addDoc(collection(db, "factures"), invoiceData);
         docId = docRef.id;
       }
@@ -771,30 +855,30 @@ const Fact = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      if (!currentUser) return;
-
-      try {
-        // Modifiez cette requête pour filtrer par companyId
-        const clientsRef = collection(db, "clients");
-        const q = query(clientsRef, where("companyId", "==", currentUser.companyId));
-        
-        const querySnapshot = await getDocs(q);
-        const clientsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setClients(clientsData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching clients: ", error);
-        setLoading(false);
-      }
-    };
-
-    fetchClients();
-  }, [currentUser]); // Dépendance à currentUser
+  // Gestion du changement de date
+  const handleDateChange = async (e) => {
+    const newDate = e.target.value;
+    try {
+      const newNumber = await generateInvoiceNumber(new Date(newDate));
+      setData({
+        ...data,
+        facture: {
+          ...data.facture,
+          Date: [newDate],
+          Numéro: [newNumber]
+        }
+      });
+    } catch (error) {
+      console.error("Erreur génération numéro:", error);
+      setData({
+        ...data,
+        facture: {
+          ...data.facture,
+          Date: [newDate]
+        }
+      });
+    }
+  };
 
   if (!currentUser) {
     return (
@@ -804,7 +888,7 @@ const Fact = () => {
     );
   }
 
-  if (loading) {
+  if (loading || loadingData) {
     return (
       <div
         style={{
@@ -858,6 +942,7 @@ const Fact = () => {
         isSaved={isSaved}
         showPreview={showPreview}
         setShowPreview={setShowPreview}
+        handleDateChange={handleDateChange}
       />
     </div>
   );

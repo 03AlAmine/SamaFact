@@ -455,3 +455,6 @@
 .section {
   animation: fadeIn 0.6s ease-out;
 }
+.thead-article{
+  background: linear-gradient(135deg, #feb47b 0% , #4a6fa5 100%);
+}

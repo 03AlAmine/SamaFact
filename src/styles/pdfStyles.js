@@ -25,12 +25,16 @@ export const pdfStyles = StyleSheet.create({
     color: '#7f8c8d',
     lineHeight: 1.5
   },
-  invoiceTitleContainer: {
-    backgroundColor: '#3498db',
-    padding: 10,
-    borderRadius: 4,
-    alignSelf: 'flex-end'
-  },
+invoiceTitleContainer: {
+  position: 'absolute',
+  top: 10, // ajuste selon la hauteur que tu veux
+  right: 40, // ou 'left' selon le côté souhaité
+  backgroundColor: '#66BB6A', // Vert élégant
+  padding: 10,
+  borderRadius: 4,
+  width: 120,
+},
+
   invoiceTitle: {
     fontSize: 20,
     color: 'white',
@@ -87,6 +91,15 @@ export const pdfStyles = StyleSheet.create({
     backgroundColor: '#218838',
     color: 'white',
   },
+  tableRow_1:{
+    flexDirection: 'row',
+    borderBottom: '1px solid #eee',
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    //backgroundColor: '#218838',
+    color: 'black',
+    fontSize: 10,
+  },
   tableHeader: {
     fontWeight: 'bold',
     fontSize: 10,
@@ -103,10 +116,18 @@ export const pdfStyles = StyleSheet.create({
     width: '50%',
     textAlign: 'right',
     paddingRight: 10,
+    fontSize: 10,
   },
   totalValue: {
     width: '50%',
     textAlign: 'right',
+    fontSize: 10,
   },
+    totalValue_1: {
+    width: '50%',
+    textAlign: 'right',
+    fontSize: 10,
+    color: '#218838',
+  }
 });
 

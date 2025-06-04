@@ -94,6 +94,9 @@
 .auth-form-box.auth-register {
   visibility: hidden;
 }
+.auth-register form {
+  width: 90%;
+}
 
 .auth-container.auth-active .auth-form-box.auth-register {
   visibility: visible;
