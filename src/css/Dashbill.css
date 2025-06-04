@@ -1481,3 +1481,34 @@ body {
     grid-template-columns: 1fr;
   }
 }
+.client-type-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #4CAF50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+}
+
+.client-type-badge.prospect {
+    background: #FFC107;
+    color: #333;
+}
+
+.anciens-noms {
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.client-history {
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.8rem;
+}.historique-nom {
+    color: #FF9800;
+    margin-left: 5px;
+    cursor: help;
+}

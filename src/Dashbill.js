@@ -54,9 +54,10 @@ const Dashbill = () => {
         adresse: "",
         email: "",
         telephone: "",
-        societe: ""
+        societe: "",
+        type: "client", // "client" ou "prospect"
+        anciensNoms: [] // Pour stocker les anciens noms de société
     });
-
     const [clients, setClients] = useState([]);
     const [factures, setFactures] = useState([]);
     const [selectedClient, setSelectedClient] = useState(null);
@@ -85,7 +86,22 @@ const Dashbill = () => {
         facturesImpayees: 0,
         totalEquipes: 0
     });
-
+    const handleSocieteChange = (newName) => {
+        if (editingClient.societe !== newName) {
+            const updatedClient = {
+                ...editingClient,
+                societe: newName,
+                anciensNoms: [
+                    ...(editingClient.anciensNoms || []),
+                    {
+                        nom: editingClient.societe,
+                        dateChangement: new Date().toISOString()
+                    }
+                ]
+            };
+            setEditingClient(updatedClient);
+        }
+    };
     // Charger les clients
     useEffect(() => {
         if (!companyId) return;
@@ -274,7 +290,14 @@ const Dashbill = () => {
             alert("Veuillez sélectionner un client d'abord");
             return;
         }
-        navigate("/bill", { state: { client: selectedClient } });
+        navigate("/bill", {
+            state: {
+                client: {
+                    ...selectedClient,
+                    nomSocieteActuel: selectedClient.societe
+                }
+            }
+        });
     };
 
     const cancelEdit = () => {
@@ -437,9 +460,14 @@ const Dashbill = () => {
                                             id="edit-societe"
                                             name="societe"
                                             value={editingClient.societe}
-                                            onChange={handleEditChange}
+                                            onChange={(e) => handleSocieteChange(e.target.value)}
                                             className="form-input"
                                         />
+                                        {editingClient.anciensNoms?.length > 0 && (
+                                            <div className="anciens-noms">
+                                                <small>Anciens noms : {editingClient.anciensNoms.map(n => n.nom).join(", ")}</small>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -544,17 +572,33 @@ const Dashbill = () => {
                                         />
                                     </div>
                                 </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="adresse" className="form-label">Adresse</label>
-                                    <input
-                                        id="adresse"
-                                        name="adresse"
-                                        value={client.adresse}
-                                        onChange={handleChange}
-                                        className="form-input"
-                                    />
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="adresse" className="form-label">Adresse</label>
+                                        <input
+                                            id="adresse"
+                                            name="adresse"
+                                            value={client.adresse}
+                                            onChange={handleChange}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="type" className="form-label">Type</label>
+                                        <select
+                                            id="type"
+                                            name="type"
+                                            value={client.type}
+                                            onChange={handleChange}
+                                            className="form-input"
+                                        >
+                                            <option value="client">Client</option>
+                                            <option value="prospect">Prospect</option>
+                                        </select>
+                                    </div>
                                 </div>
+
+
 
                                 <button type="submit" className="submit-btn">
                                     Ajouter le client
@@ -595,6 +639,12 @@ const Dashbill = () => {
                                             className={`client-card ${selectedClient?.id === c.id ? 'active' : ''}`}
                                             onClick={() => loadFactures(c.id)}
                                         >
+                                            {/* Début de l'ajout */}
+                                            <div className="client-type-badge">
+                                                {c.type === "client" ? "Client" : "Prospect"}
+                                            </div>
+                                            {/* Fin de l'ajout */}
+
                                             <div className="client-header">
                                                 <div className="client-avatar">
                                                     {c.nom.charAt(0).toUpperCase()}
@@ -652,6 +702,14 @@ const Dashbill = () => {
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {/* Début de l'ajout */}
+                                            {c.anciensNoms?.length > 0 && (
+                                                <div className="client-history">
+                                                    <small>Ancien nom: {c.anciensNoms[0].nom}</small>
+                                                </div>
+                                            )}
+                                            {/* Fin de l'ajout */}
                                         </div>
                                     ))}
                                 </div>
@@ -705,8 +763,16 @@ const Dashbill = () => {
                                             <tbody>
                                                 {factures.map(f => (
                                                     <tr key={f.id}>
+                                                        <td>
+                                                            {f.numero}
+                                                            {f.nomSocieteHistorique && (
+                                                                <span className="historique-nom" title={`Ancien nom: ${f.nomSocieteHistorique}`}>
+                                                                    *
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                         <td>{f.numero}</td>
-                                                        <td>{f.date}</td>
+                                                        <td>{f.date?.toLocaleDateString('fr-FR')}</td> {/* ✅ corrigé ici */}
                                                         <td>{f.prixTotal} FCFA</td>
                                                         <td>
                                                             <span className={`invoice-status ${f.statut}`}>
@@ -732,6 +798,7 @@ const Dashbill = () => {
                                                         </td>
                                                     </tr>
                                                 ))}
+
                                             </tbody>
                                         </table>
                                     </div>

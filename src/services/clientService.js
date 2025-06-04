@@ -13,6 +13,7 @@ export const clientService = {
     });
     return unsubscribe;
   },
+  
 
   addClient: async (companyId, clientData) => {
     try {
@@ -65,4 +66,5 @@ export const clientService = {
       throw error;
     }
   }
+  
 };
