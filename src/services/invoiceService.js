@@ -6,27 +6,27 @@ const convertIfTimestamp = (value) => {
 };
 
 export const invoiceService = {
-getInvoices: (companyId, callback) => {
-  const q = query(
-    collection(db, "factures"), 
-    where("companyId", "==", companyId)
-  );
-  
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const invoicesData = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        date: convertIfTimestamp(data.date),
-        createdAt: convertIfTimestamp(data.createdAt),
-      };
+  getInvoices: (companyId, callback) => {
+    const q = query(
+      collection(db, "factures"),
+      where("companyId", "==", companyId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const invoicesData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: convertIfTimestamp(data.date),
+          createdAt: convertIfTimestamp(data.createdAt),
+        };
+      });
+      callback(invoicesData);
     });
-    callback(invoicesData);
-  });
-  
-  return unsubscribe;
-},
+
+    return unsubscribe;
+  },
 
 
   deleteInvoice: async (invoiceId) => {
@@ -55,11 +55,11 @@ getInvoices: (companyId, callback) => {
       };
 
       const docRef = await addDoc(collection(db, "factures"), invoiceToSave);
-      
-      return { 
-        success: true, 
-        id: docRef.id, 
-        message: "Facture créée avec succès !" 
+
+      return {
+        success: true,
+        id: docRef.id,
+        message: "Facture créée avec succès !"
       };
     } catch (error) {
       console.error("Erreur:", error);
@@ -95,7 +95,7 @@ getInvoices: (companyId, callback) => {
         where("companyId", "==", companyId),
         where("clientId", "==", clientId)
       );
-      
+
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({
         id: doc.id,

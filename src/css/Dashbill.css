@@ -5,21 +5,21 @@
   --primary-light: #6b8cae;
   --primary-dark: #2a4868;
   --primary-hover: #3a56d4;
-  
+
   /* Couleurs secondaires */
   --secondary-colore: #ff7e5f;
   --secondary-color: #eee;
   --secondary-light: #ff9e88;
   --secondary-dark: #e65f3e;
   --secondary-bg: #f8f9fa;
-  
+
   /* Couleurs d'état */
   --success-color: #28a745;
   --success-light: #2ec4b6;
   --warning-color: #ffc107;
   --danger-color: #dc3545;
   --error-color: #ff4d6d;
-  
+
   /* Nuances de gris et couleurs neutres */
   --light-color: #f8f9fa;
   --dark-color: #343a40;
@@ -32,18 +32,18 @@
   --white: #ffffff;
   --white-transparent: rgba(255, 255, 255, 0.9);
   --border-color: #e9ecef;
-  
+
   /* Dégradés */
   --primary-gradient: linear-gradient(135deg, #4a6fa5 0%, #6b8cae 100%);
   --secondary-gradient: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
   --success-gradient: linear-gradient(135deg, #28a745 0%, #5cb85c 100%);
   --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ffd966 100%);
   --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
-  
+
   /* Bordures */
   --border-radius: 12px;
   --border-radius-sm: 6px;
-  
+
   /* Ombres */
   --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   --box-shadow-md: 0 6px 12px rgba(0, 0, 0, 0.15);
@@ -52,7 +52,7 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
   --box-shadow-soft: 0 10px 20px rgba(0, 0, 0, 0.08);
   --box-shadow-card: 0 5px 15px rgba(0, 0, 0, 0.05);
-  
+
   /* Transitions et effets */
   --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   --transition-fast: 0.2s ease;
@@ -94,7 +94,7 @@ body {
 /* Sidebar Styles */
 .sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #feb47b 0% , #4a6fa5 100%);
+  background: linear-gradient(135deg, #feb47b 0%, #4a6fa5 100%);
   color: white;
   transition: var(--transition);
   display: flex;
@@ -158,8 +158,6 @@ body {
   box-shadow: inset 3px 0 0 var(--secondary-colore);
 }
 
-
-
 .sidebar-nav .nav-icon {
   margin-right: 15px;
   font-size: 1.3rem;
@@ -216,9 +214,8 @@ body {
   top: 0;
   z-index: 1000;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    margin-top: 15px !important;
-    border-radius: 10px;
-
+  margin-top: 15px !important;
+  border-radius: 10px;
 }
 
 .navbar-left {
@@ -238,7 +235,11 @@ body {
 .company-icon {
   font-size: 1.5rem;
   color: var(--primary-color);
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-light) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1359,8 +1360,6 @@ body {
   }
 }
 
-
-
 .sidebar-nav .nav-icon {
   margin-right: 10px;
   font-size: 1.2rem;
@@ -1482,33 +1481,92 @@ body {
   }
 }
 .client-type-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #4CAF50;
-    color: white;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #4caf50;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
 }
 
 .client-type-badge.prospect {
-    background: #FFC107;
-    color: #333;
+  background: #ffc107;
+  color: #333;
 }
 
 .anciens-noms {
-    margin-top: 5px;
-    color: #666;
-    font-size: 0.8rem;
+  margin-top: 5px;
+  color: #666;
+  font-size: 0.8rem;
 }
 
 .client-history {
-    margin-top: 5px;
-    color: #666;
-    font-size: 0.8rem;
-}.historique-nom {
-    color: #FF9800;
-    margin-left: 5px;
-    cursor: help;
+  margin-top: 5px;
+  color: #666;
+  font-size: 0.8rem;
 }
+.historique-nom {
+  color: #ff9800;
+  margin-left: 5px;
+  cursor: help;
+}
+.navbar-tabs button {
+    padding: 10px 20px;
+    border: none;
+    background: #f0f0f0;
+    margin-right: 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.navbar-tabs .active {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+.clients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.client-card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.client-card:hover {
+    transform: translateY(-4px);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+.search-box input {
+    padding: 8px 8px 8px 32px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
