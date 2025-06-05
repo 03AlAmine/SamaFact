@@ -679,48 +679,55 @@ const Fact = () => {
   const location = useLocation();
 
   // Fonction pour générer le numéro de facture séquentiel
-  const generateInvoiceNumber = async (date = new Date(), type = "facture") => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+const generateInvoiceNumber = async (date = new Date(), type = "facture") => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
 
-    let prefix;
-    switch (type) {
-      case "avoir":
-        prefix = `AV-${year}${month}`;
-        break;
-      case "devis":
-        prefix = `D-${year}${month}`;
-        break;
-      default:
-        prefix = `F-${year}${month}`;
-    }
+  // Choix du préfixe selon le type
+  let typePrefix;
+  switch (type) {
+    case "avoir":
+      typePrefix = "AV";
+      break;
+    case "devis":
+      typePrefix = "D";
+      break;
+    default:
+      typePrefix = "F";
+  }
 
-    try {
-      const facturesRef = collection(db, "factures");
+  const prefix = `${typePrefix}-${year}${month}`;
 
-      // Requête pour récupérer la facture avec le plus grand numéro global
-      const q = query(
-        facturesRef,
-        orderBy("numero", "desc"),
-        limit(1)
-      );
+  try {
+    const facturesRef = collection(db, "factures");
 
-      const querySnapshot = await getDocs(q);
-      let lastNumber = 0;
+    // Récupère les 10 derniers documents triés par numéro décroissant (au cas où certains sont mal formés)
+    const q = query(facturesRef, orderBy("numero", "desc"), limit(10));
+    const querySnapshot = await getDocs(q);
 
-      if (!querySnapshot.empty) {
-        const lastInvoiceNum = querySnapshot.docs[0].data().numero;
-        const parts = lastInvoiceNum.split('-');
-        // On prend toujours la dernière partie comme numéro global
-        lastNumber = parseInt(parts[parts.length - 1]) || 0;
+    let maxNumber = 0;
+
+    querySnapshot.forEach(doc => {
+      const numero = doc.data().numero;
+      // Extraction du dernier nombre après le dernier tiret
+      const match = numero.match(/-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1]);
+        if (num > maxNumber) {
+          maxNumber = num;
+        }
       }
+    });
 
-      return `${prefix}-${lastNumber + 1}`;
-    } catch (error) {
-      console.error("Erreur génération numéro:", error);
-      return `${prefix}-1`; // Fallback
-    }
-  };
+    const newNumber = maxNumber + 1;
+
+    return `${prefix}-${newNumber}`;
+  } catch (error) {
+    console.error("Erreur génération numéro:", error);
+    return `${prefix}-1`; // Fallback
+  }
+};
+
 
   // Fonction pour transformer les données de Firebase
   const transformFactureData = (facture) => {
