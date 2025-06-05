@@ -360,6 +360,70 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             </div>
           </div>
         </div>
+        <div className="section">
+
+          <h2>Type de document</h2>
+          <div className="form-group">
+            <select
+              className="select"
+              value={data.facture.Type?.[0] || "facture"}
+              onChange={async (e) => {
+                const newType = e.target.value;
+                try {
+                  const newNumber = await generateInvoiceNumber(new Date(data.facture.Date[0]), newType);
+                  setData({
+                    ...data,
+                    facture: {
+                      ...data.facture,
+                      Type: [newType],
+                      Numéro: [newNumber]
+                    }
+                  });
+                } catch (error) {
+                  console.error("Erreur génération numéro:", error);
+                  setData({
+                    ...data,
+                    facture: {
+                      ...data.facture,
+                      Type: [newType]
+                    }
+                  });
+                }
+              }}
+            >
+              <option value="facture">Facture</option>
+              <option value="avoir">Avoir</option>
+              <option value="devis">Devis</option>
+            </select>
+          </div>
+          <div className="section" style={{ marginTop: '2rem' }}>
+            <h2>Objet de la facture</h2>
+            <div className="form-group">
+              <input
+                type="text"
+                value={objet}
+                onChange={(e) => setObjet(e.target.value)}
+                placeholder="Objet de la facture"
+                className="input"
+              />
+            </div>
+            <div className="section" style={{ marginTop: '2rem' }}>
+              <h2>Coordonnées Bancaires</h2>
+              <div className="form-group">
+                <label className="label">Banque pour le paiement:</label>
+                <select
+                  value={selectedRib}
+                  onChange={(e) => setSelectedRib(e.target.value)}
+                  className="select"
+                >
+                  <option value="CBAO">CBAO</option>
+                  <option value="BIS">BIS</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
 
         <div className="section">
           <h2>Ajouter un article</h2>
@@ -474,68 +538,9 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             <i className="fas fa-plus"></i> Ajouter l'article
           </button>
         </div>
-        <div className="section" style={{ marginTop: '2rem' }}>
-          <h2>Coordonnées Bancaires</h2>
-          <div className="form-group">
-            <label className="label">Banque pour le paiement:</label>
-            <select
-              value={selectedRib}
-              onChange={(e) => setSelectedRib(e.target.value)}
-              className="select"
-            >
-              <option value="CBAO">CBAO</option>
-              <option value="BIS">BIS</option>
-            </select>
-          </div>
-        </div>
-        <div className="section" style={{ marginTop: '2rem' }}>
-          <h2>Objet de la facture</h2>
-          <div className="form-group">
-            <input
-              type="text"
-              value={objet}
-              onChange={(e) => setObjet(e.target.value)}
-              placeholder="Objet de la facture"
-              className="input"
-            />
-          </div>
-        </div>
-        <div className="section">
-          <h2>Type de document</h2>
-          <div className="form-group">
-            <select
-              className="select"
-              value={data.facture.Type?.[0] || "facture"}
-              onChange={async (e) => {
-                const newType = e.target.value;
-                try {
-                  const newNumber = await generateInvoiceNumber(new Date(data.facture.Date[0]), newType);
-                  setData({
-                    ...data,
-                    facture: {
-                      ...data.facture,
-                      Type: [newType],
-                      Numéro: [newNumber]
-                    }
-                  });
-                } catch (error) {
-                  console.error("Erreur génération numéro:", error);
-                  setData({
-                    ...data,
-                    facture: {
-                      ...data.facture,
-                      Type: [newType]
-                    }
-                  });
-                }
-              }}
-            >
-              <option value="facture">Facture</option>
-              <option value="avoir">Avoir</option>
-              <option value="devis">Devis</option>
-            </select>
-          </div>
-        </div>
+
+
+
 
 
 
@@ -674,17 +679,28 @@ const Fact = () => {
   const location = useLocation();
 
   // Fonction pour générer le numéro de facture séquentiel
-  const generateInvoiceNumber = async (date = new Date()) => {
+  const generateInvoiceNumber = async (date = new Date(), type = "facture") => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const prefix = `F-${year}${month}`;
+
+    let prefix;
+    switch (type) {
+      case "avoir":
+        prefix = `AV-${year}${month}`;
+        break;
+      case "devis":
+        prefix = `D-${year}${month}`;
+        break;
+      default:
+        prefix = `F-${year}${month}`;
+    }
 
     try {
       const facturesRef = collection(db, "factures");
+
+      // Requête pour récupérer la facture avec le plus grand numéro global
       const q = query(
         facturesRef,
-        where("numero", ">=", `${prefix}-`),
-        where("numero", "<", `${prefix}-z`),
         orderBy("numero", "desc"),
         limit(1)
       );
@@ -695,7 +711,8 @@ const Fact = () => {
       if (!querySnapshot.empty) {
         const lastInvoiceNum = querySnapshot.docs[0].data().numero;
         const parts = lastInvoiceNum.split('-');
-        lastNumber = parseInt(parts[2]) || 0;
+        // On prend toujours la dernière partie comme numéro global
+        lastNumber = parseInt(parts[parts.length - 1]) || 0;
       }
 
       return `${prefix}-${lastNumber + 1}`;
