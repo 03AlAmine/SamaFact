@@ -71,6 +71,7 @@ const Dashbill = () => {
     const [activeTab, setActiveTab] = useState("dashboard");
     const navigate = useNavigate();
 
+
     // États pour les équipes
     const [equipe, setEquipe] = useState({
         nom: "",
@@ -80,6 +81,12 @@ const Dashbill = () => {
     const [equipes, setEquipes] = useState([]);
     const [editingEquipe, setEditingEquipe] = useState(null);
     const [isEditingEquipe, setIsEditingEquipe] = useState(false);
+    const [societeInput, setSocieteInput] = useState("");
+    useEffect(() => {
+        if (editingClient?.societe) {
+            setSocieteInput(editingClient.societe);
+        }
+    }, [editingClient]);
 
     // Statistiques
     const [stats, setStats] = useState({
@@ -89,23 +96,27 @@ const Dashbill = () => {
         facturesImpayees: 0,
         totalEquipes: 0
     });
-    const handleSocieteChange = (newName) => {
-        if (editingClient.societe !== newName) {
-            const updatedClient = {
-                ...editingClient,
-                societe: newName,
-                anciensNoms: [
-                    ...(editingClient.anciensNoms || []),
-                    {
-                        nom: editingClient.societe,
-                        dateChangement: new Date().toISOString()
-                    }
-                ]
-            };
-            setEditingClient(updatedClient);
-        }
-    };
-    // Charger les clients
+    const handleSocieteBlur = () => {
+        const currentName = (editingClient.societe || "").trim();
+        const newName = societeInput.trim();
+
+        // Si pas de changement ou champ vide, on ne fait rien
+        if (!newName || currentName === newName) return;
+
+        const updatedClient = {
+            ...editingClient,
+            societe: newName,
+            anciensNoms: [
+                ...(editingClient.anciensNoms || []),
+                {
+                    nom: currentName,
+                    dateChangement: new Date().toISOString(),
+                },
+            ],
+        };
+
+        setEditingClient(updatedClient);
+    }; // Charger les clients
     useEffect(() => {
         if (!companyId) return;
 
@@ -593,8 +604,9 @@ const Dashbill = () => {
                                         <input
                                             id="edit-societe"
                                             name="societe"
-                                            value={editingClient.societe}
-                                            onChange={(e) => handleSocieteChange(e.target.value)}
+                                            value={societeInput}
+                                            onChange={(e) => setSocieteInput(e.target.value)}
+                                            onBlur={handleSocieteBlur}
                                             className="form-input"
                                         />
                                         {editingClient.anciensNoms?.length > 0 && (
@@ -603,6 +615,7 @@ const Dashbill = () => {
                                             </div>
                                         )}
                                     </div>
+
                                 </div>
 
                                 <div className="form-row">
@@ -629,17 +642,33 @@ const Dashbill = () => {
                                         />
                                     </div>
                                 </div>
+                                <div className="form-row">
 
-                                <div className="form-group">
-                                    <label htmlFor="edit-adresse" className="form-label">Adresse</label>
-                                    <input
-                                        id="edit-adresse"
-                                        name="adresse"
-                                        value={editingClient.adresse}
-                                        onChange={handleEditChange}
-                                        className="form-input"
-                                    />
+                                    <div className="form-group">
+                                        <label htmlFor="edit-adresse" className="form-label">Adresse</label>
+                                        <input
+                                            id="edit-adresse"
+                                            name="adresse"
+                                            value={editingClient.adresse}
+                                            onChange={handleEditChange}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="edit-type" className="form-label">Type</label>
+                                        <select
+                                            id="edit-type"
+                                            name="type"
+                                            value={editingClient.type || "prospect"}
+                                            onChange={handleEditChange}
+                                            className="form-input"
+                                        >
+                                            <option value="client">Client</option>
+                                            <option value="prospect">Prospect</option>
+                                        </select>
+                                    </div>
                                 </div>
+
 
                                 <div className="form-actions">
                                     <button type="button" onClick={cancelEdit} className="cancel-btn">
