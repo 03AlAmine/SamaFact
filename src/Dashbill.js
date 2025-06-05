@@ -1366,7 +1366,7 @@ const handleCreateInvoice = () => {
 
 
 
-                            {sidebarOpen && <span>Factures</span>}
+                            {sidebarOpen && <span>Ment@Fact</span>}
                         </li>
 
                         <li

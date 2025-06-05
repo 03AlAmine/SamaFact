@@ -50,7 +50,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
                         onClick={() => setActiveTab("factures")}
                     >
                         <FaFileInvoiceDollar className="nav-icon" />
-                        {sidebarOpen && <span>Factures</span>}
+                        {sidebarOpen && <span>Ment@Fact</span>}
                     </li>
                     <li
                         className={activeTab === "stats" ? "active" : ""}
