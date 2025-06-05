@@ -331,20 +331,24 @@ const Dashbill = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleCreateInvoice = () => {
-        if (!selectedClient) {
-            alert("Veuillez sélectionner un client d'abord");
-            return;
-        }
-        navigate("/bill", {
-            state: {
-                client: {
-                    ...selectedClient,
-                    nomSocieteActuel: selectedClient.societe
-                }
+const handleCreateInvoice = () => {
+    if (!selectedClient) {
+        alert("Veuillez sélectionner un client d'abord");
+        return;
+    }
+    
+    navigate("/bill", {
+        state: {
+            client: {
+                id: selectedClient.id, // Important pour la liaison ultérieure
+                nom: selectedClient.nom || selectedClient.name, // Selon votre structure
+                adresse: selectedClient.adresse || selectedClient.address,
+                societe: selectedClient.societe || selectedClient.company
+                // Ajoutez d'autres champs si nécessaire
             }
-        });
-    };
+        }
+    });
+};
 
     const cancelEdit = () => {
         setIsEditing(false);

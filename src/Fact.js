@@ -9,7 +9,8 @@ import Sidebar from "./Sidebar";
 import { useAuth } from './auth/AuthContext';
 import { Image } from '@react-pdf/renderer';
 
-// Composant InvoicePDF
+
+// Composant InvoicePDF (inchangé)
 const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
   const ribData = {
     CBAO: {
@@ -27,20 +28,24 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
       <Page size="A4" style={pdfStyles.page}>
         <View style={pdfStyles.header}>
           <View style={pdfStyles.companyInfo}>
+            {/* Logo de l'entreprise */}
             <Image
               style={pdfStyles.logo}
-              src="./Logo_LIS.png"
+              src="./Logo_LIS.png" // ou une URL si le logo est accessible en ligne
             />
+            {/* <Text style={pdfStyles.companyName}>VOTRE ENTREPRISE</Text> */}
           </View>
+
 
           <View style={pdfStyles.invoiceTitleContainer}>
             <Text style={pdfStyles.invoiceTitle}>
               {data.facture.Type?.[0]?.toUpperCase() || "FACTURE"}
-            </Text>
-          </View>
+            </Text>          </View>
         </View>
 
+
         <View style={{ marginTop: -20, alignItems: 'flex-end' }}>
+          {/*<Text style={pdfStyles.sectionTitle}>Informations facture</Text> */}
           <View style={{ padding: 10, marginTop: -70 }}>
             <Text style={{ marginBottom: 5, fontSize: 25, color: '#2c3e50', fontWeight: 'bold' }}>
               {data.facture.Numéro[0]}
@@ -67,6 +72,7 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
           </View>
         </View>
 
+
         <View style={{ marginTop: 20 }}>
           <Text style={pdfStyles.sectionTitle}>Objet : {objet || "Non spécifié"}</Text>
         </View>
@@ -74,6 +80,7 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
         <View style={{ marginTop: 20 }}>
           <Text style={pdfStyles.sectionTitle}>Cher client </Text>
           <View style={{ marginTop: 10 }}>
+            {/* En-tête du tableau */}
             <View style={pdfStyles.tableRow}>
               <Text style={[pdfStyles.tableHeader, { width: '40%' }]}>Désignation</Text>
               <Text style={[pdfStyles.tableHeader, { width: '10%', textAlign: 'right' }]}>QTE</Text>
@@ -82,6 +89,8 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
               <Text style={[pdfStyles.tableHeader, { width: '23%', textAlign: 'right' }]}>PT HT</Text>
             </View>
 
+
+            {/* Lignes des articles */}
             {data.items.Designation?.map((designation, index) => (
               <View key={index} style={pdfStyles.tableRow_1}>
                 <Text style={{ width: '40%' }}>{designation}</Text>
@@ -94,12 +103,16 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
           </View>
         </View>
 
+        {/* Totaux alignés à droite */}
         <View style={[pdfStyles.totalsContainer, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+
+          {/* Bloc Notes à gauche */}
           <View style={{ maxWidth: '40%' }}>
             <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Notes</Text>
             <Text>Nous vous remercions de votre confiance</Text>
           </View>
 
+          {/* Bloc Totaux à droite */}
           <View style={{ width: '50%', backgroundColor: '#f0f8ff', borderRadius: 4, padding: 10 }}>
             <View style={pdfStyles.totalRow}>
               <Text style={pdfStyles.totalLabel}>Total HT</Text>
@@ -116,7 +129,9 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
               </Text>
             </View>
           </View>
+
         </View>
+
 
         <View style={pdfStyles.footer}>
           <Text>LEADER INTERIM ET SERVICES</Text>
@@ -132,53 +147,8 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
   );
 };
 
-// Fonction pour générer le numéro de facture/avoir séquentiel
-const generateInvoiceNumber = async (date = new Date(), type = "facture") => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-
-  // Définir les préfixes en fonction du type
-  let prefix;
-  switch (type) {
-    case "avoir":
-      prefix = `AV-${year}${month}`;
-      break;
-    case "devis":
-      prefix = `D-${year}${month}`;
-      break;
-    default: // facture
-      prefix = `F-${year}${month}`;
-  }
-
-  try {
-    const facturesRef = collection(db, "factures");
-    const q = query(
-      facturesRef,
-      where("type", "==", type),
-      where("numero", ">=", `${prefix}-`),
-      where("numero", "<", `${prefix}-z`),
-      orderBy("numero", "desc"),
-      limit(1)
-    );
-
-    const querySnapshot = await getDocs(q);
-    let lastNumber = 0;
-
-    if (!querySnapshot.empty) {
-      const lastInvoiceNum = querySnapshot.docs[0].data().numero;
-      const parts = lastInvoiceNum.split('-');
-      lastNumber = parseInt(parts[2]) || 0;
-    }
-
-    return `${prefix}-${lastNumber + 1}`;
-  } catch (error) {
-    console.error("Erreur génération numéro:", error);
-    return `${prefix}-1`; // Fallback
-  }
-};
-
-// Composant InvoiceForm
-const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, handleDateChange }) => {
+// Composant InvoiceForm (inchangé)
+const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, isS, generateInvoiceNumber }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "",
@@ -187,17 +157,21 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
   });
   const [selectedRib, setSelectedRib] = useState("CBAO");
   const [objet, setObjet] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState("");
+
 
   const handleClientChange = (e) => {
-    const selectedClientId = e.target.value;
-    const selectedClient = clients.find(client => client.id === selectedClientId);
+    const clientId = e.target.value;
+    setSelectedClientId(clientId);
 
+    const selectedClient = clients.find(client => client.id === clientId);
     if (selectedClient) {
       setData({
         ...data,
         client: {
           Nom: [selectedClient.nom],
-          Adresse: [selectedClient.adresse]
+          Adresse: [selectedClient.adresse],
+          // Ajoutez d'autres champs si nécessaire
         }
       });
     }
@@ -310,15 +284,20 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
 
       <div className="container">
         <h1 className="header">Création de {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}</h1>
+
         <div className="section">
           <h2>Informations du client</h2>
+
 
           <div className="form-group">
             <label className="label">Client:</label>
             <select
               className="select"
               onChange={handleClientChange}
-              value={clients.find(c => c.nom === data.client?.Nom?.[0])?.id || ""}
+              value={selectedClientId || (data.client?.Nom?.[0] ?
+                clients.find(c => c.nom === data.client.Nom[0])?.id || ""
+                : "")
+              }
             >
               <option value="">Sélectionner un client</option>
               {clients.map(client => (
@@ -349,7 +328,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             marginTop: '1.5rem'
           }}>
             <div className="form-group">
-              <label className="label">Numéro de {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}:</label>
+              <label className="label">Numéro de facture:</label>
               <input
                 className="input"
                 type="text"
@@ -370,7 +349,13 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                 className="input"
                 type="date"
                 value={data.facture.Date[0]}
-                onChange={handleDateChange}
+                onChange={(e) => setData({
+                  ...data,
+                  facture: {
+                    ...data.facture,
+                    Date: [e.target.value]
+                  }
+                })}
               />
             </div>
           </div>
@@ -432,7 +417,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                     if (e.target.value === 'custom') {
                       setCurrentItem({
                         ...currentItem,
-                        TVA: ''
+                        TVA: '' // Réinitialise la valeur pour l'input
                       });
                     } else {
                       handleItemChange(e);
@@ -440,7 +425,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                   }}
                   style={{
                     appearance: 'none',
-                    paddingRight: '30px'
+                    paddingRight: '30px' // Espace pour l'icône
                   }}
                 >
                   <option value="0">0%</option>
@@ -504,13 +489,13 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
           </div>
         </div>
         <div className="section" style={{ marginTop: '2rem' }}>
-          <h2>Objet de la {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}</h2>
+          <h2>Objet de la facture</h2>
           <div className="form-group">
             <input
               type="text"
               value={objet}
               onChange={(e) => setObjet(e.target.value)}
-              placeholder={`Objet de la ${data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}`}
+              placeholder="Objet de la facture"
               className="input"
             />
           </div>
@@ -551,6 +536,9 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             </select>
           </div>
         </div>
+
+
+
         <div className="section">
           <h2>Articles ajoutés</h2>
           {data.items.Designation && data.items.Designation.length > 0 ? (
@@ -612,7 +600,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             </div>
           ) : (
             <div className="empty-state">
-              Aucun article ajouté à la {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}
+              Aucun article ajouté à la facture
             </div>
           )}
         </div>
@@ -638,10 +626,11 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               )}
             </button>
 
+            {/* Bouton TÉLÉCHARGER */}
             {isSaved ? (
               <PDFDownloadLink
-                document={<InvoicePDF data={data} ribType={selectedRib} objet={objet} />}
-                fileName={`${data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}_${data.facture.Numéro[0]}.pdf`}
+                document={<InvoicePDF data={data} />}
+                fileName={`facture_${data.facture.Numéro[0]}.pdf`}
                 className="button success-button"
               >
                 {({ loading: pdfLoading }) =>
@@ -650,6 +639,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                     : <><i className="fas fa-file-download"></i> Télécharger</>
                 }
               </PDFDownloadLink>
+
             ) : (
               <button className="button info-button secondary-button" disabled>
                 <i className="fas fa-download"></i> Télécharger
@@ -683,29 +673,16 @@ const Fact = () => {
   const [isSaved, setIsSaved] = useState(false);
   const location = useLocation();
 
-  // Fonction pour générer le numéro de facture/avoir séquentiel
-  const generateInvoiceNumber = async (date = new Date(), type = "facture") => {
+  // Fonction pour générer le numéro de facture séquentiel
+  const generateInvoiceNumber = async (date = new Date()) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-
-    // Définir les préfixes en fonction du type
-    let prefix;
-    switch (type) {
-      case "avoir":
-        prefix = `AV-${year}${month}`;
-        break;
-      case "devis":
-        prefix = `D-${year}${month}`;
-        break;
-      default: // facture
-        prefix = `F-${year}${month}`;
-    }
+    const prefix = `F-${year}${month}`;
 
     try {
       const facturesRef = collection(db, "factures");
       const q = query(
         facturesRef,
-        where("type", "==", type),
         where("numero", ">=", `${prefix}-`),
         where("numero", "<", `${prefix}-z`),
         orderBy("numero", "desc"),
@@ -757,8 +734,7 @@ const Fact = () => {
     return {
       facture: {
         Numéro: [facture.numero || ""],
-        Date: [facture.date || new Date().toISOString().split('T')[0]],
-        Type: [facture.type || "facture"]
+        Date: [facture.date || new Date().toISOString().split('T')[0]]
       },
       client: {
         Nom: [facture.clientNom || ""],
@@ -777,8 +753,7 @@ const Fact = () => {
   const [data, setData] = useState({
     facture: {
       Numéro: ["Chargement..."],
-      Date: [new Date().toISOString().split('T')[0]],
-      Type: ["facture"]
+      Date: [new Date().toISOString().split('T')[0]]
     },
     client: {
       Nom: [],
@@ -803,7 +778,6 @@ const Fact = () => {
   // Chargement initial des données
   useEffect(() => {
     const initializeData = async () => {
-      // Récupérer le type depuis location.state ou utiliser "facture" par défaut
       const documentType = location.state?.type || "facture";
 
       if (location.state && location.state.facture) {
@@ -811,6 +785,13 @@ const Fact = () => {
         setLoadingData(false);
         return;
       }
+      // Gestion du client passé en paramètre
+      const initialClient = location.state?.client
+        ? {
+          Nom: [location.state.client.nom || ""],
+          Adresse: [location.state.client.adresse || ""]
+        }
+        : { Nom: [], Adresse: [] };
 
       try {
         const invoiceNumber = await generateInvoiceNumber(new Date(), documentType);
@@ -819,26 +800,20 @@ const Fact = () => {
           facture: {
             Numéro: [invoiceNumber],
             Date: [new Date().toISOString().split('T')[0]],
-            Type: [documentType] // Utiliser le type passé en paramètre
-          }
+            Type: [documentType]
+          },
+          client: initialClient // Utilisation du client passé
         }));
       } catch (error) {
         console.error("Erreur initialisation:", error);
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
-        let prefix;
-        switch (documentType) {
-          case "avoir": prefix = "AV"; break;
-          case "devis": prefix = "D"; break;
-          default: prefix = "F";
-        }
         setData(prev => ({
           ...prev,
           facture: {
-            Numéro: [`${prefix}-${year}${month}-TEMP`],
-            Date: [now.toISOString().split('T')[0]],
-            Type: [documentType]
+            Numéro: [`F-${year}${month}-TEMP`],
+            Date: [now.toISOString().split('T')[0]]
           }
         }));
       } finally {
@@ -874,7 +849,7 @@ const Fact = () => {
     fetchClients();
   }, [currentUser]);
 
-  // Sauvegarde de la facture/avoir
+  // Sauvegarde de la facture
   const saveInvoiceToFirestore = async () => {
     try {
       const invoiceData = {
@@ -940,7 +915,7 @@ const Fact = () => {
   const handleDateChange = async (e) => {
     const newDate = e.target.value;
     try {
-      const newNumber = await generateInvoiceNumber(new Date(newDate), data.facture.Type[0]);
+      const newNumber = await generateInvoiceNumber(new Date(newDate));
       setData({
         ...data,
         facture: {
@@ -1024,6 +999,7 @@ const Fact = () => {
         showPreview={showPreview}
         setShowPreview={setShowPreview}
         handleDateChange={handleDateChange}
+        generateInvoiceNumber={generateInvoiceNumber}
       />
     </div>
   );
