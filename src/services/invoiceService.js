@@ -6,10 +6,11 @@ const convertIfTimestamp = (value) => {
 };
 
 export const invoiceService = {
-  getInvoices: (companyId, callback) => {
+  getInvoices: (companyId, callback, type = "facture") => {
     const q = query(
       collection(db, "factures"),
-      where("companyId", "==", companyId)
+      where("companyId", "==", companyId),
+      where("type", "==", type) // 👈 filtre par type
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -29,6 +30,8 @@ export const invoiceService = {
   },
 
 
+
+
   deleteInvoice: async (invoiceId) => {
     try {
       await deleteDoc(doc(db, "factures", invoiceId));
@@ -39,17 +42,16 @@ export const invoiceService = {
     }
   },
 
-  addInvoice: async (companyId, invoiceData) => {
+  addInvoice: async (companyId, invoiceData, type = "facture") => {
     try {
-      // Ajout des informations d'historique
       const invoiceToSave = {
         ...invoiceData,
         companyId,
+        type, // <--- ICI
         createdAt: new Date(),
-        clientType: invoiceData.client?.type || 'client', // Type de client
-        originalClientName: invoiceData.client?.nom, // Nom original du client
-        originalCompanyName: invoiceData.client?.societe, // Nom original de la société
-        // Historique si le nom a changé
+        clientType: invoiceData.client?.type || 'client',
+        originalClientName: invoiceData.client?.nom,
+        originalCompanyName: invoiceData.client?.societe,
         hasCompanyNameChanged: invoiceData.client?.anciensNoms?.length > 0 || false,
         previousCompanyNames: invoiceData.client?.anciensNoms || []
       };
@@ -65,13 +67,14 @@ export const invoiceService = {
       console.error("Erreur:", error);
       return { success: false, message: "Erreur lors de la création de la facture." };
     }
-  },
+  }
+  ,
 
-  updateInvoice: async (invoiceId, invoiceData) => {
+  updateInvoice: async (invoiceId, invoiceData, type = "facture") => {
     try {
-      // Mise à jour avec les mêmes informations d'historique
       const updatedData = {
         ...invoiceData,
+        type, // <--- s'assure que le type reste correct
         clientType: invoiceData.client?.type || 'client',
         originalClientName: invoiceData.client?.nom,
         originalCompanyName: invoiceData.client?.societe,
@@ -85,15 +88,16 @@ export const invoiceService = {
       console.error("Erreur:", error);
       return { success: false, message: "Erreur lors de la mise à jour de la facture." };
     }
-  },
+  }
+  ,
 
-  // Nouvelle méthode pour charger les factures d'un client spécifique
-  loadClientInvoices: async (clientId, companyId) => {
+  loadClientInvoices: async (clientId, companyId, type = "facture") => {
     try {
       const q = query(
         collection(db, "factures"),
         where("companyId", "==", companyId),
-        where("clientId", "==", clientId)
+        where("clientId", "==", clientId),
+        where("type", "==", type)
       );
 
       const snapshot = await getDocs(q);
@@ -107,4 +111,5 @@ export const invoiceService = {
       throw error;
     }
   }
+
 };

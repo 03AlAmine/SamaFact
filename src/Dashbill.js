@@ -60,6 +60,9 @@ const Dashbill = () => {
     });
     const [clients, setClients] = useState([]);
     const [factures, setFactures] = useState([]);
+    const [devis, setDevis] = useState([]);
+    const [avoirs, setAvoirs] = useState([]);
+
     const [selectedClient, setSelectedClient] = useState(null);
     const [editingClient, setEditingClient] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -115,13 +118,18 @@ const Dashbill = () => {
 
     const loadFactures = async (clientId) => {
         try {
-            const facturesData = await clientService.loadClientInvoices(clientId);
+            const facturesData = await clientService.loadClientInvoices(clientId, companyId, "facture");
+            const devisData = await clientService.loadClientInvoices(clientId, companyId, "devis");
+            const avoirsData = await clientService.loadClientInvoices(clientId, companyId, "avoir");
+
             setFactures(facturesData);
+            setDevis(devisData);
+            setAvoirs(avoirsData);
             setSelectedClient(clients.find(c => c.id === clientId));
             setIsEditing(false);
         } catch (error) {
-            console.error("Erreur lors du chargement des factures:", error);
-            alert("Erreur lors du chargement des factures");
+            console.error("Erreur lors du chargement des documents:", error);
+            alert("Erreur lors du chargement des documents");
         }
     };
 
@@ -129,31 +137,58 @@ const Dashbill = () => {
     useEffect(() => {
         if (!companyId) return;
 
-        if (activeTab === "factures" || activeTab === "dashboard") {
-            const unsubscribe = invoiceService.getInvoices(companyId, (invoicesData) => {
-                setFactures(invoicesData);
-                setStats(prev => ({
-                    ...prev,
-                    totalFactures: invoicesData.length,
-                    facturesImpayees: invoicesData.filter(f => f.statut === "en attente").length,
-                    revenusMensuels: invoicesData
-                        .filter(f => new Date(f.date).getMonth() === new Date().getMonth())
-                        .reduce((sum, f) => sum + parseFloat(f.totalTTC || 0), 0)
-                }));
-            });
-            return () => unsubscribe();
-        }
+        // Charger les factures
+        const unsubscribeFactures = invoiceService.getInvoices(companyId, (invoicesData) => {
+            setFactures(invoicesData);
+        }, "facture");
+
+        // Charger les devis
+        const unsubscribeDevis = invoiceService.getInvoices(companyId, (invoicesData) => {
+            setDevis(invoicesData);
+        }, "devis");
+
+        // Charger les avoirs
+        const unsubscribeAvoirs = invoiceService.getInvoices(companyId, (invoicesData) => {
+            setAvoirs(invoicesData);
+        }, "avoir");
+
+        // Mettre à jour les statistiques
+        setStats(prev => ({
+            ...prev,
+            totalFactures: factures.length,
+            totalDevis: devis.length,
+            totalAvoirs: avoirs.length,
+            facturesImpayees: factures.filter(f => f.statut === "en attente").length,
+            revenusMensuels: factures
+                .filter(f => new Date(f.date).getMonth() === new Date().getMonth())
+                .reduce((sum, f) => sum + parseFloat(f.totalTTC || 0), 0)
+        }));
+
+        return () => {
+            unsubscribeFactures();
+            unsubscribeDevis();
+            unsubscribeAvoirs();
+        };
     }, [companyId, activeTab]);
 
-    const handleDeleteFacture = async (factureId) => {
-        if (window.confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
+
+    const handleDeleteFacture = async (factureId, type = "facture") => {
+        if (window.confirm(`Êtes-vous sûr de vouloir supprimer ce ${type} ?`)) {
             try {
                 await invoiceService.deleteInvoice(factureId);
-                alert("Facture supprimée avec succès !");
-                setFactures(factures.filter(f => f.id !== factureId));
+                alert(`${type.charAt(0).toUpperCase() + type.slice(1)} supprimé(e) avec succès !`);
+
+                // Mettre à jour l'état approprié
+                if (type === "facture") {
+                    setFactures(factures.filter(f => f.id !== factureId));
+                } else if (type === "devis") {
+                    setDevis(devis.filter(d => d.id !== factureId));
+                } else if (type === "avoir") {
+                    setAvoirs(avoirs.filter(a => a.id !== factureId));
+                }
             } catch (error) {
                 console.error("Erreur:", error);
-                alert("Erreur lors de la suppression de la facture.");
+                alert(`Erreur lors de la suppression du ${type}.`);
             }
         }
     };
@@ -326,6 +361,105 @@ const Dashbill = () => {
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .slice(0, 3);
     };
+    const [activeTab_0, setActiveTab_0] = useState("factures");
+    const DocumentSection = ({ title, items, searchTerm, setSearchTerm, navigate, onDelete, selectedClient, type }) => (
+        <div className="clients-section">
+            <div className="section-header">
+                <h2 className="section-title">
+                    <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
+                    {title} ({items.length})
+                </h2>
+                <div className="search-box">
+                    <FaSearch className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder={`Rechercher un ${title.toLowerCase().slice(0, -1)}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="invoices-actions">
+                    <button
+                        onClick={() => navigate("/bill", { state: { type } })}
+                        className={`create-invoice-btn ${type === "devis" ? "tertiary" : type === "avoir" ? "secondary" : ""}`}
+                    >
+                        <FaPlus style={{ marginRight: "8px" }} />
+                        Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
+                    </button>
+                </div>
+            </div>
+
+            {items.length === 0 ? (
+                <div className="empty-state">
+                    <img src="/empty-invoices.svg" alt={`Aucun ${title.toLowerCase().slice(0, -1)}`} />
+                    <p>Aucun {title.toLowerCase().slice(0, -1)} trouvé</p>
+                    <button
+                        onClick={() => navigate("/bill", { state: { type } })}
+                        className="primary-btn"
+                    >
+                        <FaPlus /> Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
+                    </button>
+                </div>
+            ) : (
+                <div className="clients-grid">
+                    {items.map((f) => (
+                        <div key={f.id} className="client-card">
+                            <div className="client-header">
+                                <div className="client-avatar"><FaFileInvoiceDollar /></div>
+                                <div className="client-info">
+                                    <div className="client-name">{f.numero}</div>
+                                    <div className="client-company">{f.clientNom || "Sans client"}</div>
+                                </div>
+                                <div className="client-actions">
+                                    <button
+                                        className="action-btn edit-btn"
+                                        title="Modifier"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate("/bill", {
+                                                state: {
+                                                    facture: f,
+                                                    client: selectedClient,
+                                                    type: f.type // Ajoutez le type du document
+                                                }
+                                            });
+                                        }}
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                    <button
+                                        className="action-btn delete-btn"
+                                        title="Supprimer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(f.id, type);
+                                        }}
+                                    >
+                                        <FaTrash />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="client-details">
+                                <div className="client-detail">
+                                    <span className="detail-label">Client:</span>
+                                    <span className="detail-value">{f.clientNom || "N/A"}</span>
+                                </div>
+                                <div className="client-detail">
+                                    <span className="detail-label">Date:</span>
+                                    <span className="detail-value">{f.date}</span>
+                                </div>
+                                <div className="client-detail">
+                                    <span className="detail-label">Montant:</span>
+                                    <span className="detail-value">{f.totalTTC} FCFA</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
 
     // Rendu du contenu en fonction de l'onglet actif
     const renderActiveTab = () => {
@@ -992,105 +1126,65 @@ const Dashbill = () => {
             case "factures":
                 return (
                     <>
-                        <div className="clients-section">
-                            <div className="section-header">
-                                <h2 className="section-title">
-                                    <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
-                                    Factures ({factures.length})
-                                </h2>
-                                <div className="search-box">
-                                    <FaSearch className="search-icon" />
-                                    <input
-                                        type="text"
-                                        placeholder="Rechercher une facture..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                                <div className="invoices-actions">
-                                    <button
-                                        onClick={() => navigate("/bill")}
-                                        className="create-invoice-btn"
-                                    >
-                                        <FaPlus style={{ marginRight: "8px" }} />
-                                        Créer une facture
-                                    </button>
-                                </div>
-                            </div>
-
-                            {factures.length === 0 ? (
-                                <div className="empty-state">
-                                    <img src="/empty-invoices.svg" alt="Aucune facture" />
-                                    <p>Aucune facture trouvée</p>
-                                    <button
-                                        onClick={() => navigate("/bill")}
-                                        className="primary-btn"
-                                    >
-                                        <FaPlus /> Créer une facture
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="clients-grid">
-                                    {factures.map((f) => (
-                                        <div key={f.id} className="client-card">
-                                            <div className="client-header">
-                                                <div className="client-avatar">
-                                                    <FaFileInvoiceDollar />
-                                                </div>
-                                                <div className="client-info">
-                                                    <div className="client-name">{f.numero}</div>
-                                                    <div className="client-company">{f.clientNom || "Sans client"}</div>
-                                                </div>
-                                                <div className="client-actions">
-                                                    <button
-                                                        className="action-btn edit-btn"
-                                                        title="Modifier"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            navigate("/bill", {
-                                                                state: {
-                                                                    facture: f,
-                                                                    client: selectedClient
-                                                                }
-                                                            });
-                                                        }}
-                                                    >
-                                                        <FaEdit />
-                                                    </button>
-                                                    <button
-                                                        className="action-btn delete-btn"
-                                                        title="Supprimer"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteFacture(f.id);
-                                                        }}
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="client-details">
-                                                <div className="client-detail">
-                                                    <span className="detail-label">Client:</span>
-                                                    <span className="detail-value">{f.clientNom || "N/A"}</span>
-                                                </div>
-                                                <div className="client-detail">
-                                                    <span className="detail-label">Date:</span>
-                                                    <span className="detail-value">{f.date}</span>
-                                                </div>
-                                                <div className="client-detail">
-                                                    <span className="detail-label">Montant:</span>
-                                                    <span className="detail-value">{f.totalTTC} FCFA</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        <div className="navbar-tabs">
+                            <button
+                                className={activeTab_0 === "factures" ? "active" : ""}
+                                onClick={() => setActiveTab_0("factures")}
+                            >
+                                Factures ({factures.length})
+                            </button>
+                            <button
+                                className={activeTab_0 === "devis" ? "active" : ""}
+                                onClick={() => setActiveTab_0("devis")}
+                            >
+                                Devis ({devis.length})
+                            </button>
+                            <button
+                                className={activeTab_0 === "avoirs" ? "active" : ""}
+                                onClick={() => setActiveTab_0("avoirs")}
+                            >
+                                Avoirs ({avoirs.length})
+                            </button>
                         </div>
+
+                        {activeTab_0 === "factures" && (
+                            <DocumentSection
+                                title="Factures"
+                                items={factures}
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
+                                navigate={navigate}
+                                onDelete={handleDeleteFacture}
+                                selectedClient={selectedClient}
+                                type="facture"
+                            />
+                        )}
+                        {activeTab_0 === "devis" && (
+                            <DocumentSection
+                                title="Devis"
+                                items={devis}
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
+                                navigate={navigate}
+                                onDelete={handleDeleteFacture}
+                                selectedClient={selectedClient}
+                                type="devis"
+                            />
+                        )}
+                        {activeTab_0 === "avoirs" && (
+                            <DocumentSection
+                                title="Avoirs"
+                                items={avoirs}
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
+                                navigate={navigate}
+                                onDelete={handleDeleteFacture}
+                                selectedClient={selectedClient}
+                                type="avoir"
+                            />
+                        )}
                     </>
-                );
-            case "stats":
+                ); case "stats":
                 return (
                     <div className="stats-section">
                         <h2 className="section-title">
