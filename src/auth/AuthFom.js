@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { Link, useNavigate } from 'react-router-dom';

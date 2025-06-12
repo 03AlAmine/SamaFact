@@ -1,9 +1,23 @@
 import { db } from "../firebase";
-import { collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  doc,
+  deleteDoc,
+  updateDoc,
+  where,
+  getDocs
+} from "firebase/firestore";
 
 export const clientService = {
   getClients: (companyId, callback) => {
-    const q = query(collection(db, "clients"), where("companyId", "==", companyId));
+    if (!companyId) return () => { };
+
+    const clientsRef = collection(db, `companies/${companyId}/clients`);
+    const q = query(clientsRef);
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const clientsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -11,15 +25,15 @@ export const clientService = {
       }));
       callback(clientsData);
     });
+
     return unsubscribe;
   },
-  
 
   addClient: async (companyId, clientData) => {
     try {
-      await addDoc(collection(db, "clients"), {
+      const clientsRef = collection(db, `companies/${companyId}/clients`);
+      await addDoc(clientsRef, {
         ...clientData,
-        companyId,
         createdAt: new Date()
       });
       return { success: true, message: "Client ajouté avec succès !" };
@@ -29,9 +43,10 @@ export const clientService = {
     }
   },
 
-  updateClient: async (clientId, clientData) => {
+  updateClient: async (companyId, clientId, clientData) => {
     try {
-      await updateDoc(doc(db, "clients", clientId), clientData);
+      const clientRef = doc(db, `companies/${companyId}/clients/${clientId}`);
+      await updateDoc(clientRef, clientData);
       return { success: true, message: "Client modifié avec succès !" };
     } catch (error) {
       console.error("Erreur:", error);
@@ -39,9 +54,11 @@ export const clientService = {
     }
   },
 
-  deleteClient: async (clientId) => {
+
+  deleteClient: async (companyId, clientId) => {
     try {
-      await deleteDoc(doc(db, "clients", clientId));
+      const clientRef = doc(db, `companies/${companyId}/clients/${clientId}`);
+      await deleteDoc(clientRef);
       return { success: true, message: "Client supprimé avec succès !" };
     } catch (error) {
       console.error("Erreur:", error);
@@ -49,22 +66,45 @@ export const clientService = {
     }
   },
 
-  loadClientInvoices: async (companyId, clientId) => {
-    try {
-      const q = query(
-        collection(db, "factures"), 
-        where("companyId", "==", companyId),
-        where("clientId", "==", clientId)
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.error("Erreur lors du chargement des factures:", error);
-      throw error;
-    }
-  }
+loadClientInvoices: async (companyId, clientId, type) => {
   
+  try {
+    const chemin = `companies/${companyId}/factures`;
+
+    const invoicesRef = collection(db, chemin);
+    const q = query(
+      invoicesRef,
+      where("clientId", "==", clientId),
+      where("type", "==", type)
+    );
+
+    
+    const querySnapshot = await getDocs(q);
+
+  /*  if (querySnapshot.empty) {
+      console.warn("Aucun document trouvé pour cette requête");
+      return [];
+    }*/
+
+    const resultats = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      
+      return {
+        id: doc.id,
+        ...data,
+        date: data.date?.toDate?.() || null
+      };
+    });
+
+    return resultats;
+  } catch (error) {
+    console.error("❌ Erreur complète:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    throw error;
+  }
+}
+
 };

@@ -33,6 +33,8 @@ invoiceTitleContainer: {
   padding: 10,
   borderRadius: 4,
   width: 120,
+  display:"flex",
+  alignItems: "center",
 },
 
   invoiceTitle: {

@@ -7,13 +7,13 @@ import { getStorage } from "firebase/storage";
 
 // Configuration Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyADUHCKuEGHAm0ovdywreqQAgqDMRyZk58",
-  authDomain: "syslis.firebaseapp.com",
-  projectId: "syslis",
-  storageBucket: "syslis.firebasestorage.app",
-  messagingSenderId: "41730309928",
-  appId: "1:41730309928:web:d3cee091272664ce1c5a1d",
-  measurementId: "G-KGY8SWXEHK"
+  apiKey: "AIzaSyDYEz7Kz_H9Q57qnpFnP6lebW12rFkT180",
+  authDomain: "mentafact.firebaseapp.com",
+  projectId: "mentafact",
+  storageBucket: "mentafact.firebasestorage.app",
+  messagingSenderId: "927707293074",
+  appId: "1:927707293074:web:0d1622176bec28e948cd4b",
+  measurementId: "G-8PBFXDJNBC"
 };
 
 // Initialisation Firebase

@@ -381,3 +381,153 @@
     padding: 1.5rem;
   }
 }
+/* Sub-user Management Section */
+.subuser-section {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 2.5rem;
+  margin-top: 3rem;
+  transition: all var(--transition-slow);
+  border: 1px solid rgba(67, 97, 238, 0.1);
+}
+
+.subuser-section:hover {
+  box-shadow: var(--shadow-xl);
+  border-color: rgba(67, 97, 238, 0.2);
+}
+
+.subuser-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.subuser-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+
+.subuser-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.75rem;
+}
+
+.subuser-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.subuser-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-medium);
+  font-size: 0.9rem;
+}
+
+.subuser-form input,
+.subuser-form select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+  background: var(--secondary-color);
+}
+
+.subuser-form input:focus,
+.subuser-form select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+  outline: none;
+}
+
+.subuser-form small {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+.btn-create-user {
+  background-color: var(--success-color);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-bounce);
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 1rem;
+  margin-left: auto;
+}
+
+.btn-create-user:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-create-user:active {
+  transform: translateY(0);
+}
+
+/* Role Badges */
+.subuser-form select option {
+  padding: 0.5rem;
+}
+
+.subuser-form select option[value="admin"] {
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.subuser-form select option[value="manager"] {
+  background-color: rgba(234, 88, 12, 0.1);
+}
+
+.subuser-form select option[value="editor"] {
+  background-color: rgba(234, 179, 8, 0.1);
+}
+
+.subuser-form select option[value="viewer"] {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+/* Password Field Styling */
+.subuser-form input[readonly] {
+  background-color: var(--secondary-color);
+  color: var(--text-medium);
+  cursor: not-allowed;
+  border: 1px dashed var(--border-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .subuser-form {
+    grid-template-columns: 1fr;
+  }
+  
+  .btn-create-user {
+    width: 100%;
+    justify-content: center;
+  }
+}

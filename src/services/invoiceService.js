@@ -1,5 +1,14 @@
 import { db } from "../firebase";
-import { collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  doc,
+  deleteDoc,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 
 const convertIfTimestamp = (value) => {
   return value && typeof value.toDate === 'function' ? value.toDate() : value;
@@ -7,10 +16,12 @@ const convertIfTimestamp = (value) => {
 
 export const invoiceService = {
   getInvoices: (companyId, callback, type = "facture") => {
+    if (!companyId) return () => { };
+
+    const invoicesRef = collection(db, `companies/${companyId}/factures`);
     const q = query(
-      collection(db, "factures"),
-      where("companyId", "==", companyId),
-      where("type", "==", type) // 👈 filtre par type
+      invoicesRef,
+      where("type", "==", type) // Filtre par type
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -29,25 +40,11 @@ export const invoiceService = {
     return unsubscribe;
   },
 
-
-
-
-  deleteInvoice: async (invoiceId) => {
-    try {
-      await deleteDoc(doc(db, "factures", invoiceId));
-      return { success: true, message: "Facture supprimée avec succès !" };
-    } catch (error) {
-      console.error("Erreur:", error);
-      return { success: false, message: "Erreur lors de la suppression de la facture." };
-    }
-  },
-
   addInvoice: async (companyId, invoiceData, type = "facture") => {
     try {
       const invoiceToSave = {
         ...invoiceData,
-        companyId,
-        type, // <--- ICI
+        type,
         createdAt: new Date(),
         clientType: invoiceData.client?.type || 'client',
         originalClientName: invoiceData.client?.nom,
@@ -56,7 +53,8 @@ export const invoiceService = {
         previousCompanyNames: invoiceData.client?.anciensNoms || []
       };
 
-      const docRef = await addDoc(collection(db, "factures"), invoiceToSave);
+      const invoicesRef = collection(db, `companies/${companyId}/invoices`);
+      const docRef = await addDoc(invoicesRef, invoiceToSave);
 
       return {
         success: true,
@@ -67,14 +65,13 @@ export const invoiceService = {
       console.error("Erreur:", error);
       return { success: false, message: "Erreur lors de la création de la facture." };
     }
-  }
-  ,
+  },
 
-  updateInvoice: async (invoiceId, invoiceData, type = "facture") => {
+  updateInvoice: async (companyId, invoiceId, invoiceData, type = "facture") => {
     try {
       const updatedData = {
         ...invoiceData,
-        type, // <--- s'assure que le type reste correct
+        type,
         clientType: invoiceData.client?.type || 'client',
         originalClientName: invoiceData.client?.nom,
         originalCompanyName: invoiceData.client?.societe,
@@ -82,34 +79,25 @@ export const invoiceService = {
         previousCompanyNames: invoiceData.client?.anciensNoms || []
       };
 
-      await updateDoc(doc(db, "factures", invoiceId), updatedData);
+      const invoiceRef = doc(db, `companies/${companyId}/invoices/${invoiceId}`);
+      await updateDoc(invoiceRef, updatedData);
       return { success: true, message: "Facture mise à jour avec succès !" };
     } catch (error) {
       console.error("Erreur:", error);
       return { success: false, message: "Erreur lors de la mise à jour de la facture." };
     }
-  }
-  ,
+  },
 
-  loadClientInvoices: async (clientId, companyId, type = "facture") => {
+  deleteInvoice: async (companyId, invoiceId) => {
     try {
-      const q = query(
-        collection(db, "factures"),
-        where("companyId", "==", companyId),
-        where("clientId", "==", clientId),
-        where("type", "==", type)
-      );
-
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date?.toDate() || doc.data().date
-      }));
+      const invoiceRef = doc(db, `companies/${companyId}/invoices/${invoiceId}`);
+      await deleteDoc(invoiceRef);
+      return { success: true, message: "Facture supprimée avec succès !" };
     } catch (error) {
       console.error("Erreur:", error);
-      throw error;
+      return { success: false, message: "Erreur lors de la suppression de la facture." };
     }
-  }
+  },
+
 
 };

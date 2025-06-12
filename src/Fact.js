@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Page, Text, View, Document, PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, where, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
 import { pdfStyles } from './styles/pdfStyles';
 import './css/Fact.css';
 import Sidebar from "./Sidebar";
 import { useAuth } from './auth/AuthContext';
 import { Image } from '@react-pdf/renderer';
+import n2words from 'n2words';
 
 
 // Composant InvoicePDF (inchangé)
@@ -40,7 +41,8 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
           <View style={pdfStyles.invoiceTitleContainer}>
             <Text style={pdfStyles.invoiceTitle}>
               {data.facture.Type?.[0]?.toUpperCase() || "FACTURE"}
-            </Text>          </View>
+            </Text>
+          </View>
         </View>
 
 
@@ -107,9 +109,14 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
         <View style={[pdfStyles.totalsContainer, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
 
           {/* Bloc Notes à gauche */}
-          <View style={{ maxWidth: '40%' }}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Notes</Text>
-            <Text>Nous vous remercions de votre confiance</Text>
+          <View style={{ maxWidth: '60%', marginTop: '30%' }}>
+            <Text style={{ fontSize: 12, marginBottom: 4, color: 'green' }}>Arrêtée la présente facture à la somme de </Text>
+            <Text style={{ fontSize: 10 }}>
+              {n2words(Number(data.totals?.["Total TTC"]?.[0]?.replace(',', '.')) || 0, { lang: 'fr' })} francs cfa
+            </Text>
+
+            <Text style={{ fontSize: 12, marginTop: '5%', color: 'green' }}>Notes</Text>
+            <Text style={{ fontSize: 10 }}>Nous vous remercions de votre confiance</Text>
           </View>
 
           {/* Bloc Totaux à droite */}
@@ -148,7 +155,7 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
 };
 
 // Composant InvoiceForm (inchangé)
-const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, isS, generateInvoiceNumber }) => {
+const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "",
@@ -646,7 +653,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               </PDFDownloadLink>
 
             ) : (
-              <button className="button info-button secondary-button" disabled>
+              <button className="button info-button " disabled>
                 <i className="fas fa-download"></i> Télécharger
               </button>
             )}
@@ -679,55 +686,45 @@ const Fact = () => {
   const location = useLocation();
 
   // Fonction pour générer le numéro de facture séquentiel
-  const generateInvoiceNumber = async (date = new Date(), type = "facture") => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+  const generateInvoiceNumber = useCallback(
+    async (date = new Date(), type = "facture") => {
+      if (!currentUser?.companyId) return `${type}-TEMP`;
 
-    // Choix du préfixe selon le type
-    let typePrefix;
-    switch (type) {
-      case "avoir":
-        typePrefix = "AV";
-        break;
-      case "devis":
-        typePrefix = "D";
-        break;
-      default:
-        typePrefix = "F";
-    }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
 
-    const prefix = `${typePrefix}-${year}${month}`;
+      let typePrefix;
+      switch (type) {
+        case "avoir": typePrefix = "AV"; break;
+        case "devis": typePrefix = "D"; break;
+        default: typePrefix = "F";
+      }
 
-    try {
-      const facturesRef = collection(db, "factures");
+      const prefix = `${typePrefix}-${year}${month}`;
 
-      // Récupère les 10 derniers documents triés par numéro décroissant (au cas où certains sont mal formés)
-      const q = query(facturesRef, orderBy("numero", "desc"), limit(10));
-      const querySnapshot = await getDocs(q);
+      try {
+        const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
+        const q = query(facturesRef, orderBy("numero", "desc"), limit(10));
+        const querySnapshot = await getDocs(q);
 
-      let maxNumber = 0;
-
-      querySnapshot.forEach(doc => {
-        const numero = doc.data().numero;
-        // Extraction du dernier nombre après le dernier tiret
-        const match = numero.match(/-(\d+)$/);
-        if (match) {
-          const num = parseInt(match[1]);
-          if (num > maxNumber) {
-            maxNumber = num;
+        let maxNumber = 0;
+        querySnapshot.forEach(doc => {
+          const numero = doc.data().numero;
+          const match = numero.match(/-(\d+)$/);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxNumber) maxNumber = num;
           }
-        }
-      });
+        });
 
-      const newNumber = maxNumber + 1;
-
-      return `${prefix}-${newNumber}`;
-    } catch (error) {
-      console.error("Erreur génération numéro:", error);
-      return `${prefix}-1`; // Fallback
-    }
-  };
-
+        return `${prefix}-${maxNumber + 1}`;
+      } catch (error) {
+        console.error("Erreur génération numéro:", error);
+        return `${prefix}-1`;
+      }
+    },
+    [currentUser?.companyId]
+  );
 
   // Fonction pour transformer les données de Firebase
   const transformFactureData = (facture) => {
@@ -758,7 +755,8 @@ const Fact = () => {
     return {
       facture: {
         Numéro: [facture.numero || ""],
-        Date: [facture.date || new Date().toISOString().split('T')[0]]
+        Date: [facture.date || new Date().toISOString().split('T')[0]],
+        Type: [facture.type || "facture"]
       },
       client: {
         Nom: [facture.clientNom || ""],
@@ -777,7 +775,8 @@ const Fact = () => {
   const [data, setData] = useState({
     facture: {
       Numéro: ["Chargement..."],
-      Date: [new Date().toISOString().split('T')[0]]
+      Date: [new Date().toISOString().split('T')[0]],
+      Type: ["facture"]
     },
     client: {
       Nom: [],
@@ -809,7 +808,7 @@ const Fact = () => {
         setLoadingData(false);
         return;
       }
-      // Gestion du client passé en paramètre
+
       const initialClient = location.state?.client
         ? {
           Nom: [location.state.client.nom || ""],
@@ -822,11 +821,11 @@ const Fact = () => {
         setData(prev => ({
           ...prev,
           facture: {
+            ...prev.facture,
             Numéro: [invoiceNumber],
-            Date: [new Date().toISOString().split('T')[0]],
             Type: [documentType]
           },
-          client: initialClient // Utilisation du client passé
+          client: initialClient
         }));
       } catch (error) {
         console.error("Erreur initialisation:", error);
@@ -836,8 +835,8 @@ const Fact = () => {
         setData(prev => ({
           ...prev,
           facture: {
-            Numéro: [`F-${year}${month}-TEMP`],
-            Date: [now.toISOString().split('T')[0]]
+            ...prev.facture,
+            Numéro: [`F-${year}${month}-TEMP`]
           }
         }));
       } finally {
@@ -846,22 +845,23 @@ const Fact = () => {
     };
 
     initializeData();
-  }, [location.state]);
+  }, [location.state, currentUser?.companyId, generateInvoiceNumber]);
 
   // Chargement des clients
   useEffect(() => {
     const fetchClients = async () => {
-      if (!currentUser) return;
+      if (!currentUser?.companyId) return;
 
       try {
-        const clientsRef = collection(db, "clients");
-        const q = query(clientsRef, where("companyId", "==", currentUser.companyId));
-
+        const clientsRef = collection(db, `companies/${currentUser.companyId}/clients`);
+        const q = query(clientsRef);
         const querySnapshot = await getDocs(q);
+
         const clientsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+
         setClients(clientsData);
         setLoading(false);
       } catch (error) {
@@ -875,11 +875,15 @@ const Fact = () => {
 
   // Sauvegarde de la facture
   const saveInvoiceToFirestore = async () => {
+    if (!currentUser?.companyId) {
+      throw new Error("Company ID not available");
+    }
+
     try {
       const invoiceData = {
         numero: data.facture.Numéro[0],
         date: data.facture.Date[0],
-        type: data.facture.Type[0], // Ajout du type (facture/avoir)
+        type: data.facture.Type[0],
         clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
         clientNom: data.client.Nom[0],
         clientAdresse: data.client.Adresse[0],
@@ -903,10 +907,12 @@ const Fact = () => {
 
       let docId;
       if (location.state && location.state.facture && location.state.facture.id) {
-        await updateDoc(doc(db, "factures", location.state.facture.id), invoiceData);
+        const factureRef = doc(db, `companies/${currentUser.companyId}/factures`, location.state.facture.id);
+        await updateDoc(factureRef, invoiceData);
         docId = location.state.facture.id;
       } else {
-        const docRef = await addDoc(collection(db, "factures"), invoiceData);
+        const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
+        const docRef = await addDoc(facturesRef, invoiceData);
         docId = docRef.id;
       }
 
@@ -915,7 +921,6 @@ const Fact = () => {
       throw error;
     }
   };
-
   const handleSave = async () => {
     if (!data.client.Nom[0] || data.items.Designation.length === 0) {
       alert("Veuillez sélectionner un client et ajouter au moins un article");
