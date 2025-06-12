@@ -8,7 +8,6 @@ import {
 } from 'react-icons/fa';
 import { MdDashboard } from "react-icons/md";
 
-import "./css/Dashbill.css";
 import logo from './assets/Logo_Mf.png';
 import empty from './assets/empty.png';
 import empty_client from './assets/empty_client.png';
