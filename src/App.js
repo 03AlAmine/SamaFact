@@ -6,9 +6,9 @@ import Login from './auth/Login';
 import Register from './auth/Register';
 import Fact from './Fact';
 import Profile from './profil/Profile';
-//import HomeZero from './Dashbill';
 import Home from './Mentafact';
-//import ForgotPassword from './auth/ForgotPassword';
+import NotFound from './components/NotFound'; // importation du composant NotFound
+//import AccessDenied from './components/AccessDenied'; // importation du composant NotFound
 
 function App() {
   return (
@@ -16,17 +16,17 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-         {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
+          <Route path="/register_admin" element={<Register />} />
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-       {/*   <Route path="home_0" element={<PrivateRoute><HomeZero /></PrivateRoute>} /> */}
           <Route path="/bill" element={<PrivateRoute><Fact /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          {/* <Route path="/register" element={<AccessDenied />} />
+          Route pour toutes les pages non trouvées */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </Router>
   );
 }
-
 
 export default App;

@@ -1,10 +1,12 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser } from 'react-icons/fa';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser, FaInfoCircle } from 'react-icons/fa';
 import './AuthForm.css';
-import logo from '../assets/Logo_Mf.png'; // ou le bon chemin
+import logo from '../assets/Logo_Mf.png';
+import PasswordGate from './PasswordGate';
+import Preloader from '../components/Preloader';
 
 const AuthForm = ({ type }) => {
     const [email, setEmail] = useState('');
@@ -14,10 +16,12 @@ const AuthForm = ({ type }) => {
     const [userName, setUserName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isAdminVerified, setIsAdminVerified] = useState(false);
     const { login, signup } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
-
+    const [isLoadingComplete, setIsLoadingComplete] = useState(false);
 
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
@@ -27,6 +31,10 @@ const AuthForm = ({ type }) => {
         setPasswordConfirm('');
         setCompanyName('');
         setUserName('');
+    };
+
+    const handleAdminVerification = () => {
+        setIsAdminVerified(true);
     };
 
     async function handleSubmit(e, formType) {
@@ -44,15 +52,22 @@ const AuthForm = ({ type }) => {
         try {
             setError('');
             setLoading(true);
+            setIsLoadingComplete(false); // Active le préloader
 
             if (formType === 'login') {
                 await login(email, password);
-                navigate('/');
+
+                // Ici on attend un court délai pour le préloader
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Force le rechargement de la page après la connexion
+                window.location.href = '/';
             } else {
                 await signup(email, password, companyName, userName);
                 navigate('/profile');
             }
         } catch (err) {
+            setIsLoadingComplete(true); // Désactive le préloader en cas d'erreur
             if (formType === 'login') {
                 if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
                     setError("Email ou mot de passe incorrect");
@@ -67,147 +82,172 @@ const AuthForm = ({ type }) => {
         }
     }
 
-    return (
-        <div className={`auth-container ${activeForm}`}>
-            <div className="auth-form-box auth-login">
-                <form className="form-auth" onSubmit={(e) => handleSubmit(e, 'login')}>
-                    {error && <div className="auth-error">{error}</div>}
 
-                    <h1>Connexion</h1>
-                    <div className="auth-input-box">
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Email"
-                            required
-                        />
-                        <FaEnvelope className="auth-icon" />
-                    </div>
-                    <div className="auth-input-box">
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Mot de passe"
-                            required
-                        />
-                        <FaLock className="auth-icon" />
-                    </div>
-                    <div className="auth-forgot-link">
-                        <Link to="/forgot-password">Mot de passe oublié?</Link>
-                    </div>
-                    <button disabled={loading} type="submit" className="auth-btn">
-                        {loading ? 'Connexion en cours...' : 'Se connecter'}
-                    </button>
-                    <p>ou connectez-vous avec</p>
-                    <div className="auth-social-icons">
-                        <a href="#"><FaGoogle /></a>
-                        <a href="#"><FaFacebook /></a>
-                        <a href="#"><FaGithub /></a>
-                        <a href="#"><FaLinkedin /></a>
-                    </div>
-                </form>
-            </div>
+    const renderRegisterForm = () => {
+        if (type === 'register' && !isAdminVerified) {
+            return <PasswordGate onSuccess={handleAdminVerification} />;
+        }
 
-            <div className="auth-form-box auth-register">
-                <form onSubmit={(e) => handleSubmit(e, 'register')}>
-                    <h1>Inscription</h1>
-
-                    {/* Nouveaux champs entreprise */}
-                    <div className="auth-input-box">
-                        <input
-                            type="text"
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder="Nom de l'entreprise"
-                            required
-                        />
-                        <FaBuilding className="auth-icon" />
-                    </div>
-
-                    <div className="auth-input-box">
-                        <input
-                            type="text"
-                            value={userName}
-                            onChange={(e) => setUserName(e.target.value)}
-                            placeholder="Votre nom complet"
-                            required
-                        />
-                        <FaUser className="auth-icon" />
-                    </div>
-                    {/* Fin nouveaux champs */}
-
-                    <div className="auth-input-box">
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Email"
-                            required
-                        />
-                        <FaEnvelope className="auth-icon" />
-                    </div>
-                    <div className="auth-input-box">
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Mot de passe"
-                            required
-                        />
-                        <FaLock className="auth-icon" />
-                    </div>
-                    <div className="auth-input-box">
-                        <input
-                            type="password"
-                            value={passwordConfirm}
-                            onChange={(e) => setPasswordConfirm(e.target.value)}
-                            placeholder="Confirmez le mdp"
-                            required
-                        />
-                        <FaLock className="auth-icon" />
-                    </div>
-                    <button disabled={loading} type="submit" className="auth-btn">
-                        {loading ? 'Inscription en cours...' : "S'inscrire"}
-                    </button>
-                    <p>ou inscrivez-vous avec</p>
-                    <div className="auth-social-icons">
-                        <a href="#"><FaGoogle /></a>
-                        <a href="#"><FaFacebook /></a>
-                        <a href="#"><FaGithub /></a>
-                        <a href="#"><FaLinkedin /></a>
-                    </div>
-                </form>
-            </div>
-
-            <div className="auth-toggle-box">
-                <div className="auth-toggle-panel auth-toggle-left">
-                    <img src={logo} alt="Logo" className="auth-logo" />
-                    <h1 className="auth-welcome-title">
-                        Bienvenue sur<br />
-                        <span className="h1-span">Ment@Fact</span>
-                    </h1>
-
-                    <p>Vous n'avez pas encore de compte ?</p>
-                    <button className="auth-btn auth-register-btn" onClick={toggleForm}>
-                        S'inscrire
-                    </button>
+        return (
+            <form onSubmit={(e) => handleSubmit(e, 'register')}>
+                <h1>Inscription Admin</h1>
+                <div className="auth-input-box">
+                    <input
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="Nom de l'entreprise"
+                        required
+                    />
+                    <FaBuilding className="auth-icon" />
                 </div>
-
-                <div className="auth-toggle-panel auth-toggle-right">
-                    <img src={logo} alt="Logo" className="auth-logo" />
-
-                    <h1>Content de vous revoir ! <br />
-                        <span className="h1-span">Ment@Fact</span>
-                    </h1>
-                    <p>Vous avez déjà un compte ?</p>
-                    <button className="auth-btn auth-login-btn" onClick={toggleForm}>
-                        Se connecter
-                    </button>
+                <div className="auth-input-box">
+                    <input
+                        type="text"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Votre nom complet"
+                        required
+                    />
+                    <FaUser className="auth-icon" />
                 </div>
+                <div className="auth-input-box">
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        required
+                    />
+                    <FaEnvelope className="auth-icon" />
+                </div>
+                <div className="auth-input-box">
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Mot de passe"
+                        required
+                    />
+                    <FaLock className="auth-icon" />
+                </div>
+                <div className="auth-input-box">
+                    <input
+                        type="password"
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                        placeholder="Confirmez le mdp"
+                        required
+                    />
+                    <FaLock className="auth-icon" />
+                </div>
+                <button disabled={loading} type="submit" className="auth-btn">
+                    {loading ? 'Inscription en cours...' : "S'inscrire"}
+                </button>
+            </form>
+        );
+    };
+
+    const renderInfoPanel = () => (
+        <div className="auth-info-panel">
+            <div className="auth-info-content">
+                <FaInfoCircle className="auth-info-icon" />
+                <h2>Comment obtenir un compte ?</h2>
+                <p>
+                    Pour créer un compte sur notre plateforme, veuillez contacter
+                    l'administrateur système ou votre responsable d'entreprise.
+                </p>
+                <p>
+                    Les comptes sont créés et gérés de manière centralisée pour
+                    assurer la sécurité de notre écosystème.
+                </p>
+                <button
+                    className="auth-btn auth-contact-btn"
+                    onClick={() => window.location.href = 'mailto:admin@mentafact.com'}
+                >
+                    Contacter l'administrateur
+                </button>
             </div>
         </div>
+    );
+
+    return (
+        <>
+            {!isLoadingComplete && loading && <Preloader />}
+            <div className={`auth-container ${activeForm}`}>
+                <div className="auth-form-box auth-login">
+                    <form className="form-auth" onSubmit={(e) => handleSubmit(e, 'login')}>
+                        {error && <div className="auth-error">{error}</div>}
+
+                        <h1>Connexion</h1>
+                        <div className="auth-input-box">
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Email"
+                                required
+                            />
+                            <FaEnvelope className="auth-icon" />
+                        </div>
+                        <div className="auth-input-box">
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Mot de passe"
+                                required
+                            />
+                            <FaLock className="auth-icon" />
+                        </div>
+                        <div className="auth-forgot-link">
+                            <Link to="/forgot-password">Mot de passe oublié?</Link>
+                        </div>
+                        <button disabled={loading} type="submit" className="auth-btn">
+                            {loading ? 'Connexion en cours...' : 'Se connecter'}
+                        </button>
+                        <p>ou connectez-vous avec</p>
+                        <div className="auth-social-icons">
+                            <a href="#"><FaGoogle /></a>
+                            <a href="#"><FaFacebook /></a>
+                            <a href="#"><FaGithub /></a>
+                            <a href="#"><FaLinkedin /></a>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="auth-form-box auth-register">
+                    {type === 'register' ? renderRegisterForm() : renderInfoPanel()}
+                </div>
+
+                <div className="auth-toggle-box">
+                    <div className="auth-toggle-panel auth-toggle-left">
+                        <img src={logo} alt="Logo" className="auth-logo" />
+                        <h1 className="auth-welcome-title">
+                            Bienvenue sur<br />
+                            <span className="h1-span">Ment@Fact</span>
+                        </h1>
+
+                        <p>Vous n'avez pas encore de compte ?</p>
+                        <button className="auth-btn auth-register-btn" onClick={toggleForm}>
+                            Plus d'informations
+                        </button>
+                    </div>
+
+                    <div className="auth-toggle-panel auth-toggle-right">
+                        <img src={logo} alt="Logo" className="auth-logo" />
+
+                        <h1>Content de vous revoir ! <br />
+                            <span className="h1-span">Ment@Fact</span>
+                        </h1>
+                        <p>Vous avez déjà un compte ?</p>
+                        <button className="auth-btn auth-login-btn" onClick={toggleForm}>
+                            Se connecter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </>
     );
 };
 

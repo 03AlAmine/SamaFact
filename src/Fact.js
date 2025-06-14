@@ -1001,7 +1001,7 @@ const Fact = () => {
         >
           ⏳
         </div>
-        <div>Chargement des clients...</div>
+        <div>Chargement...</div>
 
         <style>
           {`

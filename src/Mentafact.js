@@ -21,6 +21,7 @@ import Sidebar from "./pages/Sidebare";
 
 import logo from './assets/Logo_Mf.png';
 import "./css/Mentafact.css";
+import Preloader from './components/Preloader';
 
 
 // Import clientService (adjust the path as needed)
@@ -29,7 +30,8 @@ const Mentafact = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
     const companyId = currentUser?.companyId; // Retrieve companyId from currentUser or adjust as needed
-
+    const [isLoading, setIsLoading] = useState(true);
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     // États
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("dashboard");
@@ -66,45 +68,107 @@ const Mentafact = () => {
     });
 
     useEffect(() => {
-        if (!companyId) return;
+        // Fonction pour charger toutes les données
+        const loadAllData = async () => {
+            setIsLoading(true);
+            setError(null);
 
-        const unsubscribeClients = clientService.getClients(companyId, (clientsData) => {
-            setClients(clientsData);
-            setStats(prev => ({ ...prev, totalClients: clientsData.length }));
-        });
+            try {
+                if (!companyId) {
+                    throw new Error("ID d'entreprise non disponible");
+                }
 
-        const unsubscribeFactures = invoiceService.getInvoices(companyId, (invoicesData) => {
-            setAllFactures(invoicesData);
-            setStats(prev => ({
-                ...prev,
-                totalFactures: invoicesData.length,
-                facturesImpayees: invoicesData.filter(f => f.statut === "en attente").length,
-                revenusMensuels: invoicesData
-                    .filter(f => new Date(f.date).getMonth() === new Date().getMonth())
-                    .reduce((sum, f) => sum + parseFloat(f.totalTTC || 0), 0)
-            }));
-        }, "facture");
+                // Chargement en parallèle pour meilleure performance
+                const [clientsData, invoicesData, devisData, avoirsData, equipesData] = await Promise.all([
+                    // Clients
+                    new Promise((resolve) => {
+                        const unsubscribe = clientService.getClients(companyId, (data) => {
+                            resolve(data);
+                        });
+                        return () => unsubscribe();
+                    }),
 
-        const unsubscribeDevis = invoiceService.getInvoices(companyId, (invoicesData) => {
-            setAllDevis(invoicesData);
-        }, "devis");
+                    // Factures
+                    new Promise((resolve) => {
+                        const unsubscribe = invoiceService.getInvoices(companyId, (data) => {
+                            resolve(data);
+                        }, "facture");
+                        return () => unsubscribe();
+                    }),
 
-        const unsubscribeAvoirs = invoiceService.getInvoices(companyId, (invoicesData) => {
-            setAllAvoirs(invoicesData);
-        }, "avoir");
+                    // Devis
+                    new Promise((resolve) => {
+                        const unsubscribe = invoiceService.getInvoices(companyId, (data) => {
+                            resolve(data);
+                        }, "devis");
+                        return () => unsubscribe();
+                    }),
 
-        teamService.getTeams(companyId).then(equipesData => {
-            setEquipes(equipesData);
-            setStats(prev => ({ ...prev, totalEquipes: equipesData.length }));
-        });
+                    // Avoirs
+                    new Promise((resolve) => {
+                        const unsubscribe = invoiceService.getInvoices(companyId, (data) => {
+                            resolve(data);
+                        }, "avoir");
+                        return () => unsubscribe();
+                    }),
 
-        return () => {
-            unsubscribeClients();
-            unsubscribeFactures();
-            unsubscribeDevis();
-            unsubscribeAvoirs();
+                    // Équipes
+                    teamService.getTeams(companyId)
+                ]);
+
+                // Mise à jour des états
+                setClients(clientsData);
+                setAllFactures(invoicesData);
+                setAllDevis(devisData);
+                setAllAvoirs(avoirsData);
+                setEquipes(equipesData);
+
+                // Calcul des stats
+                setStats({
+                    totalClients: clientsData.length,
+                    totalFactures: invoicesData.length,
+                    revenusMensuels: invoicesData
+                        .filter(f => new Date(f.date).getMonth() === new Date().getMonth())
+                        .reduce((sum, f) => sum + parseFloat(f.totalTTC || 0), 0),
+                    facturesImpayees: invoicesData.filter(f => f.statut === "en attente").length,
+                    totalEquipes: equipesData.length
+                });
+
+            } catch (err) {
+                console.error("Erreur de chargement:", err);
+                setError(err.message || "Erreur lors du chargement des données");
+            } finally {
+                // Délai minimum pour éviter le flash (1 seconde max)
+                const minLoadingTime = 1000;
+                const loadingStartTime = Date.now();
+
+                const remainingTime = minLoadingTime - (Date.now() - loadingStartTime);
+
+                if (remainingTime > 0) {
+                    await new Promise(resolve => setTimeout(resolve, remainingTime));
+                }
+
+                setInitialLoadComplete(true);
+                setIsLoading(false);
+            }
         };
-    }, [companyId]);
+
+        // Démarrer le chargement
+        loadAllData();
+
+        // Gestion du rechargement de page
+        const handleBeforeUnload = () => {
+            if (!isLoading) setIsLoading(true);
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Nettoyage
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            // Ajoutez ici les unsubscribes si nécessaire
+        };
+    }, [companyId, currentUser]); // Dépendances
 
 
     const handleSocieteBlur = () => {
@@ -390,7 +454,10 @@ const Mentafact = () => {
                 return <div>Sélectionnez une section</div>;
         }
     };
-
+    // Ajoutez cette vérification au début du return
+    if (isLoading || !initialLoadComplete) {
+        return <Preloader />;
+    }
     return (
         <div className="dashboard-layout">
             {/* Sidebar */}
