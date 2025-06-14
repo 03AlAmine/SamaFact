@@ -19,6 +19,7 @@ const AuthForm = ({ type }) => {
     const [isAdminVerified, setIsAdminVerified] = useState(false);
     const { login, signup } = useAuth();
     const navigate = useNavigate();
+    // eslint-disable-next-line no-unused-vars
     const location = useLocation();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
     const [showSuccess, setShowSuccess] = useState(false);
