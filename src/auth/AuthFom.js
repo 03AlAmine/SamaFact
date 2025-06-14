@@ -21,7 +21,7 @@ const AuthForm = ({ type }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
-    const [isLoadingComplete, setIsLoadingComplete] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
@@ -40,6 +40,7 @@ const AuthForm = ({ type }) => {
     async function handleSubmit(e, formType) {
         e.preventDefault();
 
+        // Validation pour l'inscription
         if (formType === 'register') {
             if (password !== passwordConfirm) {
                 return setError("Les mots de passe ne correspondent pas");
@@ -52,36 +53,43 @@ const AuthForm = ({ type }) => {
         try {
             setError('');
             setLoading(true);
-            setIsLoadingComplete(false); // Active le préloader
 
             if (formType === 'login') {
                 await login(email, password);
+                setShowSuccess(true);
 
-                // Ici on attend un court délai pour le préloader
+                // Afficher le message de succès pendant 1.5 secondes avant la redirection
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
-                // Force le rechargement de la page après la connexion
-                window.location.href = '/';
+                // Redirection avec rechargement complet
+                window.location.assign('/');
             } else {
                 await signup(email, password, companyName, userName);
+                setShowSuccess(true);
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 navigate('/profile');
             }
         } catch (err) {
-            setIsLoadingComplete(true); // Désactive le préloader en cas d'erreur
+            setLoading(false);
+            setShowSuccess(false);
+
             if (formType === 'login') {
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                    setError("Email ou mot de passe incorrect");
-                } else {
-                    setError("Échec de la connexion. Vérifiez vos identifiants");
+                switch (err.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        setError("Identifiants incorrects");
+                        break;
+                    case 'auth/too-many-requests':
+                        setError("Trop de tentatives. Réessayez plus tard");
+                        break;
+                    default:
+                        setError("Erreur de connexion");
                 }
             } else {
-                setError(err.message || "Une erreur est survenue lors de l'inscription");
+                setError(err.message || "Erreur d'inscription");
             }
-        } finally {
-            setLoading(false);
         }
     }
-
 
     const renderRegisterForm = () => {
         if (type === 'register' && !isAdminVerified) {
@@ -173,82 +181,88 @@ const AuthForm = ({ type }) => {
 
     return (
         <>
-            {!isLoadingComplete && loading && <Preloader />}
-            <div className={`auth-container ${activeForm}`}>
-                <div className="auth-form-box auth-login">
-                    <form className="form-auth" onSubmit={(e) => handleSubmit(e, 'login')}>
-                        {error && <div className="auth-error">{error}</div>}
+            {showSuccess ? (
+                <Preloader
+                    message="Connexion réussie! Redirection..."
+                    onComplete={() => { }}
+                />
+            ) : (
+                <div className={`auth-container ${activeForm}`}>
+                    <div className="auth-form-box auth-login">
+                        <form className="form-auth" onSubmit={(e) => handleSubmit(e, 'login')}>
+                            {error && <div className="auth-error">{error}</div>}
 
-                        <h1>Connexion</h1>
-                        <div className="auth-input-box">
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Email"
-                                required
-                            />
-                            <FaEnvelope className="auth-icon" />
-                        </div>
-                        <div className="auth-input-box">
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Mot de passe"
-                                required
-                            />
-                            <FaLock className="auth-icon" />
-                        </div>
-                        <div className="auth-forgot-link">
-                            <Link to="/forgot-password">Mot de passe oublié?</Link>
-                        </div>
-                        <button disabled={loading} type="submit" className="auth-btn">
-                            {loading ? 'Connexion en cours...' : 'Se connecter'}
-                        </button>
-                        <p>ou connectez-vous avec</p>
-                        <div className="auth-social-icons">
-                            <a href="#"><FaGoogle /></a>
-                            <a href="#"><FaFacebook /></a>
-                            <a href="#"><FaGithub /></a>
-                            <a href="#"><FaLinkedin /></a>
-                        </div>
-                    </form>
-                </div>
-
-                <div className="auth-form-box auth-register">
-                    {type === 'register' ? renderRegisterForm() : renderInfoPanel()}
-                </div>
-
-                <div className="auth-toggle-box">
-                    <div className="auth-toggle-panel auth-toggle-left">
-                        <img src={logo} alt="Logo" className="auth-logo" />
-                        <h1 className="auth-welcome-title">
-                            Bienvenue sur<br />
-                            <span className="h1-span">Ment@Fact</span>
-                        </h1>
-
-                        <p>Vous n'avez pas encore de compte ?</p>
-                        <button className="auth-btn auth-register-btn" onClick={toggleForm}>
-                            Plus d'informations
-                        </button>
+                            <h1>Connexion</h1>
+                            <div className="auth-input-box">
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Email"
+                                    required
+                                />
+                                <FaEnvelope className="auth-icon" />
+                            </div>
+                            <div className="auth-input-box">
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Mot de passe"
+                                    required
+                                />
+                                <FaLock className="auth-icon" />
+                            </div>
+                            <div className="auth-forgot-link">
+                                <Link to="/forgot-password">Mot de passe oublié?</Link>
+                            </div>
+                            <button disabled={loading} type="submit" className="auth-btn">
+                                {loading ? 'Connexion en cours...' : 'Se connecter'}
+                            </button>
+                            <p>ou connectez-vous avec</p>
+                            <div className="auth-social-icons">
+                                <a href="#"><FaGoogle /></a>
+                                <a href="#"><FaFacebook /></a>
+                                <a href="#"><FaGithub /></a>
+                                <a href="#"><FaLinkedin /></a>
+                            </div>
+                        </form>
                     </div>
 
-                    <div className="auth-toggle-panel auth-toggle-right">
-                        <img src={logo} alt="Logo" className="auth-logo" />
+                    <div className="auth-form-box auth-register">
+                        {type === 'register' ? renderRegisterForm() : renderInfoPanel()}
+                    </div>
 
-                        <h1>Content de vous revoir ! <br />
-                            <span className="h1-span">Ment@Fact</span>
-                        </h1>
-                        <p>Vous avez déjà un compte ?</p>
-                        <button className="auth-btn auth-login-btn" onClick={toggleForm}>
-                            Se connecter
-                        </button>
+                    <div className="auth-toggle-box">
+                        <div className="auth-toggle-panel auth-toggle-left">
+                            <img src={logo} alt="Logo" className="auth-logo" />
+                            <h1 className="auth-welcome-title">
+                                Bienvenue sur<br />
+                                <span className="h1-span">Ment@Fact</span>
+                            </h1>
+
+                            <p>Vous n'avez pas encore de compte ?</p>
+                            <button className="auth-btn auth-register-btn" onClick={toggleForm}>
+                                Plus d'informations
+                            </button>
+                        </div>
+
+                        <div className="auth-toggle-panel auth-toggle-right">
+                            <img src={logo} alt="Logo" className="auth-logo" />
+
+                            <h1>Content de vous revoir ! <br />
+                                <span className="h1-span">Ment@Fact</span>
+                            </h1>
+                            <p>Vous avez déjà un compte ?</p>
+                            <button className="auth-btn auth-login-btn" onClick={toggleForm}>
+                                Se connecter
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
         </>
     );
-};
+}
 
 export default AuthForm;
