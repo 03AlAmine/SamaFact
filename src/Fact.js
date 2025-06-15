@@ -55,6 +55,9 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
             <Text>
               <Text style={{ fontWeight: 'bold' }}>Date:</Text> {new Date(data.facture.Date[0]).toLocaleDateString('fr-FR')}
             </Text>
+            <Text>
+              <Text style={{ fontWeight: 'bold' }}>Echéance:</Text> {new Date(data.facture.DateEcheance[0]).toLocaleDateString('fr-FR')}
+            </Text>
           </View>
         </View>
 
@@ -382,6 +385,21 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                   facture: {
                     ...data.facture,
                     Date: [e.target.value]
+                  }
+                })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="label">Date d'échéance:</label>
+              <input
+                className="input"
+                type="date"
+                value={data.facture.DateEcheance[0]}
+                onChange={(e) => setData({
+                  ...data,
+                  facture: {
+                    ...data.facture,
+                    DateEcheance: [e.target.value]
                   }
                 })}
               />
@@ -799,6 +817,8 @@ const Fact = () => {
       facture: {
         Numéro: [facture.numero || ""],
         Date: [facture.date || new Date().toISOString().split('T')[0]],
+        DateEcheance: [facture.dateEcheance || ""], // Ajouté
+
         Type: [facture.type || "facture"]
       },
       client: {
@@ -819,6 +839,7 @@ const Fact = () => {
     facture: {
       Numéro: ["Chargement..."],
       Date: [new Date().toISOString().split('T')[0]],
+      DateEcheance: [new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]],
       Type: ["facture"]
     },
     client: {
@@ -926,6 +947,7 @@ const Fact = () => {
       const invoiceData = {
         numero: data.facture.Numéro[0],
         date: data.facture.Date[0],
+        dateEcheance: data.facture.DateEcheance?.[0] || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         type: data.facture.Type[0],
         clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
         clientNom: data.client.Nom[0],
