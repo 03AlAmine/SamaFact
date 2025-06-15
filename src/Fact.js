@@ -160,11 +160,12 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
     Designation: "",
     Quantite: "",
     "Prix Unitaire": "",
-    TVA: "20"
+    TVA: "18"
   });
   const [selectedRib, setSelectedRib] = useState("CBAO");
   const [objet, setObjet] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
 
 
   const handleClientChange = (e) => {
@@ -213,10 +214,20 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
     };
 
     const updatedItems = { ...data.items };
-    Object.keys(newItem).forEach(key => {
-      if (!updatedItems[key]) updatedItems[key] = [];
-      updatedItems[key].push(newItem[key]);
-    });
+
+    if (editingIndex !== null) {
+      // Modification d'un article existant
+      Object.keys(newItem).forEach(key => {
+        updatedItems[key][editingIndex] = newItem[key];
+      });
+      setEditingIndex(null);
+    } else {
+      // Ajout d'un nouvel article
+      Object.keys(newItem).forEach(key => {
+        if (!updatedItems[key]) updatedItems[key] = [];
+        updatedItems[key].push(newItem[key]);
+      });
+    }
 
     setData({
       ...data,
@@ -227,8 +238,18 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
       Designation: "",
       Quantite: "",
       "Prix Unitaire": "",
-      TVA: "20"
+      TVA: "18"
     });
+  };
+
+  const editItem = (index) => {
+    setCurrentItem({
+      Designation: data.items.Designation[index],
+      Quantite: data.items.Quantite[index],
+      "Prix Unitaire": data.items["Prix Unitaire"][index],
+      TVA: data.items.TVA[index].replace("%", "")
+    });
+    setEditingIndex(index);
   };
 
   const removeItem = (index) => {
@@ -500,8 +521,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                   }}
                 >
                   <option value="0">0%</option>
-                  <option value="5.5">5.5%</option>
-                  <option value="10">10%</option>
+                  <option value="18">18%</option>
                   <option value="20">20%</option>
                   <option value="custom">Personnalisé...</option>
                 </select>
@@ -515,7 +535,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                 }}></i>
               </div>
 
-              {(currentItem.TVA === '' || !['0', '5.5', '10', '20'].includes(currentItem.TVA)) && (
+              {(currentItem.TVA === '' || !['0', '18', '20'].includes(currentItem.TVA)) && (
                 <input
                   className="input"
                   type="number"
@@ -542,15 +562,31 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               marginLeft: '35%',
             }}
           >
-            <i className="fas fa-plus"></i> Ajouter l'article
+            <i className="fas fa-plus"></i> {editingIndex !== null ? "Modifier l'article" : "Ajouter l'article"}
           </button>
+          {editingIndex !== null && (
+            <button
+              className="button danger-button"
+              onClick={() => {
+                setCurrentItem({
+                  Designation: "",
+                  Quantite: "",
+                  "Prix Unitaire": "",
+                  TVA: "18"
+                });
+                setEditingIndex(null);
+              }}
+              style={{
+                marginTop: '1.5rem',
+                width: '100%',
+                maxWidth: '300px',
+                marginLeft: '1rem',
+              }}
+            >
+              <i className="fas fa-times"></i> Annuler
+            </button>
+          )}
         </div>
-
-
-
-
-
-
         <div className="section">
           <h2>Articles ajoutés</h2>
           {data.items.Designation && data.items.Designation.length > 0 ? (
@@ -580,6 +616,13 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                       <td>{data.items["Prix Total"][index]}FCFA</td>
                       <td>
                         <div className="action-buttons">
+                          <button
+                            className="button warning-button"
+                            onClick={() => editItem(index)}
+                            style={{ marginRight: '0.5rem' }}
+                          >
+                            <i className="fas fa-edit"></i> Modifier
+                          </button>
                           <button
                             className="button danger-button"
                             onClick={() => removeItem(index)}
@@ -922,6 +965,11 @@ const Fact = () => {
     }
   };
   const handleSave = async () => {
+    if (isSaved) {
+      alert("Cette facture est déjà enregistrée. Créez une nouvelle facture si nécessaire.");
+      return;
+    }
+
     if (!data.client.Nom[0] || data.items.Designation.length === 0) {
       alert("Veuillez sélectionner un client et ajouter au moins un article");
       return;

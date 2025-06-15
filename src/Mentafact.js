@@ -23,6 +23,8 @@ import Sidebar from "./pages/Sidebare";
 import logo from './assets/Logo_Mf.png';
 import "./css/Mentafact.css";
 import Preloader from './components/Preloader';
+// Ajout de l'import pour CompanyNameDisplay
+import CompanyNameDisplay from './components/CompanyNameDisplay';
 
 
 // Import clientService (adjust the path as needed)
@@ -478,10 +480,8 @@ const Mentafact = () => {
                 <header className="navbar-premium">
                     <div className="navbar-left">
                         <div className="company-brand">
-                            <FaBuilding className="company-icon" />
-                            <div className="company-details">
-                                <span className="company-name">{currentUser?.companyName || "Mon Entreprise"}</span>
-                                <span className="company-status">Premium</span>
+                            <div className="navbar-left">
+                                <CompanyNameDisplay companyId={companyId} currentUser={currentUser} />
                             </div>
                         </div>
 
