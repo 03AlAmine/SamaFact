@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from './auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import {
     FaFileInvoiceDollar, FaChartLine, FaBell, FaEdit, FaPlus, FaSearch, FaTrash,
     FaEnvelope, FaPhone, FaMapMarkerAlt, FaBuilding, FaChartBar, FaUserCircle,
@@ -13,12 +13,12 @@ import empty from './assets/empty.png';
 import empty_client from './assets/empty_client.png';
 import empty_team from './assets/empty_team.png';
 
-import { clientService } from "./services/clientService";
-import { invoiceService } from "./services/invoiceService";
-import { teamService } from "./services/teamService";
+import { clientService } from "../services/clientService";
+import { invoiceService } from "../services/invoiceService";
+import { teamService } from "../services/teamService";
 import {
     InvoiceChart, ClientChart, StatusChart, MonthlyComparisonChart
-} from './components/Charts';
+} from '../components/Charts';
 
 // Composant DocumentSection réutilisable
 const DocumentSection = ({ title, items, searchTerm, setSearchTerm, navigate, onDelete, selectedClient, type }) => (
