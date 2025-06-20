@@ -26,3 +26,8 @@ jobs:
           server-dir: /home5/adminlys/samafact.leaderinterime.com/  # Ajoutez un slash final
           port: 21
           protocol: ftp
+
+      - name: Debug secrets (ne pas faire en prod)
+        run: |
+          echo "Username: ${{ secrets.FTP_USERNAME }}"
+          echo "Password: [masqué]"
