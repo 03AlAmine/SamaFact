@@ -1,7 +1,7 @@
 name: Deploy to O2Switch
 on:
   push:
-    branches: [master]
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -17,13 +17,12 @@ jobs:
       - name: Build project
         run: npm run build
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.0 # Version spécifique recommandée
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: ftp.leaderinterime.com
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build/
-          server-dir: /home5/adminlys/samafact.leaderinterime.com/samafact
+          server: 'ftp.leaderinterime.com'  # Entre guillemets
+          username: '${{ secrets.FTP_USER }}'  # Nom corrigé
+          password: '${{ secrets.FTP_PASS }}'  # Nom corrigé
+          local-dir: './build/'
+          server-dir: '/home5/adminlys/samafact.leaderinterime.com/samafact'
           port: 21
           protocol: ftp
-          dangerous-clean-slate: true # Nettoie le dossier distant avant déploiement
