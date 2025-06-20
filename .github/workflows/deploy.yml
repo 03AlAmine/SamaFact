@@ -20,9 +20,9 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
           server: 'ftp.leaderinterime.com'  # Entre guillemets
-          username: '${{ secrets.FTP_USERNAME }}'  # Nom exact du secret
-          password: '${{ secrets.FTP_PASSWORD }}'  # Nom exact du secret
-          local-dir: './build/'
-          server-dir: '/home5/adminlys/samafact.leaderinterime.com/'  # Ajoutez un slash final
+          username: ${{ secrets.FTP_USERNAME }}  # Nom exact du secret
+          password: ${{ secrets.FTP_PASSWORD }}  # Nom exact du secret
+          local-dir: ./build/
+          server-dir: /home5/adminlys/samafact.leaderinterime.com/  # Ajoutez un slash final
           port: 21
           protocol: ftp
