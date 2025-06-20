@@ -17,7 +17,7 @@ jobs:
       - name: Build project
         run: npm run build
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0  # Version spécifique recommandée
         with:
           server: ftp.leaderinterime.com  # Serveur FTP fourni par O2Switch
           username: ${{ secrets.FTP_USERNAME }}  # À définir dans les secrets GitHub
