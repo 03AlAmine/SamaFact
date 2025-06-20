@@ -17,12 +17,12 @@ jobs:
       - name: Build project
         run: npm run build
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.0  # Version spécifique recommandée
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: ftp.leaderinterime.com  # Serveur FTP fourni par O2Switch
-          username: ${{ secrets.FTP_USERNAME }}  # À définir dans les secrets GitHub
-          password: ${{ secrets.FTP_PASSWORD }}  # À définir dans les secrets GitHub
-          local-dir: ./build/
-          server-dir: /home5/adminlys/samafact.leaderinterime.com  # Chemin exact fourni par O2Switch
-          port: 21  # Port FTP standard
-          protocol: ftp  # Ou 'ftps' si supporté
+          server: 'ftp.leaderinterime.com'  # Entre guillemets
+          username: '${{ secrets.FTP_USERNAME }}'  # Nom exact du secret
+          password: '${{ secrets.FTP_PASSWORD }}'  # Nom exact du secret
+          local-dir: './build/'
+          server-dir: '/home5/adminlys/samafact.leaderinterime.com/'  # Ajoutez un slash final
+          port: 21
+          protocol: ftp
