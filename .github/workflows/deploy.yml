@@ -23,6 +23,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}  # À définir dans les secrets GitHub
           password: ${{ secrets.FTP_PASSWORD }}  # À définir dans les secrets GitHub
           local-dir: ./build/
-          server-dir: /home5/adminlys/samafact.leaderinterime.com/samafact  # Chemin exact fourni par O2Switch
+          server-dir: /home5/adminlys/samafact.leaderinterime.com  # Chemin exact fourni par O2Switch
           port: 21  # Port FTP standard
           protocol: ftp  # Ou 'ftps' si supporté
