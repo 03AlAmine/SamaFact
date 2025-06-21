@@ -459,7 +459,7 @@ const Mentafact = () => {
     };
     // Ajoutez cette vérification au début du return
     if (isLoading || !initialLoadComplete) {
-        return <Preloader message="Ment@Fact ..." />;
+        return <Preloader message="Sam@Fact ..." />;
     }
     return (
         <div className="dashboard-layout">

@@ -24,8 +24,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
         className="sidebar-header"
         style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
       >
-        <img src={logo} alt="Logo Ment@Fact" style={{ height: '50px' }} />
-        {sidebarOpen && <h2 style={{ margin: 0 }}>Ment@Fact</h2>}
+        <img src={logo} alt="Logo Sam@Fact" style={{ height: '50px' }} />
+          {sidebarOpen && <h2 style={{ margin: 0 }}>SamaFact</h2>}
       </Link>
 
       <nav className="sidebar-nav">

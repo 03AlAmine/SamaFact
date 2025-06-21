@@ -239,7 +239,7 @@ const AuthForm = ({ type }) => {
                             <img src={logo} alt="Logo" className="auth-logo" />
                             <h1 className="auth-welcome-title">
                                 Bienvenue sur<br />
-                                <span className="h1-span">Ment@Fact</span>
+                                <span className="h1-span">SamaFact</span>
                             </h1>
 
                             <p>Vous n'avez pas encore de compte ?</p>
@@ -252,7 +252,7 @@ const AuthForm = ({ type }) => {
                             <img src={logo} alt="Logo" className="auth-logo" />
 
                             <h1>Content de vous revoir ! <br />
-                                <span className="h1-span">Ment@Fact</span>
+                                <span className="h1-span">SamaFact</span>
                             </h1>
                             <p>Vous avez déjà un compte ?</p>
                             <button className="auth-btn auth-login-btn" onClick={toggleForm}>
