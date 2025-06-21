@@ -8,43 +8,50 @@ import {
 } from 'react-icons/fa';
 import empty from '../assets/empty.png';
 
-const DocumentSection = ({ title, items, searchTerm, setSearchTerm, navigate, onDelete, selectedClient, type }) => (
-    <div className="clients-section">
-        <div className="section-header">
-            <h2 className="section-title">
-                <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
-                {title} ({items.length})
-            </h2>
-            <div className="search-box">
-                <FaSearch className="search-icon" />
-                <input
-                    type="text"
-                    placeholder={`Rechercher un ${title.toLowerCase().slice(0, -1)}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-            <div className="invoices-actions">
-                <button
-                    onClick={() => navigate("/bill", { state: { type } })}
-                    className={`create-invoice-btn ${type === "devis" ? "tertiary" : type === "avoir" ? "secondary" : ""}`}
-                >
-                    <FaPlus style={{ marginRight: "8px" }} />
-                    Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
-                </button>
-            </div>
-        </div>
+const DocumentSection = ({ title, items, searchTerm, setSearchTerm, navigate, onDelete, selectedClient, type }) => {
+    // Filtre supplémentaire par recherche
+    const filteredItems = items.filter(item => 
+        item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.clientNom && item.clientNom.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
-        {items.length === 0 ? (
-            <div className="empty-state" style={{ backgroundImage: `url(${empty})` }}>
-                <p>Aucun {title.toLowerCase().slice(0, -1)} trouvé</p>
-                <button onClick={() => navigate("/bill", { state: { type } })} className="primary-btn">
-                    <FaPlus /> Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
-                </button>
+    return (
+        <div className="clients-section">
+            <div className="section-header">
+                <h2 className="section-title">
+                    <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
+                    {title} ({filteredItems.length})
+                </h2>
+                <div className="search-box">
+                    <FaSearch className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder={`Rechercher un ${title.toLowerCase().slice(0, -1)}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="invoices-actions">
+                    <button
+                        onClick={() => navigate("/bill", { state: { type } })}
+                        className={`create-invoice-btn ${type === "devis" ? "tertiary" : type === "avoir" ? "secondary" : ""}`}
+                    >
+                        <FaPlus style={{ marginRight: "8px" }} />
+                        Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
+                    </button>
+                </div>
             </div>
-        ) : (
-            <div className="clients-grid">
-                {items.map((f) => (
+
+            {filteredItems.length === 0 ? (
+                <div className="empty-state" style={{ backgroundImage: `url(${empty})` }}>
+                    <p>Aucun {title.toLowerCase().slice(0, -1)} trouvé</p>
+                    <button onClick={() => navigate("/bill", { state: { type } })} className="primary-btn">
+                        <FaPlus /> Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
+                    </button>
+                </div>
+            ) : (
+                <div className="clients-grid">
+                    {filteredItems.map((f) => (
                     <div key={f.id} className="client-card">
                         <div className="client-header">
                             <div className="client-avatar"><FaFileInvoiceDollar /></div>
@@ -86,5 +93,6 @@ const DocumentSection = ({ title, items, searchTerm, setSearchTerm, navigate, on
         )}
     </div>
 );
+};
 
 export default DocumentSection;
