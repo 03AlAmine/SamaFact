@@ -138,25 +138,25 @@ const ClientsPage = ({
 
                     {/* Formulaire d'ajout... */}
                     <div className="form-row">
+
                         <div className="form-group">
-                            <label htmlFor="nom" className="form-label">Nom <span className="required">*</span></label>
+                            <label htmlFor="societe" className="form-label">Responsable</label>
+                            <input
+                                id="societe"
+                                name="societe"
+                                value={client.societe}
+                                onChange={handleChange}
+                                className="form-input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="nom" className="form-label">Raison sociale <span className="required">*</span></label>
                             <input
                                 id="nom"
                                 name="nom"
                                 value={client.nom}
                                 onChange={handleChange}
                                 required
-                                className="form-input"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="societe" className="form-label">Société</label>
-                            <input
-                                id="societe"
-                                name="societe"
-                                value={client.societe}
-                                onChange={handleChange}
                                 className="form-input"
                             />
                         </div>
@@ -188,7 +188,7 @@ const ClientsPage = ({
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="adresse" className="form-label">Adresse</label>
+                            <label htmlFor="adresse" className="form-label">Adresse <span className="required">*</span></label>
                             <input
                                 id="adresse"
                                 name="adresse"

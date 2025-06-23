@@ -46,9 +46,30 @@ const PERMISSIONS = {
 };
 
 export function AuthProvider({ children }) {
-  // State
-  const [currentUser, setCurrentUser] = useState(null);
+
+    const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Récupère les claims (JWT décodé)
+        const idTokenResult = await user.getIdTokenResult();
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          ...idTokenResult.claims // Ajoute role et companyId
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+  // State
+
 
   // Auth functions
   async function signup(email, password, companyName, userName) {

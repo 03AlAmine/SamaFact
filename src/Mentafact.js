@@ -1,56 +1,49 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from './auth/AuthContext';
-import {
-    FaBell, FaUserCircle, FaCog, FaSignOutAlt,
-    FaChevronDown, FaCreditCard, FaUser, FaSearch, FaChevronRight, FaBuilding
-} from 'react-icons/fa';
-
+import { FaBell, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown, FaCreditCard, FaUser, FaSearch, FaChevronRight } from 'react-icons/fa';
 import { clientService } from "./services/clientService";
 import { invoiceService } from "./services/invoiceService";
 import { teamService } from "./services/teamService";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "./firebase";
 
-// Import des pages
+// Import pages and components
 import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import StatsPage from "./pages/StatsPage";
 import TeamsPage from "./pages/TeamsPage";
 import Sidebar from "./pages/Sidebare";
+import Preloader from './components/Preloader';
+import CompanyNameDisplay from './components/CompanyNameDisplay';
 
 import logo from './assets/Logo_Mf.png';
 import "./css/Mentafact.css";
-import Preloader from './components/Preloader';
-// Ajout de l'import pour CompanyNameDisplay
-import CompanyNameDisplay from './components/CompanyNameDisplay';
-
-
-// Import clientService (adjust the path as needed)
 
 const Mentafact = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
-    const companyId = currentUser?.companyId; // Retrieve companyId from currentUser or adjust as needed
     const [isLoading, setIsLoading] = useState(true);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-    // États
+    const [companyId, setCompanyId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("dashboard");
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab_0, setActiveTab_0] = useState("factures");
+    // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
 
-    // États clients
+    // States for data
     const [client, setClient] = useState({ nom: "", adresse: "", email: "", telephone: "", societe: "", type: "client", anciensNoms: [] });
     const [clients, setClients] = useState([]);
     const [selectedClient, setSelectedClient] = useState(null);
     const [editingClient, setEditingClient] = useState(null);
+    // eslint-disable-next-line no-unused-vars
     const [isEditing, setIsEditing] = useState(false);
     const [societeInput, setSocieteInput] = useState("");
 
-    // États documents
     const [allFactures, setAllFactures] = useState([]);
     const [clientFactures, setClientFactures] = useState([]);
     const [allDevis, setAllDevis] = useState([]);
@@ -58,107 +51,114 @@ const Mentafact = () => {
     const [allAvoirs, setAllAvoirs] = useState([]);
     const [clientAvoirs, setClientAvoirs] = useState([]);
 
-    // États équipes
     const [equipe, setEquipe] = useState({ nom: "", description: "", responsable: "" });
     const [equipes, setEquipes] = useState([]);
     const [editingEquipe, setEditingEquipe] = useState(null);
     const [isEditingEquipe, setIsEditingEquipe] = useState(false);
 
-    // Statistiques
     const [stats, setStats] = useState({
-        totalClients: 0, totalFactures: 0, revenusMensuels: 0,
-        facturesImpayees: 0, totalEquipes: 0
+        totalClients: 0,
+        totalFactures: 0,
+        revenusMensuels: 0,
+        facturesImpayees: 0,
+        totalEquipes: 0
     });
 
     useEffect(() => {
-        // Fonction pour charger toutes les données
+        const fetchCompanyId = async () => {
+            if (!currentUser) return;
+
+            try {
+                let companyIdToSet = currentUser.companyId;
+
+                if (!companyIdToSet) {
+                    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                    if (userDoc.exists()) {
+                        companyIdToSet = userDoc.data().companyId;
+                    } else {
+                        throw new Error("Profil utilisateur incomplet");
+                    }
+                }
+
+                setCompanyId(companyIdToSet);
+                return companyIdToSet;
+            } catch (error) {
+                console.error("Error fetching companyId:", error);
+                setError("Erreur de chargement des informations de l'entreprise");
+                return null;
+            }
+        };
+
         const loadAllData = async () => {
             setIsLoading(true);
             setError(null);
 
             try {
-                if (!companyId) {
-                    throw new Error("ID d'entreprise non disponible");
-                }
+                const resolvedCompanyId = await fetchCompanyId();
+                if (!resolvedCompanyId) return;
 
-                // Chargement en parallèle pour meilleure performance
+                // Unified data loader
+                const loadServiceData = async (service, ...args) => {
+                    try {
+                        if (typeof service === 'function') {
+                            if (service === teamService.getTeams) {
+                                return await service(resolvedCompanyId);
+                            }
+                            return await new Promise((resolve) => {
+                                const unsubscribe = service(resolvedCompanyId, resolve, ...args);
+                                return () => unsubscribe?.();
+                            });
+                        }
+                        return [];
+                    } catch (error) {
+                        console.error(`Error loading ${service.name}:`, error);
+                        return [];
+                    }
+                };
+
                 const [clientsData, invoicesData, devisData, avoirsData, equipesData] = await Promise.all([
-                    // Clients
-                    new Promise((resolve) => {
-                        const unsubscribe = clientService.getClients(companyId, (data) => {
-                            resolve(data);
-                        });
-                        return () => unsubscribe();
-                    }),
-
-                    // Factures
-                    new Promise((resolve) => {
-                        const unsubscribe = invoiceService.getInvoices(companyId, (data) => {
-                            resolve(data);
-                        }, "facture");
-                        return () => unsubscribe();
-                    }),
-
-                    // Devis
-                    new Promise((resolve) => {
-                        const unsubscribe = invoiceService.getInvoices(companyId, (data) => {
-                            resolve(data);
-                        }, "devis");
-                        return () => unsubscribe();
-                    }),
-
-                    // Avoirs
-                    new Promise((resolve) => {
-                        const unsubscribe = invoiceService.getInvoices(companyId, (data) => {
-                            resolve(data);
-                        }, "avoir");
-                        return () => unsubscribe();
-                    }),
-
-                    // Équipes
-                    teamService.getTeams(companyId)
+                    loadServiceData(clientService.getClients),
+                    loadServiceData(invoiceService.getInvoices, "facture"),
+                    loadServiceData(invoiceService.getInvoices, "devis"),
+                    loadServiceData(invoiceService.getInvoices, "avoir"),
+                    loadServiceData(teamService.getTeams)
                 ]);
 
-                // Mise à jour des états
-                setClients(clientsData);
-                setAllFactures(invoicesData);
-                setAllDevis(devisData);
-                setAllAvoirs(avoirsData);
-                setEquipes(equipesData);
+                // Validate and set data
+                setClients(Array.isArray(clientsData) ? clientsData : []);
+                setAllFactures(Array.isArray(invoicesData) ? invoicesData : []);
+                setAllDevis(Array.isArray(devisData) ? devisData : []);
+                setAllAvoirs(Array.isArray(avoirsData) ? avoirsData : []);
+                setEquipes(Array.isArray(equipesData) ? equipesData : []);
 
-                // Calcul des stats
+                // Calculate stats
+                const now = new Date();
                 setStats({
-                    totalClients: clientsData.length,
-                    totalFactures: invoicesData.length,
-                    revenusMensuels: invoicesData
-                        .filter(f => new Date(f.date).getMonth() === new Date().getMonth())
-                        .reduce((sum, f) => sum + parseFloat(f.totalTTC || 0), 0),
-                    facturesImpayees: invoicesData.filter(f => f.statut === "en attente").length,
-                    totalEquipes: equipesData.length
+                    totalClients: clientsData?.length || 0,
+                    totalFactures: invoicesData?.length || 0,
+                    revenusMensuels: (invoicesData || [])
+                        .filter(f => f?.date && new Date(f.date).getMonth() === now.getMonth())
+                        .reduce((sum, f) => sum + (parseFloat(f?.totalTTC) || 0), 0),
+                    facturesImpayees: (invoicesData || []).filter(f => f?.statut === "en attente").length,
+                    totalEquipes: equipesData?.length || 0
                 });
 
             } catch (err) {
-                console.error("Erreur de chargement:", err);
-                setError(err.message || "Erreur lors du chargement des données");
+                console.error("Critical error:", {
+                    message: err.message,
+                    stack: err.stack,
+                    user: currentUser?.uid
+                });
+                setError(err.message.includes("permissions")
+                    ? "Accès refusé - Droits insuffisants"
+                    : "Erreur de chargement des données");
             } finally {
-                // Délai minimum pour éviter le flash (1 seconde max)
-                const minLoadingTime = 1000;
-                const loadingStartTime = Date.now();
-
-                const remainingTime = minLoadingTime - (Date.now() - loadingStartTime);
-
-                if (remainingTime > 0) {
-                    await new Promise(resolve => setTimeout(resolve, remainingTime));
-                }
-
                 setInitialLoadComplete(true);
                 setIsLoading(false);
             }
         };
 
-        // Démarrer le chargement
         loadAllData();
-
         // Gestion du rechargement de page
         const handleBeforeUnload = () => {
             if (!isLoading) setIsLoading(true);
@@ -166,12 +166,11 @@ const Mentafact = () => {
 
         window.addEventListener('beforeunload', handleBeforeUnload);
 
-        // Nettoyage
+
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            // Ajoutez ici les unsubscribes si nécessaire
         };
-    }, [companyId, currentUser]); // Dépendances
+    }, [currentUser]);
 
 
     const handleSocieteBlur = () => {
@@ -337,9 +336,9 @@ const Mentafact = () => {
         navigate("/bill", { state: { client: selectedClient } });
     };
 
-    const getLastThreeInvoices = () => [...allFactures]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 3);
+    /*  const getLastThreeInvoices = () => [...allFactures]
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 3); */
 
     // Filtres
     const filteredClients = clients.filter(client =>

@@ -18,7 +18,7 @@ const PasswordGate = ({ onSuccess }) => {
     // Simulation de délai pour l'UX
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (password === process.env.REACT_APP_REGISTER_SECRET) {
+    if (password === process.env.REACT_APP_ADMIN_SECRET) {
       onSuccess();
       navigate(location.pathname, { replace: true });
     } else {
