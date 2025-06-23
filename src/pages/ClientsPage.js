@@ -115,6 +115,7 @@ const ClientsPage = ({
                             >
                                 <option value="client">Client</option>
                                 <option value="prospect">Prospect</option>
+                                <option value="fournisseur">Fournisseur</option>
                             </select>
                         </div>
                     </div>
@@ -208,6 +209,8 @@ const ClientsPage = ({
                             >
                                 <option value="client">Client</option>
                                 <option value="prospect">Prospect</option>
+                                <option value="fournisseur">Fournisseur</option>
+
                             </select>
                         </div>
                     </div>
@@ -259,7 +262,7 @@ const ClientsPage = ({
                                 onClick={() => loadClientInvoices(c.id)}
                             >
                                 <div className="client-type-badge">
-                                    {c.type === "client" ? "Client" : "Prospect"}
+                                    {c.type === "client" ? "Client" : c.type === "prospect" ? "Prospect" : "Fournisseur"}
                                 </div>
 
                                 <div className="client-header">

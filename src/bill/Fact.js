@@ -810,53 +810,80 @@ const Fact = () => {
   });
 
   // Chargement initial des données
-  useEffect(() => {
+useEffect(() => {
     const initializeData = async () => {
-      const documentType = location.state?.type || "facture";
+        const documentType = location.state?.type || "facture";
+        const isDuplicate = location.state?.isDuplicate || false;
 
-      if (location.state && location.state.facture) {
-        setData(transformFactureData(location.state.facture));
-        setLoadingData(false);
-        return;
-      }
-
-      const initialClient = location.state?.client
-        ? {
-          Nom: [location.state.client.nom || ""],
-          Adresse: [location.state.client.adresse || ""]
+        if (location.state && location.state.facture && !isDuplicate) {
+            setData(transformFactureData(location.state.facture));
+            setLoadingData(false);
+            return;
         }
-        : { Nom: [], Adresse: [] };
 
-      try {
-        const invoiceNumber = await generateInvoiceNumber(new Date(), documentType);
-        setData(prev => ({
-          ...prev,
-          facture: {
-            ...prev.facture,
-            Numéro: [invoiceNumber],
-            Type: [documentType]
-          },
-          client: initialClient
-        }));
-      } catch (error) {
-        console.error("Erreur initialisation:", error);
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        setData(prev => ({
-          ...prev,
-          facture: {
-            ...prev.facture,
-            Numéro: [`F-${year}${month}-TEMP`]
-          }
-        }));
-      } finally {
-        setLoadingData(false);
-      }
+        const initialClient = location.state?.client
+            ? {
+                Nom: [location.state.client.nom || ""],
+                Adresse: [location.state.client.adresse || ""]
+            }
+            : { Nom: [], Adresse: [] };
+
+        try {
+            let invoiceNumber;
+            let factureData = {};
+
+            if (isDuplicate && location.state?.facture) {
+                // Pour une duplication, générer un nouveau numéro mais conserver le type
+                invoiceNumber = await generateInvoiceNumber(
+                    new Date(), 
+                    location.state.facture.type || documentType
+                );
+                
+                // Transformer les données du document original
+                factureData = transformFactureData(location.state.facture);
+                
+                // Mettre à jour le numéro et la date
+                factureData.facture.Numéro = [invoiceNumber];
+                factureData.facture.Date = [new Date().toISOString().split('T')[0]];
+                
+                // Mettre à jour la date d'échéance (7 jours plus tard)
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 7);
+                factureData.facture.DateEcheance = [dueDate.toISOString().split('T')[0]];
+            } else {
+                // Nouveau document
+                invoiceNumber = await generateInvoiceNumber(new Date(), documentType);
+                factureData = {
+                    ...data,
+                    facture: {
+                        ...data.facture,
+                        Numéro: [invoiceNumber],
+                        Type: [documentType]
+                    },
+                    client: initialClient
+                };
+            }
+
+            setData(factureData);
+        } catch (error) {
+            console.error("Erreur initialisation:", error);
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            setData(prev => ({
+                ...prev,
+                facture: {
+                    ...prev.facture,
+                    Numéro: [`F-${year}${month}-TEMP`]
+                }
+            }));
+        } finally {
+            setLoadingData(false);
+        }
     };
 
     initializeData();
-  }, [location.state, currentUser?.companyId, generateInvoiceNumber]);
+}, [location.state, currentUser?.companyId, generateInvoiceNumber]);
 
   // Chargement des clients
   useEffect(() => {

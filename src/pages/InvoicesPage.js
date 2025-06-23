@@ -84,6 +84,46 @@ const InvoicesPage = ({
             });
         }
     };
+    const handleViewDocument = (document) => {
+        // Logique pour afficher le document (peut-être une modale ou une page dédiée)
+        console.log("Voir document:", document);
+    };
+
+    const handleDownloadDocument = (document) => {
+        // Logique pour télécharger le document (génération PDF par exemple)
+        console.log("Télécharger document:", document);
+    };
+
+const handleDuplicateDocument = (document) => {
+    // Créer une nouvelle date pour la facture dupliquée
+    const today = new Date();
+    const newDate = today.toISOString().split('T')[0];
+    
+    // Créer une nouvelle date d'échéance (7 jours plus tard)
+    const dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + 7);
+    const newDueDate = dueDate.toISOString().split('T')[0];
+
+    // Créer une copie du document avec les nouvelles dates
+    const duplicatedDocument = {
+        ...document,
+        date: newDate,
+        dateEcheance: newDueDate,
+        // Le numéro sera généré automatiquement dans le composant Fact
+        numero: 'AUTO' // Ceci sera remplacé par le vrai numéro généré
+    };
+
+    navigate("/bill", { 
+        state: { 
+            facture: duplicatedDocument, 
+            isDuplicate: true,
+            client: {
+                nom: document.clientNom,
+                adresse: document.clientAdresse
+            }
+        } 
+    });
+};
 
     return (
         <>
@@ -157,6 +197,9 @@ const InvoicesPage = ({
                     onDelete={handleDeleteFacture}
                     selectedClient={selectedClient}
                     type="facture"
+                    onView={handleViewDocument}
+                    onDownload={handleDownloadDocument}
+                    onDuplicate={handleDuplicateDocument}
                 />
             )}
             {activeTab_0 === "devis" && (
@@ -169,6 +212,9 @@ const InvoicesPage = ({
                     onDelete={handleDeleteFacture}
                     selectedClient={selectedClient}
                     type="devis"
+                    onView={handleViewDocument}
+                    onDownload={handleDownloadDocument}
+                    onDuplicate={handleDuplicateDocument}
                 />
             )}
             {activeTab_0 === "avoirs" && (
@@ -181,6 +227,9 @@ const InvoicesPage = ({
                     onDelete={handleDeleteFacture}
                     selectedClient={selectedClient}
                     type="avoir"
+                    onView={handleViewDocument}
+                    onDownload={handleDownloadDocument}
+                    onDuplicate={handleDuplicateDocument}
                 />
             )}
         </>

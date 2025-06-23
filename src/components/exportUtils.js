@@ -17,11 +17,14 @@ export const exportToExcel = (data, fileName, dateRange) => {
 
   // Préparer les données pour Excel
   const excelData = filteredData.map(item => ({
+    'Type': item.type === 'facture' ? 'Facture' : item.type === 'devis' ? 'Devis' : 'Avoir',
     'Numéro': item.numero,
     'Client': item.clientNom || 'N/A',
     'Date': item.date,
+    'objet': item.objet,
+    'Montant HT (FCFA)': item.totalHT,
+    'TVA (FCFA)': item.totalTVA,
     'Montant TTC (FCFA)': item.totalTTC,
-    'Type': item.type === 'facture' ? 'Facture' : item.type === 'devis' ? 'Devis' : 'Avoir'
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -48,12 +51,12 @@ export const exportToPDF = (data, fileName, dateRange) => {
   const doc = new jsPDF({
     orientation: 'landscape'
   });
-  
+
   // Titre
   doc.setFontSize(16);
   doc.setTextColor(40, 40, 40);
   doc.text(`Liste des documents (${fileName})`, 14, 15);
-  
+
   // Sous-titre avec dates si filtre appliqué
   if (dateRange && dateRange.from && dateRange.to) {
     doc.setFontSize(10);
@@ -63,16 +66,18 @@ export const exportToPDF = (data, fileName, dateRange) => {
 
   // Préparer les données pour le tableau
   const tableData = filteredData.map(item => [
+    capitalizeFirstLetter(item.type),
     item.numero,
     item.clientNom || 'N/A',
     formatDate(item.date),
-    `${formatCurrency(item.totalTTC)} FCFA`,
-    capitalizeFirstLetter(item.type)
+    formatCurrency(item.totalHT),
+    formatCurrency(item.totalTVA),
+    `${formatCurrency(item.totalTTC)} FCFA`
   ]);
 
   // Générer le tableau
   autoTable(doc, {
-    head: [['Numéro', 'Client', 'Date', 'Montant', 'Type']],
+    head: [['Type', 'Numéro', 'Client', 'Date', 'Montant HT', 'TVA (FCFA)', 'Montant TTC']],
     body: tableData,
     startY: 25,
     margin: { horizontal: 10 },
@@ -110,7 +115,7 @@ export const exportToPDF = (data, fileName, dateRange) => {
     }
   });
 
-  doc.save(`${fileName}_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`${fileName}_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
 // Fonctions utilitaires

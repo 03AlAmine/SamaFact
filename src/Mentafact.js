@@ -6,7 +6,7 @@ import { FaBell, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown, FaCreditCard,
 import { clientService } from "./services/clientService";
 import { invoiceService } from "./services/invoiceService";
 import { teamService } from "./services/teamService";
-import { getDoc, doc } from "firebase/firestore";
+import { getDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 // Import pages and components
@@ -212,18 +212,43 @@ const Mentafact = () => {
         }
     };
 
-    const handleDelete = async (clientId) => {
-        if (window.confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) {
-            const result = await clientService.deleteClient(clientId);
-            if (result.success) {
-                alert(result.message);
-                if (selectedClient?.id === clientId) {
-                    setSelectedClient(null);
-                    setClientFactures([]);
-                }
-            } else {
-                alert(result.message);
+    const handleDeleteClient = async (clientId) => {
+        if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) {
+            return false;
+        }
+
+        try {
+            // 1. Suppression dans Firestore
+            await deleteDoc(doc(db, `companies/${currentUser.companyId}/clients`, clientId));
+
+            // 2. Mise à jour de tous les états concernés
+            setClients(prev => prev.filter(client => client.id !== clientId));
+
+            // 3. Réinitialiser le client sélectionné si c'est celui supprimé
+            if (selectedClient?.id === clientId) {
+                setSelectedClient(null);
+                setClientFactures([]);
+                setClientDevis([]);
+                setClientAvoirs([]);
             }
+
+            // 4. Feedback utilisateur
+            alert("Client supprimé avec succès");
+            return true;
+
+        } catch (error) {
+            console.error("Erreur suppression client:", error);
+
+            // Gestion d'erreur plus détaillée
+            let errorMessage = "Échec de la suppression du client";
+            if (error.code === "permission-denied") {
+                errorMessage = "Vous n'avez pas les droits pour supprimer ce client";
+            } else if (error.code === "not-found") {
+                errorMessage = "Client déjà supprimé ou introuvable";
+            }
+
+            alert(errorMessage);
+            return false;
         }
     };
 
@@ -304,28 +329,21 @@ const Mentafact = () => {
 
     // Handlers factures
 
-
-    const handleDeleteFacture = async (factureId, type = "facture") => {
+    const handleDeleteFacture = async (docId, type) => {
         if (window.confirm(`Êtes-vous sûr de vouloir supprimer ce ${type} ?`)) {
-            try {
-                await invoiceService.deleteInvoice(factureId);
-                alert(`${type.charAt(0).toUpperCase() + type.slice(1)} supprimé(e) avec succès !`);
 
-                if (type === "facture") {
-                    setAllFactures(allFactures.filter(f => f.id !== factureId));
-                    setClientFactures(clientFactures.filter(f => f.id !== factureId));
-                } else if (type === "devis") {
-                    setAllDevis(allDevis.filter(d => d.id !== factureId));
-                    setClientDevis(clientDevis.filter(d => d.id !== factureId));
-                } else if (type === "avoir") {
-                    setAllAvoirs(allAvoirs.filter(a => a.id !== factureId));
-                    setClientAvoirs(clientAvoirs.filter(a => a.id !== factureId));
-                }
+            try {
+                await deleteDoc(doc(db, `companies/${currentUser.companyId}/factures`, docId));
+                setAllFactures(prev => prev.filter(doc => doc.id !== docId));
+                alert(`${type} supprimé avec succès`);
+                return true;
             } catch (error) {
-                console.error("Erreur:", error);
-                alert(`Erreur lors de la suppression du ${type}.`);
+                console.error("Erreur suppression:", error);
+                alert("Échec de la suppression");
+                return false;
             }
-        }
+        };
+
     };
 
     const handleCreateInvoice = () => {
@@ -403,7 +421,7 @@ const Mentafact = () => {
                     selectedClient={selectedClient}
                     loadClientInvoices={loadClientInvoices}
                     handleEdit={handleEdit}
-                    handleDelete={handleDelete}
+                    handleDelete={handleDeleteClient}
                     client={client}
                     handleChange={handleChange}
                     handleSubmit={handleSubmit}
