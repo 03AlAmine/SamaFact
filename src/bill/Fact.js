@@ -7,6 +7,7 @@ import '../css/Fact.css';
 import Sidebar from "../Sidebar";
 import { useAuth } from '../auth/AuthContext';
 import InvoicePDF from './InvoicePDF';
+import DynamicPDFViewer from '../components/DynamicPDFViewer';
 
 
 
@@ -156,6 +157,57 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
   useEffect(() => {
     calculateTotals();
   }, [data.items, calculateTotals]);
+  const [duplicateItem, setDuplicateItem] = useState({
+    index: null,
+    count: 1,
+    showModal: false
+  });
+  const openDuplicateModal = (index) => {
+    setDuplicateItem({
+      index,
+      count: 1,
+      showModal: true
+    });
+  };
+
+  const closeDuplicateModal = () => {
+    setDuplicateItem({
+      index: null,
+      count: 1,
+      showModal: false
+    });
+  };
+
+  const handleDuplicateCountChange = (e) => {
+    const count = parseInt(e.target.value) || 1;
+    setDuplicateItem(prev => ({
+      ...prev,
+      count: Math.max(1, count) // Minimum 1
+    }));
+  };
+
+  const confirmDuplicateItem = () => {
+    if (duplicateItem.index === null) return;
+
+    const itemIndex = duplicateItem.index;
+    const updatedItems = { ...data.items };
+
+    // Dupliquer l'article le nombre de fois spécifié
+    for (let i = 0; i < duplicateItem.count; i++) {
+      Object.keys(updatedItems).forEach(key => {
+        if (Array.isArray(updatedItems[key])) {
+          updatedItems[key].push(updatedItems[key][itemIndex]);
+        }
+      });
+    }
+
+    setData({
+      ...data,
+      items: updatedItems
+    });
+
+    closeDuplicateModal();
+  };
 
   return (
     <div className="dashboard-layoute">
@@ -365,7 +417,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                 name="Prix Unitaire"
                 value={currentItem["Prix Unitaire"]}
                 onChange={handleItemChange}
-                placeholder="0,00"
+                placeholder="0 "
               />
             </div>
 
@@ -482,8 +534,8 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                       <td>{data.items.Quantite[index]}</td>
                       <td>{data.items["Prix Unitaire"][index]}FCFA</td>
                       <td>{data.items.TVA[index]}</td>
-                      <td>{data.items["Montant HT"]?.[index] || "0,00"}FCFA</td>
-                      <td>{data.items["Montant TVA"]?.[index] || "0,00"}FCFA</td>
+                      <td>{data.items["Montant HT"]?.[index] || "0 "}FCFA</td>
+                      <td>{data.items["Montant TVA"]?.[index] || "0 "}FCFA</td>
                       <td>{data.items["Prix Total"][index]}FCFA</td>
                       <td>
                         <div className="action-buttons">
@@ -493,6 +545,13 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                             style={{ marginRight: '0.5rem' }}
                           >
                             <i className="fas fa-edit"></i> Modifier
+                          </button>
+                          <button
+                            className="button info-button"
+                            onClick={() => openDuplicateModal(index)}
+                            style={{ marginRight: '0.5rem' }}
+                          >
+                            <i className="fas fa-copy"></i> Dupliquer
                           </button>
                           <button
                             className="button danger-button"
@@ -511,15 +570,15 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                 <tbody>
                   <tr>
                     <td>Total HT:</td>
-                    <td>{data.totals?.["Total HT"]?.[0] || "0,00"}FCFA</td>
+                    <td>{data.totals?.["Total HT"]?.[0] || "0 "}FCFA</td>
                   </tr>
                   <tr>
                     <td>Total TVA:</td>
-                    <td>{data.totals?.["Total TVA"]?.[0] || "0,00"}FCFA</td>
+                    <td>{data.totals?.["Total TVA"]?.[0] || "0 "}FCFA</td>
                   </tr>
                   <tr>
                     <td>Total TTC:</td>
-                    <td>{data.totals?.["Total TTC"]?.[0] || "0,00"}FCFA</td>
+                    <td>{data.totals?.["Total TTC"]?.[0] || "0 "}FCFA</td>
                   </tr>
                 </tbody>
               </table>
@@ -574,16 +633,52 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
           </div>
 
           {showPreview && (
-            <PDFViewer
+            <DynamicPDFViewer
               width="100%"
               height="800px"
               style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
             >
               <InvoicePDF data={data} ribType={selectedRib} objet={objet} />
-            </PDFViewer>
+            </DynamicPDFViewer>
           )}
         </div>
       </div>
+      {/* Modal de duplication */}
+      {duplicateItem.showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Dupliquer l'article</h3>
+            <p>Combien de fois voulez-vous dupliquer cet article ?</p>
+
+            <div className="form-group">
+              <label>Nombre de copies:</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={duplicateItem.count}
+                onChange={handleDuplicateCountChange}
+                className="input"
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button
+                onClick={closeDuplicateModal}
+                className="button danger-button"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDuplicateItem}
+                className="button success-button"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -592,7 +687,7 @@ const Fact = () => {
   const { currentUser } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
- const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -679,9 +774,9 @@ const Fact = () => {
       },
       items: items,
       totals: {
-        "Total HT": [facture.totalHT || "0,00"],
-        "Total TVA": [facture.totalTVA || "0,00"],
-        "Total TTC": [facture.totalTTC || "0,00"]
+        "Total HT": [facture.totalHT || "0 "],
+        "Total TVA": [facture.totalTVA || "0 "],
+        "Total TTC": [facture.totalTTC || "0 "]
       }
     };
   };
@@ -708,9 +803,9 @@ const Fact = () => {
       "Prix Total": []
     },
     totals: {
-      "Total HT": ["0,00"],
-      "Total TVA": ["0,00"],
-      "Total TTC": ["0,00"]
+      "Total HT": ["0 "],
+      "Total TVA": ["0 "],
+      "Total TTC": ["0 "]
     }
   });
 
@@ -809,8 +904,8 @@ const Fact = () => {
           quantite: data.items.Quantite[index],
           prixUnitaire: data.items["Prix Unitaire"][index],
           tva: data.items.TVA[index],
-          montantHT: data.items["Montant HT"]?.[index] || "0,00",
-          montantTVA: data.items["Montant TVA"]?.[index] || "0,00",
+          montantHT: data.items["Montant HT"]?.[index] || "0 ",
+          montantTVA: data.items["Montant TVA"]?.[index] || "0 ",
           prixTotal: data.items["Prix Total"][index]
         })),
         totalHT: data.totals["Total HT"][0],

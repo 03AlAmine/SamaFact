@@ -41,7 +41,7 @@
   background: linear-gradient(
     90deg,
     var(--primary-color),
-    var(--success-color)
+    var(--secondary-colore)
   );
   border-radius: 2px;
 }
@@ -79,7 +79,7 @@
   background: linear-gradient(
     to bottom,
     var(--primary-color),
-    var(--success-color)
+    var(--secondary-colore)
   );
   border-radius: 4px;
 }
@@ -344,7 +344,7 @@
 
 .totals-table tr:last-child td {
   font-weight: bold;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  background: linear-gradient(135deg , #97db6338 , #1a864c4f);
   font-size: 1.1rem;
   color: var(--dark-color);
 }
@@ -477,3 +477,33 @@
 .thead-article {
   background: linear-gradient(135deg, #feb47b 0%, #4a6fa5 100%);
 }
+/* Styles pour le modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: var(--radius-sm);
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
