@@ -94,36 +94,36 @@ const InvoicesPage = ({
         console.log("Télécharger document:", document);
     };
 
-const handleDuplicateDocument = (document) => {
-    // Créer une nouvelle date pour la facture dupliquée
-    const today = new Date();
-    const newDate = today.toISOString().split('T')[0];
-    
-    // Créer une nouvelle date d'échéance (7 jours plus tard)
-    const dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + 7);
-    const newDueDate = dueDate.toISOString().split('T')[0];
+    const handleDuplicateDocument = (document) => {
+        // Créer une nouvelle date pour la facture dupliquée
+        const today = new Date();
+        const newDate = today.toISOString().split('T')[0];
 
-    // Créer une copie du document avec les nouvelles dates
-    const duplicatedDocument = {
-        ...document,
-        date: newDate,
-        dateEcheance: newDueDate,
-        // Le numéro sera généré automatiquement dans le composant Fact
-        numero: 'AUTO' // Ceci sera remplacé par le vrai numéro généré
-    };
+        // Créer une nouvelle date d'échéance (7 jours plus tard)
+        const dueDate = new Date(today);
+        dueDate.setDate(dueDate.getDate() + 7);
+        const newDueDate = dueDate.toISOString().split('T')[0];
 
-    navigate("/bill", { 
-        state: { 
-            facture: duplicatedDocument, 
-            isDuplicate: true,
-            client: {
-                nom: document.clientNom,
-                adresse: document.clientAdresse
+        // Créer une copie du document avec les nouvelles dates
+        const duplicatedDocument = {
+            ...document,
+            date: newDate,
+            dateEcheance: newDueDate,
+            // Le numéro sera généré automatiquement dans le composant Fact
+            numero: 'AUTO' // Ceci sera remplacé par le vrai numéro généré
+        };
+
+        navigate("/bill", {
+            state: {
+                facture: duplicatedDocument,
+                isDuplicate: true,
+                client: {
+                    nom: document.clientNom,
+                    adresse: document.clientAdresse
+                }
             }
-        } 
-    });
-};
+        });
+    };
 
     return (
         <>
