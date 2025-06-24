@@ -3,7 +3,7 @@ import { Page, Text, View, Document, Image } from '@react-pdf/renderer';
 import { pdfStyles } from './styles/pdfStyles';
 import n2words from 'n2words';
 
-const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
+const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
   const ribData = {
     CBAO: {
       banque: "CBAO",
@@ -186,7 +186,14 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
             <Text>Ouest Foire rte de l'aéroport</Text>
             <Text>RC:SN 2015 B24288; NINEA: 0057262212 A2</Text>
             <View style={{ marginTop: 5 }}>
-              <Text style={{ fontWeight: 'bold' }}>RIB {ribData[ribType].banque}: {ribData[ribType].rib}</Text>
+              {Array.isArray(ribType) && ribType.map(rib => {
+                const ribInfo = ribData[rib];
+                return ribInfo ? (
+                  <Text key={rib} style={{ fontWeight: 'bold' }}>
+                    RIB {ribInfo.banque}: {ribInfo.rib}
+                  </Text>
+                ) : null;
+              })}
             </View>
             <Text>Téléphone: 338208846 - Email: infos@leaderinterime.com</Text>
           </View>
@@ -286,7 +293,14 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
             <Text>Ouest Foire rte de l'aéroport</Text>
             <Text>RC:SN 2015 B24288; NINEA: 0057262212 A2</Text>
             <View style={{ marginTop: 5 }}>
-              <Text style={{ fontWeight: 'bold' }}>RIB {ribData[ribType].banque}: {ribData[ribType].rib}</Text>
+              {Array.isArray(ribType) && ribType.map(rib => {
+                const ribInfo = ribData[rib];
+                return ribInfo ? (
+                  <Text key={rib} style={{ fontWeight: 'bold' }}>
+                    RIB {ribInfo.banque}: {ribInfo.rib}
+                  </Text>
+                ) : null;
+              })}
             </View>
             <Text>Téléphone: 338208846 - Email: infos@leaderinterime.com</Text>
           </View>

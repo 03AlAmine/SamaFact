@@ -69,6 +69,7 @@ export const exportToPDF = (data, fileName, dateRange) => {
     capitalizeFirstLetter(item.type),
     item.numero,
     item.clientNom || 'N/A',
+    item.objet || 'N/A',
     formatDate(item.date),
     formatCurrency(item.totalHT),
     formatCurrency(item.totalTVA),
@@ -77,7 +78,7 @@ export const exportToPDF = (data, fileName, dateRange) => {
 
   // Générer le tableau
   autoTable(doc, {
-    head: [['Type', 'Numéro', 'Client', 'Date', 'Montant HT', 'TVA (FCFA)', 'Montant TTC']],
+    head: [['Type', 'Numéro', 'Client', 'Objet', 'Date', 'Montant HT', 'TVA (FCFA)', 'Montant TTC']],
     body: tableData,
     startY: 25,
     margin: { horizontal: 10 },

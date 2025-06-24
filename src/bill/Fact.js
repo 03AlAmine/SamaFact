@@ -12,15 +12,13 @@ import DynamicPDFViewer from '../components/DynamicPDFViewer';
 
 
 // Composant InvoiceForm (inchangé)
-const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
+const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber, objet, setObjet, selectedRibs, setSelectedRibs }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "",
     "Prix Unitaire": "",
     TVA: "18"
   });
-  const [selectedRib, setSelectedRib] = useState("CBAO");
-  const [objet, setObjet] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
 
@@ -312,7 +310,6 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
           </div>
         </div>
         <div className="section">
-
           <h2>Type de document</h2>
           <div className="form-group">
             <select
@@ -357,19 +354,42 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                 placeholder="Objet de la facture"
                 className="input"
               />
+
             </div>
             <div className="section" style={{ marginTop: '2rem' }}>
-              <h2>Coordonnées Bancaires</h2>
+              <h2>Banque(s) pour le paiement:</h2>
               <div className="form-group">
-                <label className="label">Banque pour le paiement:</label>
-                <select
-                  value={selectedRib}
-                  onChange={(e) => setSelectedRib(e.target.value)}
-                  className="select"
-                >
-                  <option value="CBAO">CBAO</option>
-                  <option value="BIS">BIS</option>
-                </select>
+<div className="rib-selector">
+  <label className="rib-option">
+    <input
+      type="checkbox"
+      className="rib-checkbox"
+      checked={selectedRibs.includes("CBAO")}
+      onChange={(e) => setSelectedRibs(
+        e.target.checked 
+          ? [...selectedRibs, "CBAO"] 
+          : selectedRibs.filter(rib => rib !== "CBAO")
+      )}
+    />
+    <span className="rib-checkmark"></span>
+    <span className="rib-label">CBAO</span>
+  </label>
+
+  <label className="rib-option">
+    <input
+      type="checkbox"
+      className="rib-checkbox"
+      checked={selectedRibs.includes("BIS")}
+      onChange={(e) => setSelectedRibs(
+        e.target.checked
+          ? [...selectedRibs, "BIS"]
+          : selectedRibs.filter(rib => rib !== "BIS")
+      )}
+    />
+    <span className="rib-checkmark"></span>
+    <span className="rib-label">BIS</span>
+  </label>
+</div>
               </div>
             </div>
           </div>
@@ -614,7 +634,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             {/* Bouton TÉLÉCHARGER */}
             {isSaved ? (
               <PDFDownloadLink
-                document={<InvoicePDF data={data} />}
+                document=<InvoicePDF data={data} ribType={selectedRibs} objet={objet} />
                 fileName={`facture_${data.facture.Numéro[0]}.pdf`}
                 className="button success-button"
               >
@@ -638,7 +658,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               height="800px"
               style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
             >
-              <InvoicePDF data={data} ribType={selectedRib} objet={objet} />
+              <InvoicePDF data={data} ribType={selectedRibs} objet={objet} />
             </DynamicPDFViewer>
           )}
         </div>
@@ -691,9 +711,9 @@ const Fact = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [objet, setObjet] = useState(""); // Ajout de l'état objet
+  const [selectedRibs, setSelectedRibs] = useState(["CBAO"]); // Ajout de l'état selectedRibs
   const location = useLocation();
-
-  // Fonction pour générer le numéro de facture séquentiel
   const generateInvoiceNumber = useCallback(
     async (date = new Date(), type = "facture") => {
       if (!currentUser?.companyId) return `${type}-TEMP`;
@@ -764,8 +784,7 @@ const Fact = () => {
       facture: {
         Numéro: [facture.numero || ""],
         Date: [facture.date || new Date().toISOString().split('T')[0]],
-        DateEcheance: [facture.dateEcheance || ""], // Ajouté
-
+        DateEcheance: [facture.dateEcheance || ""],
         Type: [facture.type || "facture"]
       },
       client: {
@@ -777,7 +796,9 @@ const Fact = () => {
         "Total HT": [facture.totalHT || "0 "],
         "Total TVA": [facture.totalTVA || "0 "],
         "Total TTC": [facture.totalTTC || "0 "]
-      }
+      },
+      objet: facture.objet || "", // Ajoutez cette ligne
+      selectedRibs: facture.ribs || ["CBAO"], // Assurez-vous que c'est un tableau
     };
   };
 
@@ -816,55 +837,48 @@ const Fact = () => {
       const isDuplicate = location.state?.isDuplicate || false;
 
       if (location.state && location.state.facture && !isDuplicate) {
-        setData(transformFactureData(location.state.facture));
+        // Cas de modification
+        const transformedData = transformFactureData(location.state.facture);
+        setData(transformedData);
+        setObjet(location.state.facture.objet || "");
+        setSelectedRibs(location.state.facture.ribs || ["CBAO"]); // Initialise les RIBs
         setLoadingData(false);
         return;
       }
 
-      const initialClient = location.state?.client
-        ? {
-          Nom: [location.state.client.nom || ""],
-          Adresse: [location.state.client.adresse || ""]
-        }
-        : { Nom: [], Adresse: [] };
-
       try {
-        let invoiceNumber;
-        let factureData = {};
+        const invoiceNumber = await generateInvoiceNumber(new Date(), documentType);
 
         if (isDuplicate && location.state?.facture) {
-          // Pour une duplication, générer un nouveau numéro mais conserver le type
-          invoiceNumber = await generateInvoiceNumber(
-            new Date(),
-            location.state.facture.type || documentType
-          );
-
-          // Transformer les données du document original
-          factureData = transformFactureData(location.state.facture);
-
-          // Mettre à jour le numéro et la date
+          // Cas de duplication
+          const factureData = transformFactureData(location.state.facture);
           factureData.facture.Numéro = [invoiceNumber];
           factureData.facture.Date = [new Date().toISOString().split('T')[0]];
 
-          // Mettre à jour la date d'échéance (7 jours plus tard)
+          // Copie aussi les RIBs de la facture originale
+          setSelectedRibs(location.state.facture.ribs || ["CBAO"]);
+
           const dueDate = new Date();
           dueDate.setDate(dueDate.getDate() + 7);
           factureData.facture.DateEcheance = [dueDate.toISOString().split('T')[0]];
-        } else {
-          // Nouveau document
-          invoiceNumber = await generateInvoiceNumber(new Date(), documentType);
-          factureData = {
-            ...data,
-            facture: {
-              ...data.facture,
-              Numéro: [invoiceNumber],
-              Type: [documentType]
-            },
-            client: initialClient
-          };
-        }
 
-        setData(factureData);
+          setData(factureData);
+          setObjet(location.state.facture.objet || "");
+        } else {
+          // Cas de nouvelle facture
+          setData(prev => ({
+            ...prev,
+            facture: {
+              ...prev.facture,
+              Numéro: [invoiceNumber],
+              Type: [documentType],
+              Date: [new Date().toISOString().split('T')[0]],
+              DateEcheance: [new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]
+            }
+          }));
+          setObjet("");
+          setSelectedRibs(["CBAO"]); // Valeur par défaut pour nouvelle facture
+        }
       } catch (error) {
         console.error("Erreur initialisation:", error);
         const now = new Date();
@@ -877,15 +891,14 @@ const Fact = () => {
             Numéro: [`F-${year}${month}-TEMP`]
           }
         }));
+        setSelectedRibs(["CBAO"]); // Valeur par défaut en cas d'erreur
       } finally {
         setLoadingData(false);
       }
     };
 
     initializeData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, currentUser?.companyId, generateInvoiceNumber]);
-
   // Chargement des clients
   useEffect(() => {
     const fetchClients = async () => {
@@ -913,7 +926,7 @@ const Fact = () => {
   }, [currentUser]);
 
   // Sauvegarde de la facture
-  const saveInvoiceToFirestore = async () => {
+  const saveInvoiceToFirestore = async (selectedRibs) => {
     if (!currentUser?.companyId) {
       throw new Error("Company ID not available");
     }
@@ -922,11 +935,12 @@ const Fact = () => {
       const invoiceData = {
         numero: data.facture.Numéro[0],
         date: data.facture.Date[0],
-        dateEcheance: data.facture.DateEcheance?.[0] || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        dateEcheance: data.facture.DateEcheance?.[0],
         type: data.facture.Type[0],
         clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
         clientNom: data.client.Nom[0],
         clientAdresse: data.client.Adresse[0],
+        objet: objet,
         items: data.items.Designation.map((_, index) => ({
           designation: data.items.Designation[index],
           quantite: data.items.Quantite[index],
@@ -939,30 +953,32 @@ const Fact = () => {
         totalHT: data.totals["Total HT"][0],
         totalTVA: data.totals["Total TVA"][0],
         totalTTC: data.totals["Total TTC"][0],
+        ribs: selectedRibs,  // Ajoutez les RIBs sélectionnés
+
         createdAt: new Date().toISOString(),
         statut: "en attente",
         userId: currentUser.uid,
-        companyId: currentUser.companyId
+        companyId: currentUser.companyId,
+        isDuplicate: location.state?.isDuplicate || false, // Ajout d'un flag pour les duplications
       };
 
-      let docId;
-      if (location.state && location.state.facture && location.state.facture.id) {
-        const factureRef = doc(db, `companies/${currentUser.companyId}/factures`, location.state.facture.id);
-        await updateDoc(factureRef, invoiceData);
-        docId = location.state.facture.id;
-      } else {
+      // Toujours créer un nouveau document pour les duplications
+      if (location.state?.isDuplicate || !location.state?.facture?.id) {
         const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
         const docRef = await addDoc(facturesRef, invoiceData);
-        docId = docRef.id;
+        return docRef.id;
+      } else {
+        // Seulement pour les vraies modifications
+        const factureRef = doc(db, `companies/${currentUser.companyId}/factures`, location.state.facture.id);
+        await updateDoc(factureRef, invoiceData);
+        return location.state.facture.id;
       }
-
-      return docId;
     } catch (error) {
       throw error;
     }
   };
   const handleSave = async () => {
-    if (isSaved) {
+    if (isSaved && !location.state?.isDuplicate) {
       alert("Cette facture est déjà enregistrée. Créez une nouvelle facture si nécessaire.");
       return;
     }
@@ -974,9 +990,17 @@ const Fact = () => {
 
     try {
       setIsSaving(true);
-      await saveInvoiceToFirestore();
+      await saveInvoiceToFirestore(selectedRibs);  // Passez selectedRibs à la fonction de sauvegarde
       setIsSaved(true);
-      alert(`${data.facture.Type[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"} ${location.state && location.state.facture ? 'modifié(e)' : 'enregistré(e)'} avec succès !`);
+
+      const documentType = data.facture.Type[0] === "avoir" ? "Avoir" :
+        data.facture.Type[0] === "devis" ? "Devis" : "Facture";
+
+      if (location.state?.isDuplicate) {
+        alert(`${documentType} dupliqué(e) avec succès !`);
+      } else {
+        alert(`${documentType} ${location.state?.facture ? 'modifié(e)' : 'enregistré(e)'} avec succès !`);
+      }
     } catch (error) {
       console.error("Erreur d'enregistrement :", error);
       alert("Erreur lors de l'enregistrement");
@@ -1061,21 +1085,24 @@ const Fact = () => {
   }
 
   return (
-    <div style={{ backgroundColor: 'var(--light-color)', minHeight: '100vh' }}>
-      <InvoiceForm
-        data={data}
-        setData={setData}
-        clients={clients}
-        saveInvoiceToFirestore={saveInvoiceToFirestore}
-        handleSave={handleSave}
-        isSaving={isSaving}
-        isSaved={isSaved}
-        showPreview={showPreview}
-        setShowPreview={setShowPreview}
-        handleDateChange={handleDateChange}
-        generateInvoiceNumber={generateInvoiceNumber}
-      />
-    </div>
+    <InvoiceForm
+      data={data}
+      setData={setData}
+      clients={clients}
+      saveInvoiceToFirestore={saveInvoiceToFirestore}
+      handleSave={handleSave}
+      isSaving={isSaving}
+      isSaved={isSaved}
+      showPreview={showPreview}
+      setShowPreview={setShowPreview}
+      handleDateChange={handleDateChange}
+      generateInvoiceNumber={generateInvoiceNumber}
+      objet={objet}
+      setObjet={setObjet}
+      selectedRibs={selectedRibs}
+      setSelectedRibs={setSelectedRibs}
+    />
+
   );
 };
 

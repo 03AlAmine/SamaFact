@@ -45,7 +45,10 @@ const DocumentSection = ({
         .sort((a, b) => {
             let compareValue;
             if (sortBy === 'numero') {
-                compareValue = a.numero.localeCompare(b.numero);
+                // Utilisez parseInt pour convertir en nombre avant de comparer
+                const numA = parseInt(a.numero.replace(/\D/g, ''));
+                const numB = parseInt(b.numero.replace(/\D/g, ''));
+                compareValue = numA - numB;
             } else if (sortBy === 'clientNom') {
                 compareValue = (a.clientNom || '').localeCompare(b.clientNom || '');
             } else if (sortBy === 'date') {
@@ -55,8 +58,7 @@ const DocumentSection = ({
             }
 
             return sortOrder === 'asc' ? compareValue : -compareValue;
-        });
-
+        })
     const toggleSort = (field) => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
