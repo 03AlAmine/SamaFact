@@ -1,5 +1,5 @@
 import React from "react";
-import { FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone, FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch, FaFileInvoiceDollar } from "react-icons/fa";
+import { FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone, FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch, FaFileInvoiceDollar, FaFileExcel } from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
 
 
@@ -24,8 +24,27 @@ const ClientsPage = ({
     handleSocieteBlur,
     clientFactures,
     handleCreateInvoice,
-    handleDeleteFacture // <-- Add this prop
+    handleDeleteFacture, // <-- Add this prop
+    handleImportClient,   // <-- Fix: Add this prop
+    importProgress,       // <-- Add this prop
+    setImportProgress     // <-- Add this prop
 }) => {
+    const handleFileUpload = (e) => {
+        console.log("Fichier sélectionné:", e.target.files[0]); // Debug
+        if (!e.target.files || e.target.files.length === 0) {
+            console.error("Aucun fichier sélectionné");
+            return;
+        }
+
+        if (handleImportClient) {
+            console.log("Appel de handleImportClient..."); // Debug
+            handleImportClient(e);
+        } else {
+            console.error("handleImportClient n'est pas défini");
+        }
+    };
+
+
     return (
         <>
             {editingClient ? (
@@ -42,7 +61,7 @@ const ClientsPage = ({
                             <input
                                 id="edit-nom"
                                 name="nom"
-                                value={editingClient.nom}
+                                value={editingClient.societe}
                                 onChange={handleEditChange}
                                 required
                                 className="form-input"
@@ -54,7 +73,7 @@ const ClientsPage = ({
                             <input
                                 id="edit-societe"
                                 name="societe"
-                                value={societeInput}
+                                value={editingClient.nom}
                                 onChange={(e) => setSocieteInput(e.target.value)}
                                 onBlur={handleSocieteBlur}
                                 className="form-input"
@@ -235,7 +254,27 @@ const ClientsPage = ({
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <label htmlFor="file-upload" className="import-btn">
+                        <FaFileExcel /> Importer depuis Excel
+                        <input
+                            id="file-upload"
+                            type="file"
+                            accept=".xlsx, .xls, .csv"
+                            onChange={handleFileUpload}
+                            style={{ display: 'none' }}
+                        />
+                    </label>
                 </div>
+                {importProgress && (
+                    <div className="import-progress">
+                        <div>{importProgress}</div>
+                        {importProgress.includes("réussis") && (
+                            <button onClick={() => setImportProgress(null)} className="close-btn">
+                                Fermer
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {filteredClients.length === 0 ? (
                     <div
@@ -395,6 +434,7 @@ const ClientsPage = ({
                     </div>
                 );
             })()}
+
         </>
     );
 };

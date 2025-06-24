@@ -1735,3 +1735,50 @@ button:hover svg {
 .delete-btn:hover {
   background-color: rgba(244, 67, 54, 0.1);
 }
+.import-progress {
+  padding: 10px;
+  margin: 10px 0;
+  background: #f8f9fa;
+  border-left: 4px solid #4caf50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.import-progress.error {
+  border-left-color: #f44336;
+}
+
+.close-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #28a745; /* Vert Excel */
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.import-btn:hover {
+  background-color: #218838; /* Vert foncé au hover */
+  transform: translateY(-1px);
+}
+
+.import-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}

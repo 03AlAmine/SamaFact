@@ -81,10 +81,16 @@ export const InvoiceChart = ({ invoices }) => {
 // 🧍‍♂️ Clients par entreprise (Doughnut)
 export const ClientChart = ({ clients }) => {
   const companies = {};
-  clients.forEach(client => {
-    const company = client.societe || 'Non spécifié';
-    companies[company] = (companies[company] || 0) + 1;
-  });
+
+  // ✅ Vérification sécurisée
+  if (Array.isArray(clients)) {
+    clients.forEach(client => {
+      const company = client.societe || 'Non spécifié';
+      companies[company] = (companies[company] || 0) + 1;
+    });
+  } else {
+    console.warn('clients est vide ou non défini');
+  }
 
   const backgroundColors = [
     'rgba(255, 99, 132, 0.6)',
@@ -117,6 +123,7 @@ export const ClientChart = ({ clients }) => {
 
   return <Doughnut data={data} options={options} />;
 };
+
 
 // 💳 Statut des factures (Pie)
 export const StatusChart = ({ invoices }) => {

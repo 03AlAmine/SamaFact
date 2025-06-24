@@ -21,6 +21,7 @@ import CompanyNameDisplay from './components/CompanyNameDisplay';
 
 import logo from './assets/Logo_Mf.png';
 import "./css/Mentafact.css";
+import * as XLSX from 'xlsx';
 
 const Mentafact = () => {
     const { currentUser, logout } = useAuth();
@@ -34,6 +35,7 @@ const Mentafact = () => {
     const [activeTab_0, setActiveTab_0] = useState("factures");
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
+    const [importProgress, setImportProgress] = useState(""); // Ajouté pour l'import de clients
 
     // States for data
     const [client, setClient] = useState({ nom: "", adresse: "", email: "", telephone: "", societe: "", type: "client", anciensNoms: [] });
@@ -359,8 +361,8 @@ const Mentafact = () => {
           .slice(0, 3); */
 
     // Filtres
-    const filteredClients = clients.filter(client =>
-        client.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const filteredClients = (clients || []).filter(client =>
+        client.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.societe?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -402,6 +404,65 @@ const Mentafact = () => {
         }
         return allAvoirs;
     };
+    const handleImportClient = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setImportProgress("Début de l'import...");
+
+        try {
+            // 1. Lire le fichier Excel
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            setImportProgress("Conversion des données...");
+
+            // 2. Transformer les données
+            const clientsToImport = jsonData.map(row => ({
+                societe: row['Responsable'] || row['Nom'] || '',
+                nom: row['Raison sociale'] || row['Société'] || '',
+                email: row['Email'] || row['E-mail'] || '',
+                telephone: row['Téléphone'] || row['Phone'] || '',
+                adresse: row['Adresse'] || row['Address'] || '',
+                type: (row['Type'] || 'client').toLowerCase()
+            })).filter(client => client.nom.trim() !== '');
+
+            if (clientsToImport.length === 0) {
+                setImportProgress("Aucun client valide trouvé dans le fichier");
+                return;
+            }
+
+            setImportProgress(`Importation de ${clientsToImport.length} clients...`);
+
+            // 3. Importer les clients
+            let importedCount = 0;
+            for (const client of clientsToImport) {
+                try {
+                    const result = await clientService.addClient(companyId, client);
+                    if (result.success) {
+                        importedCount++;
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de l'import d'un client:", error);
+                }
+            }
+
+            // 4. Mettre à jour la liste des clients
+            //   const updatedClients = await clientService.getClients(companyId);
+            // setClients(updatedClients);
+
+            setImportProgress(`${importedCount}/${clientsToImport.length} clients importés avec succès`);
+
+        } catch (error) {
+            console.error("Erreur lors de l'import:", error);
+            setImportProgress("Erreur lors de l'import: " + error.message);
+        } finally {
+            // Réinitialiser le champ de fichier
+            e.target.value = '';
+        }
+    };
 
     const renderActiveTab = () => {
         switch (activeTab) {
@@ -434,6 +495,8 @@ const Mentafact = () => {
                     handleSocieteBlur={handleSocieteBlur}
                     clientFactures={clientFactures}
                     handleCreateInvoice={handleCreateInvoice}
+                    handleImportClient={handleImportClient} // <-- Ajoutez cette ligne
+                    importProgress={importProgress}
                 />;
             case "factures":
                 return <InvoicesPage
