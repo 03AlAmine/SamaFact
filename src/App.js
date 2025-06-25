@@ -10,6 +10,7 @@ import Profile from './profil/Profile';
 import Home from './Mentafact';
 import NotFound from './components/NotFound'; // importation du composant NotFound
 //import AccessDenied from './components/AccessDenied'; // importation du composant NotFound
+import Admin from './samafact/SamaFact'; // importation du composant Admin
 function App() {
   return (
     <Router>
@@ -21,6 +22,8 @@ function App() {
           <Route path="/bill" element={<PrivateRoute><Facture /></PrivateRoute>} />
 
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/samafact" element={<PrivateRoute allowedRoles={['superadmin']}><Admin /></PrivateRoute>} />
+
           {/* <Route path="/register" element={<AccessDenied />} />
           Route pour toutes les pages non trouvées 
           <Route path="/fact" element={<PrivateRoute><Fact /></PrivateRoute>} />
