@@ -217,6 +217,23 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
     // Formater avec séparateurs de milliers sans décimales
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   };
+  // Fonction pour afficher/masquer l'aperçu et faire défiler la page si besoin
+  const togglePreview = () => {
+    const newState = !showPreview;
+    setShowPreview(newState);
+
+    // Défilement vers le bas seulement quand on affiche l'aperçu
+    if (newState) {
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  };
+
+
 
   return (
     <div className="dashboard-layoute">
@@ -228,8 +245,15 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
       />
 
       <div className="container">
-        <h1 className="header">Création de {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}</h1>
-
+        <div className='pre-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h1 className="header">Création de {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}</h1>
+          <button
+            className="button primary-button"
+            onClick={togglePreview}  // Utilise la nouvelle fonction
+          >
+            <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
+          </button>
+        </div>
         <div className="section">
           <h2>Informations du client</h2>
 
@@ -627,7 +651,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
           <div className="button-group">
             <button
               className="button primary-button"
-              onClick={() => setShowPreview(!showPreview)}
+              onClick={togglePreview}  // Utilise la nouvelle fonction
             >
               <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
             </button>
@@ -803,7 +827,7 @@ const Fact = () => {
       client: {
         Nom: [facture.clientNom || ""],
         Adresse: [facture.clientAdresse || ""],
-        Ville:[facture.clientVille || ""]
+        Ville: [facture.clientVille || ""]
       },
       items: items,
       totals: {
