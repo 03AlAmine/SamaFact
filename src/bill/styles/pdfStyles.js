@@ -174,7 +174,7 @@ export const pdfStyles = StyleSheet.create({
     position: 'absolute',
     width: '60%',
     height: '60%',
-    opacity: 0.06,
+    opacity: 0.1,
     left: '15%',
     top: '15%',
     zIndex: -1

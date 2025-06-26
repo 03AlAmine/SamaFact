@@ -7,11 +7,11 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
   const ribData = {
     CBAO: {
       banque: "CBAO",
-      rib: "SN08 00801 023010100001 23",
+      rib: "SN012 01201 036182616901 96",
     },
     BIS: {
       banque: "BIS",
-      rib: "SN08 01010 023010100002 34",
+      rib: "SN079 01101 2254061204001 77",
     }
   };
 
