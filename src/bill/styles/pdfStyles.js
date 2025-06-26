@@ -139,7 +139,7 @@ export const pdfStyles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 32,
     left: 40,
     right: 40,
     textAlign: 'center',

@@ -64,7 +64,7 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
   const itemPages = splitItemsIntoPages(data.items);
   const isMultiPage = itemPages.length > 1;
   const lastPageItems = itemPages[itemPages.length - 1];
-  const showTotalsOnSeparatePage = lastPageItems.Designation.length > 10;
+  const showTotalsOnSeparatePage = lastPageItems.Designation.length > 9;
   // Ajoutez cette fonction de formatage
   const formatDesignation = (text) => {
     if (!text) return '';
