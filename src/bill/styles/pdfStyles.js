@@ -2,134 +2,181 @@ import { StyleSheet } from '@react-pdf/renderer';
 
 export const pdfStyles = StyleSheet.create({
   page: {
-    padding: 30,
+    padding: 40,
     backgroundColor: '#ffffff',
-    fontFamily: 'Helvetica'
+    fontFamily: 'Helvetica',
+    position: 'relative',
+    fontSize: 10
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20
+    marginBottom: 30,
+    alignItems: 'flex-start'
   },
-  companyInfo: {
-    width: '40%'
-  },
-  companyName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 5
-  },
-  companyAddress: {
-    fontSize: 10,
-    color: '#7f8c8d',
-    lineHeight: 1.5
+  logo: {
+    width: 140,
+    height: 'auto',
+    marginBottom: 10
   },
   invoiceTitleContainer: {
-    position: 'absolute',
-    top: 10, // ajuste selon la hauteur que tu veux
-    right: 40, // ou 'left' selon le côté souhaité
-    backgroundColor: '#66BB6A', // Vert élégant
-    padding: 10,
+    backgroundColor: '#218838', // Bleu élégant
+    paddingVertical: 8,
+    paddingHorizontal: 15,
     borderRadius: 4,
-    width: 120,
-    display: "flex",
-    alignItems: "center",
+    alignSelf: 'flex-end',
+    top: -40,
   },
-
   invoiceTitle: {
-    fontSize: 20,
+    fontSize: 14,
     color: 'white',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  invoiceInfo: {
+    position: 'absolute',
+    top: 100,
+    right: 40,
+    textAlign: 'right',
+    lineHeight: 1,
+
+  },
+  invoiceNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4a6da7',
+    marginBottom: 5
   },
   clientInfo: {
-    marginTop: 30,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 30,
     padding: 15,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(121, 220, 143, 0.1)',
     borderRadius: 4,
-    borderLeft: '4px solid #3498db'
+    borderLeft: '3px solid #218838'
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: 'rgba(121, 220, 143)',
     marginBottom: 10,
-    //borderBottom: '1px solid #eee',
-    paddingBottom: 5
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
-  totalsContainer: {
+  subject: {
+    fontSize: 11,
+    color: '#555',
+    marginBottom: 15,
+    fontStyle: 'italic'
+  },
+  clientGreeting: {
+    fontSize: 11,
+    color: '#4a6da7',
+    marginBottom: 10,
+    fontStyle: 'italic',
+    paddingLeft: 5,
+    borderLeft: '3px solid #4a6da7'
+  },
+  table: {
+    width: '100%',
+    marginBottom: 20
+  },
+  tableHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingTop: 10,
-    //backgroundColor: '#f0f8ff',
-    width: '100%', /* AliceBlue, un bleu très clair */
-
-  }, totalsBox: {
-    width: '48%',
-    padding: 10,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 4,
-    right: 0,
-
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 30,
-    right: 30,
-    textAlign: 'center',
-    fontSize: 8,
-    color: '#7f8c8d',
-    borderTop: '2px solid rgb(121, 220, 143)',
-    paddingTop: 10
+    backgroundColor: '#218838', // Bleu élégant)',
+    color: 'white',
+    paddingVertical: 6,
+    paddingHorizontal: 5,
+    fontSize: 9,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   tableRow: {
     flexDirection: 'row',
     borderBottom: '1px solid #eee',
-    paddingVertical: 5,
+    paddingVertical: 8,
     paddingHorizontal: 5,
-    backgroundColor: '#218838',
-    color: 'white',
+    fontSize: 10
   },
-  tableRow_1: {
+  totalsContainer: {
     flexDirection: 'row',
-    borderBottom: '1px solid #eee',
-    paddingVertical: 5,
-    paddingHorizontal: 5,
-    //backgroundColor: '#218838',
-    color: 'black',
-    fontSize: 10,
+    justifyContent: 'space-between',
+    marginTop: 10
   },
-  tableHeader: {
-    fontWeight: 'bold',
-    fontSize: 10,
-    // borderBottom: '1px solid #000',
-    paddingBottom: 3,
-    paddingTop: 3,
+  legalText: {
+    width: '50%',
+    fontSize: 9,
+    lineHeight: 1.4,
+    color: '#555'
+  },
+  totalsBox: {
+    width: '45%',
+    backgroundColor: 'rgba(185, 235, 196, 0.21)',
+    borderRadius: 4,
+    padding: 12,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 5,
+    fontSize: 10
   },
   totalLabel: {
-    width: '50%',
-    textAlign: 'right',
-    paddingRight: 10,
-    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#555'
   },
   totalValue: {
-    width: '50%',
-    textAlign: 'right',
-    fontSize: 10,
+    fontWeight: 'normal'
   },
-  totalValue_1: {
-    width: '50%',
-    textAlign: 'right',
-    fontSize: 10,
-    color: '#218838',
+  grandTotal: {
+    borderTop: '1px solid #ddd',
+    paddingTop: 5,
+    marginTop: 5,
+    fontWeight: 'bold',
+    color: 'rgba(121, 220, 143)',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 40,
+    right: 40,
+    textAlign: 'center',
+    fontSize: 8,
+    color: '#7f8c8d',
+    borderTop: '1.5px solid rgba(169, 121, 220, 0.5)',
+    paddingTop: 10,
+    lineHeight: 1.2
+  },
+  footerBold: {
+    fontWeight: 'bold',
+  },
+  pageNumber: {
+    position: 'absolute',
+    bottom: 15,
+    right: 40,
+    fontSize: 8,
+    color: '#7f8c8d'
+  },
+  amountInWords: {
+    fontSize: 9,
+    marginBottom: 5,
+    color: '#555',
+    fontStyle: 'italic'
+  },
+  notes: {
+    fontSize: 9,
+    color: '#555',
+    marginTop: 15
+  },
+  watermark: {
+    position: 'absolute',
+    width: '60%',
+    height: '60%',
+    opacity: 0.06,
+    left: '15%',
+    top: '15%',
+    zIndex: -1
   }
 });
-

@@ -91,74 +91,75 @@ const InvoicesPage = ({
     };
 
     // Dans le composant parent qui utilise DocumentSection
-const handleDownload = async (facture) => {
-    try {
-        // Transformation des données avec l'objet correctement placé
-        const pdfData = {
-            facture: {
-                Numéro: [facture.numero || ""],
-                Date: [facture.date || ""],
-                DateEcheance: [facture.dateEcheance || ""],
-                Objet: [facture.objet || "Non spécifié"], // L'objet doit être ici
-                Type: [facture.type || "facture"]
-            },
-            client: {
-                Nom: [facture.clientNom || ""],
-                Adresse: [facture.clientAdresse || ""]
-            },
-            items: facture.items ? {
-                Designation: facture.items.map(i => i.designation || ""),
-                Quantite: facture.items.map(i => i.quantite || ""),
-                "Prix Unitaire": facture.items.map(i => i.prixUnitaire || ""),
-                TVA: facture.items.map(i => i.tva || ""),
-                "Montant HT": facture.items.map(i => i.montantHT || ""),
-                "Montant TVA": facture.items.map(i => i.montantTVA || ""),
-                "Prix Total": facture.items.map(i => i.prixTotal || "")
-            } : {
-                Designation: [],
-                Quantite: [],
-                "Prix Unitaire": [],
-                TVA: [],
-                "Montant HT": [],
-                "Montant TVA": [],
-                "Prix Total": []
-            },
-            totals: {
-                "Total HT": [facture.totalHT || "0"],
-                "Total TVA": [facture.totalTVA || "0"],
-                "Total TTC": [facture.totalTTC || "0"]
-            }
-        };
+    const handleDownload = async (facture) => {
+        try {
+            // Transformation des données avec l'objet correctement placé
+            const pdfData = {
+                facture: {
+                    Numéro: [facture.numero || ""],
+                    Date: [facture.date || ""],
+                    DateEcheance: [facture.dateEcheance || ""],
+                    Objet: [facture.objet || "Non spécifié"], // L'objet doit être ici
+                    Type: [facture.type || "facture"]
+                },
+                client: {
+                    Nom: [facture.clientNom || ""],
+                    Adresse: [facture.clientAdresse || ""],
+                    Ville: [facture.clientVille || ""]
+                },
+                items: facture.items ? {
+                    Designation: facture.items.map(i => i.designation || ""),
+                    Quantite: facture.items.map(i => i.quantite || ""),
+                    "Prix Unitaire": facture.items.map(i => i.prixUnitaire || ""),
+                    TVA: facture.items.map(i => i.tva || ""),
+                    "Montant HT": facture.items.map(i => i.montantHT || ""),
+                    "Montant TVA": facture.items.map(i => i.montantTVA || ""),
+                    "Prix Total": facture.items.map(i => i.prixTotal || "")
+                } : {
+                    Designation: [],
+                    Quantite: [],
+                    "Prix Unitaire": [],
+                    TVA: [],
+                    "Montant HT": [],
+                    "Montant TVA": [],
+                    "Prix Total": []
+                },
+                totals: {
+                    "Total HT": [facture.totalHT || "0"],
+                    "Total TVA": [facture.totalTVA || "0"],
+                    "Total TTC": [facture.totalTTC || "0"]
+                }
+            };
 
-        console.log("Données envoyées au PDF:", pdfData); // Vérifiez que l'objet est présent
+            console.log("Données envoyées au PDF:", pdfData); // Vérifiez que l'objet est présent
 
-        const { pdf } = await import('@react-pdf/renderer');
-        const blob = await pdf(
-            <InvoicePDF 
-                data={pdfData} 
-                  ribType={facture.ribs || ["CBAO"]} // Assurez-vous que c'est toujours un tableau
-                objet={facture.objet || "Non spécifié"} // Passage direct de l'objet
-            />
-        ).toBlob();
-        // Téléchargement
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${facture.type}_${facture.numero}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        
-        // Nettoyage
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 100);
+            const { pdf } = await import('@react-pdf/renderer');
+            const blob = await pdf(
+                <InvoicePDF
+                    data={pdfData}
+                    ribType={facture.ribs || ["CBAO"]} // Assurez-vous que c'est toujours un tableau
+                    objet={facture.objet || "Non spécifié"} // Passage direct de l'objet
+                />
+            ).toBlob();
+            // Téléchargement
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${facture.type}_${facture.numero}.pdf`;
+            document.body.appendChild(link);
+            link.click();
 
-    } catch (error) {
-        console.error("Échec du téléchargement:", error);
-        alert(`Échec du téléchargement: ${error.message}`);
-    }
-};
+            // Nettoyage
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+
+        } catch (error) {
+            console.error("Échec du téléchargement:", error);
+            alert(`Échec du téléchargement: ${error.message}`);
+        }
+    };
 
 
 

@@ -1,7 +1,12 @@
-import React from "react";
-import { FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone, FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch, FaFileInvoiceDollar, FaFileExcel } from "react-icons/fa";
+import React, { useState, useRef } from "react";
+import {
+    FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone,
+    FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch,
+    FaFileInvoiceDollar, FaFileExcel, FaList, FaTh,
+    FaSortAlphaDown
+} from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
-
+import '../css/ClientPage.css'; // Assurez-vous d'avoir ce fichier CSS pour le style
 
 const ClientsPage = ({
     clients,
@@ -24,26 +29,55 @@ const ClientsPage = ({
     handleSocieteBlur,
     clientFactures,
     handleCreateInvoice,
-    handleDeleteFacture, // <-- Add this prop
-    handleImportClient,   // <-- Fix: Add this prop
-    importProgress,       // <-- Add this prop
-    setImportProgress     // <-- Add this prop
+    handleDeleteFacture,
+    handleImportClient,
+    importProgress,
+    setImportProgress
 }) => {
-    const handleFileUpload = (e) => {
-        console.log("Fichier sélectionné:", e.target.files[0]); // Debug
-        if (!e.target.files || e.target.files.length === 0) {
-            console.error("Aucun fichier sélectionné");
-            return;
-        }
+    const [viewMode, setViewMode] = useState('card'); // 'card' ou 'list'
+    const [sortBy, setSortBy] = useState('nom'); // 'nom', 'type', 'dateCreation'
+    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' ou 'desc'
+    const invoicesSectionRef = useRef(null);
 
-        if (handleImportClient) {
-            console.log("Appel de handleImportClient..."); // Debug
-            handleImportClient(e);
+    const handleFileUpload = (e) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        if (handleImportClient) handleImportClient(e);
+    };
+
+    // Fonction pour trier les clients
+    const toggleSort = (field) => {
+        if (sortBy === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
         } else {
-            console.error("handleImportClient n'est pas défini");
+            setSortBy(field);
+            setSortOrder('asc');
         }
     };
 
+    // Clients triés
+    const sortedClients = [...filteredClients].sort((a, b) => {
+        let compareValue;
+        if (sortBy === 'nom') {
+            compareValue = a.nom.localeCompare(b.nom);
+        } else if (sortBy === 'type') {
+            compareValue = a.type.localeCompare(b.type);
+        } else if (sortBy === 'dateCreation') {
+            compareValue = new Date(a.dateCreation) - new Date(b.dateCreation);
+        }
+        return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+    // Fonction modifiée pour inclure le défilement
+    const handleClientClick = (clientId) => {
+        loadClientInvoices(clientId);
+
+        // Défilement vers la section des factures
+        setTimeout(() => {
+            invoicesSectionRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+    };
 
     return (
         <>
@@ -124,6 +158,17 @@ const ClientsPage = ({
                             />
                         </div>
                         <div className="form-group">
+                            <label htmlFor="ville" className="form-label">Ville/Pays</label>
+                            <input
+                                id="ville"
+                                name="ville"
+                                value={editingClient.ville}
+                                onChange={handleEditChange}
+                                className="form-input"
+                                placeholder="Ex: Dakar, Sénégal"
+                            />
+                        </div>
+                        <div className="form-group">
                             <label htmlFor="edit-type" className="form-label">Type</label>
                             <select
                                 id="edit-type"
@@ -134,6 +179,7 @@ const ClientsPage = ({
                             >
                                 <option value="client">Client</option>
                                 <option value="prospect">Prospect</option>
+                                <option value="partenaire">Partenaire</option>
                                 <option value="fournisseur">Fournisseur</option>
                             </select>
                         </div>
@@ -167,6 +213,7 @@ const ClientsPage = ({
                                 value={client.societe}
                                 onChange={handleChange}
                                 className="form-input"
+                                placeholder="Monsieur Diop - Dame"
                             />
                         </div>
                         <div className="form-group">
@@ -178,6 +225,7 @@ const ClientsPage = ({
                                 onChange={handleChange}
                                 required
                                 className="form-input"
+                                placeholder="Leader Interim"
                             />
                         </div>
                     </div>
@@ -192,6 +240,7 @@ const ClientsPage = ({
                                 value={client.email}
                                 onChange={handleChange}
                                 className="form-input"
+                                placeholder="leader@gmail.com"
                             />
                         </div>
 
@@ -203,6 +252,7 @@ const ClientsPage = ({
                                 value={client.telephone}
                                 onChange={handleChange}
                                 className="form-input"
+                                placeholder="781234567"
                             />
                         </div>
                     </div>
@@ -215,6 +265,19 @@ const ClientsPage = ({
                                 value={client.adresse}
                                 onChange={handleChange}
                                 className="form-input"
+                                placeholder="Ouest Foire, Route de l'Aéroport"
+
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="ville" className="form-label">Ville/Pays</label>
+                            <input
+                                id="ville"
+                                name="ville"
+                                value={client.ville}
+                                onChange={handleChange}
+                                className="form-input"
+                                placeholder="Dakar, Sénégal"
                             />
                         </div>
                         <div className="form-group">
@@ -228,6 +291,7 @@ const ClientsPage = ({
                             >
                                 <option value="client">Client</option>
                                 <option value="prospect">Prospect</option>
+                                <option value="partenaire">Partenaire</option>
                                 <option value="fournisseur">Fournisseur</option>
 
                             </select>
@@ -238,33 +302,74 @@ const ClientsPage = ({
                     </button>
                 </form>
             )}
-
             <div className="clients-section">
                 <div className="section-header">
-                    <h2 className="section-title">
-                        <FaUsers style={{ marginRight: "10px" }} />
-                        Clients ({filteredClients.length})
-                    </h2>
-                    <div className="search-box">
-                        <FaSearch className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher un client..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    <div className="header-left">
+                        <h2 className="section-title">
+                            <FaUsers style={{ marginRight: "10px" }} />
+                            Clients ({sortedClients.length})
+                        </h2>
+
+                        <div className="view-controls">
+                            <button
+                                onClick={() => setViewMode('card')}
+                                className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
+                                title="Vue cartes"
+                            >
+                                <FaTh />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                                title="Vue liste"
+                            >
+                                <FaList />
+                            </button>
+                        </div>
                     </div>
-                    <label htmlFor="file-upload" className="import-btn">
-                        <FaFileExcel /> Importer depuis Excel
-                        <input
-                            id="file-upload"
-                            type="file"
-                            accept=".xlsx, .xls, .csv"
-                            onChange={handleFileUpload}
-                            style={{ display: 'none' }}
-                        />
-                    </label>
+
+                    <div className="header-right">
+                        <div className="search-box">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher un client..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="sort-options">
+                            <div className="sort-label">Trier par:</div>
+                            <button
+                                onClick={() => toggleSort('nom')}
+                                className={`sort-btn ${sortBy === 'nom' ? 'active' : ''}`}
+                            >
+                                <FaSortAlphaDown /> Nom
+                                {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                            </button>
+                            <button
+                                onClick={() => toggleSort('type')}
+                                className={`sort-btn ${sortBy === 'type' ? 'active' : ''}`}
+                            >
+                                <FaSortAlphaDown /> Type
+                                {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                            </button>
+                        </div>
+
+                        <label htmlFor="file-upload" className="import-btn">
+                            <FaFileExcel /> Importer
+                            <input
+                                id="file-upload"
+                                type="file"
+                                accept=".xlsx, .xls, .csv"
+                                onChange={handleFileUpload}
+                                style={{ display: 'none' }}
+                            />
+                        </label>
+                    </div>
                 </div>
+
                 {importProgress && (
                     <div className="import-progress">
                         <div>{importProgress}</div>
@@ -276,32 +381,25 @@ const ClientsPage = ({
                     </div>
                 )}
 
-                {filteredClients.length === 0 ? (
-                    <div
-                        className="empty-state"
-                        style={{
-                            backgroundImage: `url(${empty_client})`,
-                            backgroundSize: "cover",
-                            backgroundRepeat: "no-repeat",
-                            backgroundOpacity: 0.2,
-                            color: "white",
-                        }}
-                    >
-                        <p>Aucun client trouvé</p>
+                {sortedClients.length === 0 ? (
+                    <div className="empty-state">
+                        <img src={empty_client} alt="Aucun client" className="empty-image" />
+                        <h3>Aucun client trouvé</h3>
+                        <p>Commencez par créer votre premier client</p>
                         <button className="primary-btn">
                             <FaPlus /> Ajouter un client
                         </button>
                     </div>
-                ) : (
+                ) : viewMode === 'card' ? (
                     <div className="clients-grid">
-                        {filteredClients.map((c) => (
+                        {sortedClients.map((c) => (
                             <div
                                 key={c.id}
                                 className={`client-card ${selectedClient?.id === c.id ? 'active' : ''}`}
-                                onClick={() => loadClientInvoices(c.id)}
+                                onClick={() => handleClientClick(c.id)}  // Utilisation de la nouvelle fonction
                             >
                                 <div className="client-type-badge">
-                                    {c.type === "client" ? "Client" : c.type === "prospect" ? "Prospect" : "Fournisseur"}
+                                    {c.type === "client" ? "Client" : c.type === "prospect" ? "Prospect" : c.type === "fournisseur" ? "Fournisseur" : "Partenaire"}
                                 </div>
 
                                 <div className="client-header">
@@ -351,7 +449,7 @@ const ClientsPage = ({
                                     {c.adresse && (
                                         <div className="client-detail">
                                             <FaMapMarkerAlt className="detail-icon" />
-                                            <span className="detail-value">{c.adresse}</span>
+                                            <span className="detail-value">{c.adresse} - {c.ville}</span>
                                         </div>
                                     )}
                                     {c.societe && (
@@ -370,14 +468,110 @@ const ClientsPage = ({
                             </div>
                         ))}
                     </div>
+                ) : (
+                    <div className="clients-table-container">
+                        <table className="clients-table">
+                            <thead>
+                                <tr>
+                                    <th
+                                        onClick={() => toggleSort('nom')}
+                                        className={sortBy === 'nom' ? 'active' : ''}
+                                    >
+                                        <div className="th-content">
+                                            Nom
+                                            {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                                        </div>
+                                    </th>
+                                    <th
+                                        onClick={() => toggleSort('type')}
+                                        className={sortBy === 'type' ? 'active' : ''}
+                                    >
+                                        <div className="th-content">
+                                            Type
+                                            {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                                        </div>
+                                    </th>
+
+                                    <th>Contact</th>
+                                    <th>Adresse</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sortedClients.map((c) => (
+                                    <tr
+                                        key={c.id}
+                                        className={selectedClient?.id === c.id ? 'active' : ''}
+                                        onClick={() => handleClientClick(c.id)}  // Ajoutez cette ligne
+                                        style={{ cursor: 'pointer' }}  // Change le curseur pour indiquer que c'est cliquable
+                                    >
+                                        <td>
+                                            <div className="cell-content">
+                                                <div className="client-avatar-small">
+                                                    {c.nom.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div className="client-name">{c.nom}</div>
+                                                    {c.societe && <div className="client-company">{c.societe}</div>}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                {c.type}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="client-contact">
+                                                {c.email && <div><FaEnvelope /> {c.email}</div>}
+                                                {c.telephone && <div><FaPhone /> {c.telephone}</div>}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {c.adresse && (
+                                                <div className="client-address">
+                                                    <FaMapMarkerAlt /> {c.adresse}
+                                                    {c.ville && `, ${c.ville}`}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <div className="table-actions">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEdit(c);
+                                                    }}
+                                                    className="action-btn edit-btn"
+                                                    title="Modifier"
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(c.id);
+                                                    }}
+                                                    className="action-btn delete-btn"
+                                                    title="Supprimer"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 
             {selectedClient && (() => {
                 const factures = clientFactures || [];
                 return (
-                    <div className="invoices-section">
-                        <div className="invoices-header">
+                    <div className="invoices-section" >
+                        <div className="invoices-header" ref={invoicesSectionRef}>
                             <h2 className="section-title"><FaFileInvoiceDollar /> Factures de {selectedClient.nom} ({factures.length})</h2>
                             <div className="invoices-actions">
                                 <button onClick={handleCreateInvoice} className="create-invoice-btn">
@@ -434,7 +628,6 @@ const ClientsPage = ({
                     </div>
                 );
             })()}
-
         </>
     );
 };

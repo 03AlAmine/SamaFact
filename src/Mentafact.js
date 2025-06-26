@@ -389,6 +389,7 @@ const Mentafact = () => {
         setClientFactures(allFactures.filter(f => f.clientId === clientId));
         setClientDevis(allDevis.filter(d => d.clientId === clientId));
         setClientAvoirs(allAvoirs.filter(a => a.clientId === clientId));
+
     };
 
     const getDevisToDisplay = () => {
@@ -426,6 +427,7 @@ const Mentafact = () => {
                 email: row['Email'] || row['E-mail'] || '',
                 telephone: row['Téléphone'] || row['Phone'] || '',
                 adresse: row['Adresse'] || row['Address'] || '',
+                ville: row['Ville'] || row['City'] || '',
                 type: (row['Type'] || 'client').toLowerCase()
             })).filter(client => client.nom.trim() !== '');
 

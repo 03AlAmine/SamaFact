@@ -15,9 +15,9 @@ import DynamicPDFViewer from '../components/DynamicPDFViewer';
 const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber, objet, setObjet, selectedRibs, setSelectedRibs }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
-    Quantite: "",
+    Quantite: "1",
     "Prix Unitaire": "",
-    TVA: "18"
+    TVA: "0"
   });
   const [selectedClientId, setSelectedClientId] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
@@ -34,6 +34,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
         client: {
           Nom: [selectedClient.nom],
           Adresse: [selectedClient.adresse],
+          Ville: [selectedClient.ville || ""],
           // Ajoutez d'autres champs si nécessaire
         }
       });
@@ -91,9 +92,9 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
 
     setCurrentItem({
       Designation: "",
-      Quantite: "",
+      Quantite: "1",
       "Prix Unitaire": "",
-      TVA: "18"
+      TVA: "0"
     });
   };
 
@@ -206,6 +207,16 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
 
     closeDuplicateModal();
   };
+  // Fonction pour formater les nombres avec séparateurs de milliers (espaces) sans décimales
+  const formatNumberWithSpaces = (numStr) => {
+    if (!numStr) return "0";
+    // Supprimer les espaces existants et remplacer les virgules par des points
+    const cleaned = numStr.toString().replace(/\s/g, '').replace(',', '.');
+    // Convertir en nombre et arrondir à l'entier
+    const num = Math.round(parseFloat(cleaned));
+    // Formater avec séparateurs de milliers sans décimales
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
 
   return (
     <div className="dashboard-layoute">
@@ -236,7 +247,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               <option value="">Sélectionner un client</option>
               {clients.map(client => (
                 <option key={client.id} value={client.id}>
-                  {client.nom} - {client.adresse}
+                  {client.nom} - {client.adresse} - {client.ville}
                 </option>
               ))}
             </select>
@@ -252,6 +263,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             }}>
               <p><strong>Nom:</strong> {data.client.Nom[0]}</p>
               <p><strong>Adresse:</strong> {data.client.Adresse[0]}</p>
+              <p><strong>Ville:</strong> {data.client.Ville[0]}</p>
             </div>
           )}
 
@@ -359,37 +371,37 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             <div className="section" style={{ marginTop: '2rem' }}>
               <h2>Banque(s) pour le paiement:</h2>
               <div className="form-group">
-<div className="rib-selector">
-  <label className="rib-option">
-    <input
-      type="checkbox"
-      className="rib-checkbox"
-      checked={selectedRibs.includes("CBAO")}
-      onChange={(e) => setSelectedRibs(
-        e.target.checked 
-          ? [...selectedRibs, "CBAO"] 
-          : selectedRibs.filter(rib => rib !== "CBAO")
-      )}
-    />
-    <span className="rib-checkmark"></span>
-    <span className="rib-label">CBAO</span>
-  </label>
+                <div className="rib-selector">
+                  <label className="rib-option">
+                    <input
+                      type="checkbox"
+                      className="rib-checkbox"
+                      checked={selectedRibs.includes("CBAO")}
+                      onChange={(e) => setSelectedRibs(
+                        e.target.checked
+                          ? [...selectedRibs, "CBAO"]
+                          : selectedRibs.filter(rib => rib !== "CBAO")
+                      )}
+                    />
+                    <span className="rib-checkmark"></span>
+                    <span className="rib-label">CBAO</span>
+                  </label>
 
-  <label className="rib-option">
-    <input
-      type="checkbox"
-      className="rib-checkbox"
-      checked={selectedRibs.includes("BIS")}
-      onChange={(e) => setSelectedRibs(
-        e.target.checked
-          ? [...selectedRibs, "BIS"]
-          : selectedRibs.filter(rib => rib !== "BIS")
-      )}
-    />
-    <span className="rib-checkmark"></span>
-    <span className="rib-label">BIS</span>
-  </label>
-</div>
+                  <label className="rib-option">
+                    <input
+                      type="checkbox"
+                      className="rib-checkbox"
+                      checked={selectedRibs.includes("BIS")}
+                      onChange={(e) => setSelectedRibs(
+                        e.target.checked
+                          ? [...selectedRibs, "BIS"]
+                          : selectedRibs.filter(rib => rib !== "BIS")
+                      )}
+                    />
+                    <span className="rib-checkmark"></span>
+                    <span className="rib-label">BIS</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -513,9 +525,9 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               onClick={() => {
                 setCurrentItem({
                   Designation: "",
-                  Quantite: "",
+                  Quantite: "1",
                   "Prix Unitaire": "",
-                  TVA: "18"
+                  TVA: "0"
                 });
                 setEditingIndex(null);
               }}
@@ -551,12 +563,13 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                   {data.items.Designation.map((_, index) => (
                     <tr key={index}>
                       <td>{data.items.Designation[index]}</td>
-                      <td>{data.items.Quantite[index]}</td>
-                      <td>{data.items["Prix Unitaire"][index]}FCFA</td>
+                      <td>{formatNumberWithSpaces(data.items.Quantite[index])}</td>
+                      <td>{formatNumberWithSpaces(data.items["Prix Unitaire"][index])} FCFA</td>
                       <td>{data.items.TVA[index]}</td>
-                      <td>{data.items["Montant HT"]?.[index] || "0 "}FCFA</td>
-                      <td>{data.items["Montant TVA"]?.[index] || "0 "}FCFA</td>
-                      <td>{data.items["Prix Total"][index]}FCFA</td>
+                      <td>{formatNumberWithSpaces(data.items["Montant HT"]?.[index] || "0")} FCFA</td>
+                      <td>{formatNumberWithSpaces(data.items["Montant TVA"]?.[index] || "0")} FCFA</td>
+                      <td>{formatNumberWithSpaces(data.items["Prix Total"][index])} FCFA</td>
+
                       <td>
                         <div className="action-buttons">
                           <button
@@ -590,15 +603,15 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                 <tbody>
                   <tr>
                     <td>Total HT:</td>
-                    <td>{data.totals?.["Total HT"]?.[0] || "0 "}FCFA</td>
+                    <td>{formatNumberWithSpaces(data.totals?.["Total HT"]?.[0] || "0")} FCFA</td>
                   </tr>
                   <tr>
                     <td>Total TVA:</td>
-                    <td>{data.totals?.["Total TVA"]?.[0] || "0 "}FCFA</td>
+                    <td>{formatNumberWithSpaces(data.totals?.["Total TVA"]?.[0] || "0")} FCFA</td>
                   </tr>
                   <tr>
                     <td>Total TTC:</td>
-                    <td>{data.totals?.["Total TTC"]?.[0] || "0 "}FCFA</td>
+                    <td>{formatNumberWithSpaces(data.totals?.["Total TTC"]?.[0] || "0")} FCFA</td>
                   </tr>
                 </tbody>
               </table>
@@ -789,7 +802,8 @@ const Fact = () => {
       },
       client: {
         Nom: [facture.clientNom || ""],
-        Adresse: [facture.clientAdresse || ""]
+        Adresse: [facture.clientAdresse || ""],
+        Ville:[facture.clientVille || ""]
       },
       items: items,
       totals: {
@@ -812,7 +826,8 @@ const Fact = () => {
     },
     client: {
       Nom: [],
-      Adresse: []
+      Adresse: [],
+      Ville: []
     },
     items: {
       Designation: [],
@@ -940,6 +955,7 @@ const Fact = () => {
         clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
         clientNom: data.client.Nom[0],
         clientAdresse: data.client.Adresse[0],
+        clientVille: data.client.Ville[0],
         objet: objet,
         items: data.items.Designation.map((_, index) => ({
           designation: data.items.Designation[index],
