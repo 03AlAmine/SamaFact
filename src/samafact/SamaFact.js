@@ -118,9 +118,7 @@ const SamaFact = () => {
         return users.filter(user => user.companyId === companyId);
     };
 
-    if (loading) {
-        return <div className="superadmin-loading">Chargement des données admin...</div>;
-    }
+
 
     if (!currentUser?.isSuperAdmin) {
         return (
@@ -129,6 +127,9 @@ const SamaFact = () => {
                 <p>Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
             </div>
         );
+    }
+        if (loading) {
+        return <div className="superadmin-loading">Chargement des données admin...</div>;
     }
 
     return (

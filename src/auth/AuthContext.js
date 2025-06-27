@@ -138,19 +138,33 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function login(email, password) {
+async function login(email, password) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-      // Update last login time
-      const userRef = doc(db, 'users', userCredential.user.uid);
-      await setDoc(userRef, { lastLogin: new Date() }, { merge: true });
+        // Get additional user data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists()) {
+            throw new Error("User document not found");
+        }
 
-      return userCredential;
+        const userData = userDoc.data();
+
+        // Update last login time
+        await setDoc(doc(db, 'users', user.uid), {
+            lastLogin: new Date()
+        }, { merge: true });
+
+        return {
+            ...user,
+            role: userData.role,
+            companyId: userData.companyId
+        };
     } catch (error) {
-      throw error;
+        throw error;
     }
-  }
+}
 
   function logout() {
     return signOut(auth);
