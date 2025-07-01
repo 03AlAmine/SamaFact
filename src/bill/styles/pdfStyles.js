@@ -11,7 +11,7 @@ export const pdfStyles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 20,
     alignItems: 'flex-start'
   },
   logo: {
@@ -19,13 +19,22 @@ export const pdfStyles = StyleSheet.create({
     height: 'auto',
     marginBottom: 10
   },
+  address: {
+    fontSize: 7,
+    lineHeight: 1.2,
+    color: '#555',
+    alignItems: 'center',
+    textAlign: 'center',
+    justifyContent: 'center',
+    paddingLeft: 15,
+  },
   invoiceTitleContainer: {
     backgroundColor: '#218838', // Bleu élégant
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 4,
     alignSelf: 'flex-end',
-    top: -40,
+    top: -62,
   },
   invoiceTitle: {
     fontSize: 14,

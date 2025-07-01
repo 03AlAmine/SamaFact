@@ -84,6 +84,7 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
       <View style={pdfStyles.header}>
         <View>
           <Image style={pdfStyles.logo} src="./Logo_LIS.png" />
+          <Text style={pdfStyles.address}>Ouest Foire, Route de l'Aéroport {'\n'} <Text>Dakar, Sénégal</Text></Text>
         </View>
         <View style={pdfStyles.invoiceTitleContainer}>
           <Text style={pdfStyles.invoiceTitle}>
@@ -193,13 +194,12 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
         {Array.isArray(ribType) && ribType.map(rib => {
           const ribInfo = ribData[rib];
           return ribInfo ? (
-            <Text key={rib} style={{ marginTop: 3 }}>
+            <Text key={rib}>
               <Text style={pdfStyles.footerBold}>RIB {ribInfo.banque}:</Text> {ribInfo.rib}
             </Text>
           ) : null;
         })}
         <Text>Téléphone: 338208846 | Email: infos@leaderinterime.com</Text>
-        <Text>Adresse: Ouest Foire, Route de l'Aéroport, Dakar, Sénégal</Text>
       </View>
       {/* Numéro de page */}
       {isMultiPage && (
@@ -221,6 +221,7 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
       <View style={pdfStyles.header}>
         <View>
           <Image style={pdfStyles.logo} src="./Logo_LIS.png" />
+          <Text style={pdfStyles.address}>Ouest Foire, Route de l'Aéroport {'\n'} <Text>Dakar, Sénégal</Text></Text>
         </View>
         <View style={pdfStyles.invoiceTitleContainer}>
           <Text style={pdfStyles.invoiceTitle}>
@@ -301,13 +302,12 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
         {Array.isArray(ribType) && ribType.map(rib => {
           const ribInfo = ribData[rib];
           return ribInfo ? (
-            <Text key={rib} style={{ marginTop: 3 }}>
+            <Text key={rib}>
               <Text style={pdfStyles.footerBold}>RIB {ribInfo.banque}:</Text> {ribInfo.rib}
             </Text>
           ) : null;
         })}
         <Text>Téléphone: 338208846 | Email: infos@leaderinterime.com</Text>
-        <Text>Adresse: Ouest Foire, Route de l'Aéroport, Dakar, Sénégal</Text>
       </View>
 
       {/* Numéro de page */}
