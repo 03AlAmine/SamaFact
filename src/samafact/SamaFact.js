@@ -7,12 +7,13 @@ import { useAuth } from '../auth/AuthContext';
 import { BarChart, PieChart } from './Charts';
 import { PasswordModal, CompanyModal, UserModal } from './Modals';
 import { FaBuilding, FaUsers, FaBell, FaHome } from 'react-icons/fa'; // Import FaUsers and FaBell icons
-// Import correct pour des exports nommés
-// SamaFact.js
 import { CompanyTable, UserTable } from './Tables'; // or correct relative pathconst { CompanyTable, UserTable } = Tables;
 import './SamaFact.css'; // Assurez-vous d'avoir le bon chemin pour le CSS
+import { useNavigate } from 'react-router-dom';
 const SamaFact = () => {
-    const { currentUser } = useAuth();
+    // eslint-disable-next-line no-unused-vars
+    const { currentUser, isSuperAdmin, loading: authLoading } = useAuth();
+    const navigate = useNavigate();
 
     // États principaux
     const [data, setData] = useState({
@@ -31,6 +32,7 @@ const SamaFact = () => {
             usersByRole: []
         }
     });
+
 
     // États UI
     const [ui, setUi] = useState({
@@ -69,7 +71,7 @@ const SamaFact = () => {
 
     // Chargement des données
     useEffect(() => {
-        if (!currentUser?.isSuperAdmin) return;
+        if (!isSuperAdmin()) return;
 
         const loadData = async () => {
             setData(prev => ({ ...prev, loading: true }));
@@ -100,7 +102,7 @@ const SamaFact = () => {
         };
 
         loadData();
-    }, [currentUser]);
+    }, [currentUser, isSuperAdmin]); // Dépendances ajoutées
 
     // Fonctions de traitement des données
     const processCompanies = (companiesSnapshot, usersData) => {
@@ -339,23 +341,21 @@ const SamaFact = () => {
 
         return matchesSearch && matchesRole;
     });
-    if (!currentUser?.isSuperAdmin) {
+    if (!isSuperAdmin()) {
         return (
-            <div className="unauthorized-container">
-                <h2>Accès non autorisé</h2>
-                <p>Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
-            </div>
+            navigate ('/access-denied')
         );
     }
 
 
     return (
+        console.log("Rendering SamaFact component with data:", currentUser.role),
         <div className="admin-dashboard">
             {/* En-tête avec recherche et boutons */}
             <header className="dashboard-header">
                 <h1>
                     <FaHome />
-                    yTableau de bord SuperAdmin
+                    Tableau de bord SuperAdmin
                 </h1>
 
                 <div className="header-actions">

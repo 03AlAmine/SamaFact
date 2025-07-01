@@ -47,18 +47,29 @@ const PERMISSIONS = {
 
 export function AuthProvider({ children }) {
 
-    const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Dans votre AuthProvider
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Récupère les claims (JWT décodé)
-        const idTokenResult = await user.getIdTokenResult();
+        // Récupère à la fois les claims ET les données Firestore
+        const [idTokenResult, userDoc] = await Promise.all([
+          user.getIdTokenResult(),
+          getDoc(doc(db, 'users', user.uid))
+        ]);
+
         setCurrentUser({
           uid: user.uid,
           email: user.email,
-          ...idTokenResult.claims // Ajoute role et companyId
+          // Gestion complète des rôles
+          isSuperAdmin: idTokenResult.claims.superAdmin ||
+            idTokenResult.claims.role === 'super-admin' ||
+            userDoc.data()?.role === 'super-admin',
+          // Fusion des données
+          ...userDoc.data(),
+          ...idTokenResult.claims
         });
       } else {
         setCurrentUser(null);
@@ -68,6 +79,7 @@ export function AuthProvider({ children }) {
 
     return unsubscribe;
   }, []);
+
   // State
 
 
@@ -138,33 +150,33 @@ export function AuthProvider({ children }) {
     }
   }
 
-async function login(email, password) {
+  async function login(email, password) {
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-        // Get additional user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (!userDoc.exists()) {
-            throw new Error("User document not found");
-        }
+      // Get additional user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        throw new Error("User document not found");
+      }
 
-        const userData = userDoc.data();
+      const userData = userDoc.data();
 
-        // Update last login time
-        await setDoc(doc(db, 'users', user.uid), {
-            lastLogin: new Date()
-        }, { merge: true });
+      // Update last login time
+      await setDoc(doc(db, 'users', user.uid), {
+        lastLogin: new Date()
+      }, { merge: true });
 
-        return {
-            ...user,
-            role: userData.role,
-            companyId: userData.companyId
-        };
+      return {
+        ...user,
+        role: userData.role,
+        companyId: userData.companyId
+      };
     } catch (error) {
-        throw error;
+      throw error;
     }
-}
+  }
 
   function logout() {
     return signOut(auth);
@@ -180,14 +192,14 @@ async function login(email, password) {
       // Create user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
-      
+
       // Send password reset email
       await sendPasswordResetEmail(auth, email);
-      
+
       // Create profile
       const batch = writeBatch(db);
       const companyId = currentUser.companyId;
-      
+
       // Profile in company
       const profileRef = doc(db, `companies/${companyId}/profiles`, userId);
       batch.set(profileRef, {
@@ -255,35 +267,29 @@ async function login(email, password) {
   // Permission check
   function checkPermission(requiredPermission) {
     if (!currentUser) return false;
-    
+
     const userRole = currentUser.role?.toLowerCase();
     const normalizedPermissions = PERMISSIONS[userRole] || {};
-    
+
     return normalizedPermissions[requiredPermission] ?? false;
   }
+  // Dans votre AuthContext
+// Dans votre AuthContext
+function isSuperAdmin() {
+  if (!currentUser) return false;
+  
+  // Vérification à 3 niveaux
+  return (
+    currentUser.isSuperAdmin || // Firestore
+    currentUser.customClaims?.superAdmin || // Claims JWT
+    currentUser.role === 'super-admin' // Alternative
+  );
+}
+
+  // Ajoutez cette fonction au value du contexte
 
   // Auth state listener
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Fetch additional user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setCurrentUser({
-            ...user,
-            ...userDoc.data()
-          });
-        } else {
-          setCurrentUser(user);
-        }
-      } else {
-        setCurrentUser(null);
-      }
-      setLoading(false);
-    });
 
-    return unsubscribe;
-  }, []);
 
   // Context value
   const value = {
@@ -295,7 +301,9 @@ async function login(email, password) {
     createSubUser,
     updateUserRole,
     checkPermission,
-    ROLES
+    ROLES,
+    isSuperAdmin, // Nouvelle fonction exportée
+
   };
 
   return (

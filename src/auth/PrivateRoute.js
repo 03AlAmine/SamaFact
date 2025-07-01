@@ -1,10 +1,25 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
-export function PrivateRoute({ children }) {
+export const PrivateRoute = ({ children, allowedRoles = [] }) => {
   const { currentUser } = useAuth();
-  return currentUser ? children : <Navigate to="/login" />;
-}
+  const location = useLocation();
 
-export default PrivateRoute;
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Rôle avec valeur par défaut
+  const userRole = currentUser.role?.toLowerCase() || 'guest';
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    console.warn(`Access denied for ${userRole}. Required: ${allowedRoles.join(', ')}`);
+    return <Navigate to="/access-denied" state={{ 
+      requiredRoles: allowedRoles,
+      userRole
+    }} replace />;
+  }
+
+  return children;
+};
