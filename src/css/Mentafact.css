@@ -1403,9 +1403,13 @@ body {
 
 .chart-container {
   height: 300px;
+  max-width: 100%;
+  width: 100%;
   margin-top: 1rem;
   position: relative;
+  overflow: hidden;
 }
+
 
 .chart-card {
   background: white;
