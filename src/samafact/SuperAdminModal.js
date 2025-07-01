@@ -7,16 +7,16 @@ const SuperAdminModal = ({ visible, onCancel, onCreate, loading }) => {
 
   return (
     <Modal
-      visible={visible}
+      open={visible}
       title="Créer un Super Administrateur"
       onCancel={onCancel}
       footer={[
         <Button key="cancel" onClick={onCancel}>
           Annuler
         </Button>,
-        <Button 
-          key="create" 
-          type="primary" 
+        <Button
+          key="create"
+          type="primary"
           loading={loading}
           onClick={() => {
             form
@@ -34,6 +34,22 @@ const SuperAdminModal = ({ visible, onCancel, onCreate, loading }) => {
       ]}
     >
       <Form form={form} layout="vertical">
+        <Form.Item
+          name="nom"
+          label="Nom"
+          rules={[{ required: true, message: 'Ce champ est requis' }]}
+        >
+          <Input placeholder="Nom" />
+        </Form.Item>
+
+        <Form.Item
+          name="prenom"
+          label="Prénom"
+          rules={[{ required: true, message: 'Ce champ est requis' }]}
+        >
+          <Input placeholder="Prénom" />
+        </Form.Item>
+
         <Form.Item
           name="email"
           label="Email"
@@ -77,6 +93,7 @@ const SuperAdminModal = ({ visible, onCancel, onCreate, loading }) => {
           <Input.Password />
         </Form.Item>
       </Form>
+
     </Modal>
   );
 };
