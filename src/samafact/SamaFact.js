@@ -481,7 +481,7 @@ const SamaFact = () => {
 
             {/* Graphiques */}
             <section className="charts-section-admin">
-                <div className="chart-container-admin-first">
+                <div className="chart-container-admin">
                     <h3>Entreprises créées par mois</h3>
                     <BarChart data={data.charts.companiesByMonth} />
                 </div>

@@ -140,32 +140,33 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
   margin-bottom: 2rem;
+    overflow: hidden;
+    height: 400px;
+
 }
 
-.chart-container-admin,
-.chart-container-admin-first {
+.chart-container-admin {
   background: var(--card-bg);
   border-radius: var(--border-radius);
   padding: 1.5rem;
   box-shadow: var(--box-shadow);
+    height: 350px;
+  max-width: 100%;
+  margin-top: 1rem;
+  position: relative;
 }
-.chart-container-admin:hover,
-.chart-container-admin-first:hover {
+.chart-container-admin:hover{
   transform: translateY(-5px);
   box-shadow: var(--box-shadow-lg);
 }
 
-.chart-container-admin h3,
-.chart-container-admin-first h3 {
+.chart-container-admin h3{
   margin-top: 0;
   margin-bottom: 1rem;
   color: var(--text-dark);
   font-size: 1.1rem;
 }
-.chart-container-admin canvas {
-  width: 60% !important;
-  height: 400px !important;
-}
+
 
 /* Tabs */
 .content-tabs {
