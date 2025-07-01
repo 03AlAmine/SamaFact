@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, query } from 'firebase/firestore';
 import '../css/Fact.css';
 import Sidebar from "../Sidebar";
 import { useAuth } from '../auth/AuthContext';
@@ -751,45 +751,49 @@ const Fact = () => {
   const [objet, setObjet] = useState(""); // Ajout de l'état objet
   const [selectedRibs, setSelectedRibs] = useState(["CBAO"]); // Ajout de l'état selectedRibs
   const location = useLocation();
-  const generateInvoiceNumber = useCallback(
-    async (date = new Date(), type = "facture") => {
-      if (!currentUser?.companyId) return `${type}-TEMP`;
+const generateInvoiceNumber = useCallback(
+  async (date = new Date(), type = "facture") => {
+    if (!currentUser?.companyId) return `${type}-TEMP`;
 
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
 
-      let typePrefix;
-      switch (type) {
-        case "avoir": typePrefix = "AV"; break;
-        case "devis": typePrefix = "D"; break;
-        default: typePrefix = "F";
-      }
+    let typePrefix;
+    switch (type) {
+      case "avoir": typePrefix = "AV"; break;
+      case "devis": typePrefix = "D"; break;
+      default: typePrefix = "F"; // facture
+    }
 
-      const prefix = `${typePrefix}-${year}${month}`;
+    const prefix = `${typePrefix}-${year}${month}`;
 
-      try {
-        const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
-        const q = query(facturesRef, orderBy("numero", "desc"), limit(10));
-        const querySnapshot = await getDocs(q);
+    try {
+      const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
+      const snapshot = await getDocs(facturesRef);
 
-        let maxNumber = 0;
-        querySnapshot.forEach(doc => {
-          const numero = doc.data().numero;
+      let maxNumber = 0;
+
+      snapshot.forEach(doc => {
+        const numero = doc.data().numero;
+        if (numero && numero.startsWith(prefix)) {
           const match = numero.match(/-(\d+)$/);
           if (match) {
             const num = parseInt(match[1]);
             if (num > maxNumber) maxNumber = num;
           }
-        });
+        }
+      });
 
-        return `${prefix}-${maxNumber + 1}`;
-      } catch (error) {
-        console.error("Erreur génération numéro:", error);
-        return `${prefix}-1`;
-      }
-    },
-    [currentUser?.companyId]
-  );
+      return `${prefix}-${maxNumber + 1}`;
+    } catch (error) {
+      console.error("Erreur génération numéro:", error);
+      return `${prefix}-1`;
+    }
+  },
+  [currentUser?.companyId]
+);
+
+
 
   // Fonction pour transformer les données de Firebase
   const transformFactureData = (facture) => {
