@@ -10,6 +10,15 @@ import { FaBuilding, FaUsers, FaBell, FaHome } from 'react-icons/fa'; // Import 
 import { CompanyTable, UserTable } from './Tables'; // or correct relative pathconst { CompanyTable, UserTable } = Tables;
 import './SamaFact.css'; // Assurez-vous d'avoir le bon chemin pour le CSS
 import { useNavigate } from 'react-router-dom';
+import SuperAdminModal from './SuperAdminModal';
+import { httpsCallable, getFunctions } from 'firebase/functions'; // <-- Ajouté pour corriger l'erreur
+import { message } from 'antd';
+
+
+
+
+const functions = getFunctions(); // Ajouté pour initialiser functions
+
 const SamaFact = () => {
     // eslint-disable-next-line no-unused-vars
     const { currentUser, isSuperAdmin, loading: authLoading } = useAuth();
@@ -49,7 +58,13 @@ const SamaFact = () => {
             dateRange: 'all',
             role: 'all'
         },
-        modalMode: 'add' // Nouvel état spécifique pour le mode
+        modalMode: 'add', // Nouvel état spécifique pour le mode
+        showSuperAdminModal: false,
+        superAdminForm: {
+            email: '',
+            password: '',
+            confirmPassword: ''
+        }
     });
 
     // États formulaires
@@ -318,6 +333,7 @@ const SamaFact = () => {
         }));
     };
 
+
     // Filtrage des données
     const filteredCompanies = data.companies.filter(company => {
         const matchesSearch =
@@ -343,13 +359,49 @@ const SamaFact = () => {
     });
     if (!isSuperAdmin()) {
         return (
-            navigate ('/access-denied')
+            navigate('/access-denied')
         );
     }
+    // Ajoutez cette fonction dans votre composant
+    const handleCreateSuperAdmin = async (values) => {
+        try {
+            setData(prev => ({ ...prev, loading: true }));
+
+            // Appel à votre Cloud Function
+            const createSuperAdmin = httpsCallable(functions, 'createSuperAdmin');
+            const result = await createSuperAdmin({
+                email: values.email,
+                password: values.password,
+                secret: process.env.REACT_APP_SUPERADMIN_SECRET
+            });
+
+            message.success('SuperAdmin créé avec succès');
+            console.log('Backup code:', result.data.backupCode); // À afficher de manière sécurisée
+
+            // Fermez le modal et réinitialisez
+            setUi(prev => ({
+                ...prev,
+                showSuperAdminModal: false,
+                superAdminForm: {
+                    email: '',
+                    password: '',
+                    confirmPassword: ''
+                }
+            }));
+
+            // Rafraîchir la liste des utilisateurs
+            refreshData();
+        } catch (error) {
+            console.error("Erreur création SuperAdmin:", error);
+            message.error(error.message);
+        } finally {
+            setData(prev => ({ ...prev, loading: false }));
+        }
+    };
+
 
 
     return (
-        console.log("Rendering SamaFact component with data:", currentUser.role),
         <div className="admin-dashboard">
             {/* En-tête avec recherche et boutons */}
             <header className="dashboard-header">
@@ -376,6 +428,15 @@ const SamaFact = () => {
                         <i className="icon-plus"></i>
                         Ajouter {ui.activeTab === 'companies' ? 'une entreprise' : 'un utilisateur'}
                     </button>
+                    {isSuperAdmin() && (
+                        <button
+                            className="secondary-btn"
+                            onClick={() => setUi(prev => ({ ...prev, showSuperAdminModal: true }))}
+                        >
+                            <i className="icon-shield"></i>
+                            Créer SuperAdmin
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -556,6 +617,12 @@ const SamaFact = () => {
                     passwordForm: { ...prev.passwordForm, [field]: value }
                 }))}
                 item={ui.selectedItem}
+            />
+            <SuperAdminModal
+                visible={ui.showSuperAdminModal}
+                onCancel={() => setUi(prev => ({ ...prev, showSuperAdminModal: false }))}
+                onCreate={handleCreateSuperAdmin}
+                loading={data.loading}
             />
         </div>
     );
