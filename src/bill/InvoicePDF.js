@@ -153,40 +153,50 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
       </View>
       {/* Totaux sur la même page si peu d'articles */}
       {pageIndex === itemPages.length - 1 && !showTotalsOnSeparatePage && (
-        <View style={pdfStyles.totalsContainer}>
-          <View style={pdfStyles.legalText}>
-            <Text style={pdfStyles.amountInWords}>
-              Arrêtée la présente facture à la somme de : {'\n'}
-              <Text style={{ color: 'black', fontSize: 11 }}>
-                {n2words(Math.round(Number(data.totals?.["Total TTC"]?.[0]?.replace(/\s/g, '').replace(',', '.')) || 0), { lang: 'fr' })} francs CFA
+        <>
+          <View style={pdfStyles.totalsContainer}>
+            <View style={pdfStyles.legalText}>
+              <Text style={pdfStyles.amountInWords}>
+                Arrêtée la présente facture à la somme de : {'\n'}
+                <Text style={{ color: 'black', fontSize: 11 }}>
+                  {n2words(Math.round(Number(data.totals?.["Total TTC"]?.[0]?.replace(/\s/g, '').replace(',', '.')) || 0), { lang: 'fr' })} francs CFA
+                </Text>
               </Text>
-            </Text>
-            <Text style={pdfStyles.notes}>
-              Notes:{'\n'}
-              <Text style={{ color: 'black', fontSize: 11 }}>
-                Nous vous remercions de votre confiance.
+              <Text style={pdfStyles.notes}>
+                Notes:{'\n'}
+                <Text style={{ color: 'black', fontSize: 11 }}>
+                  Nous vous remercions de votre confiance.
+                </Text>
               </Text>
-            </Text>
-          </View>
+            </View>
 
-          <View style={pdfStyles.totalsBox}>
-            <View style={pdfStyles.totalRow}>
-              <Text style={pdfStyles.totalLabel}>Total HT:</Text>
-              <Text style={pdfStyles.totalValue}>{formatNumber(data.totals?.["Total HT"]?.[0])} XOF</Text>
-            </View>
-            <View style={pdfStyles.totalRow}>
-              <Text style={pdfStyles.totalLabel}>TVA:</Text>
-              <Text style={pdfStyles.totalValue}>{formatNumber(data.totals?.["Total TVA"]?.[0])} XOF</Text>
-            </View>
-            <View style={[pdfStyles.totalRow, pdfStyles.grandTotal]}>
-              <Text style={[pdfStyles.totalLabel, { color: '#4a6da7', fontSize: 12 }]}>Total TTC:</Text>
-              <Text style={[pdfStyles.totalValue, { color: '#4a6da7', fontWeight: 'bold', fontSize: 14 }]}>
-                {formatNumber(data.totals?.["Total TTC"]?.[0])} XOF
-              </Text>
+            <View style={pdfStyles.totalsBox}>
+              <View style={pdfStyles.totalRow}>
+                <Text style={pdfStyles.totalLabel}>Total HT:</Text>
+                <Text style={pdfStyles.totalValue}>{formatNumber(data.totals?.["Total HT"]?.[0])} XOF</Text>
+              </View>
+              <View style={pdfStyles.totalRow}>
+                <Text style={pdfStyles.totalLabel}>TVA:</Text>
+                <Text style={pdfStyles.totalValue}>{formatNumber(data.totals?.["Total TVA"]?.[0])} XOF</Text>
+              </View>
+              <View style={[pdfStyles.totalRow, pdfStyles.grandTotal]}>
+                <Text style={[pdfStyles.totalLabel, { color: '#4a6da7', fontSize: 12 }]}>Total TTC:</Text>
+                <Text style={[pdfStyles.totalValue, { color: '#4a6da7', fontWeight: 'bold', fontSize: 14 }]}>
+                  {formatNumber(data.totals?.["Total TTC"]?.[0])} XOF
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+          <View style={pdfStyles.signatureContainer}>
+            <Image
+              style={pdfStyles.signatureImage}
+              src="./Logo_LIS.png" // Chemin vers votre image de signature
+            />
+          </View>
+        </>
+
       )}
+
       {/* Pied de page */}
       <View style={pdfStyles.footer}>
         <Text style={pdfStyles.footerBold}>LEADER INTERIM ET SERVICES</Text>
@@ -294,7 +304,12 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
           </View>
         </View>
       </View>
-
+      <View style={pdfStyles.signatureContainer}>
+        <Image
+          style={pdfStyles.signatureImage}
+          src="./Logo_LIS.png" // Chemin vers votre image de signature
+        />
+      </View>
       {/* Pied de page */}
       <View style={pdfStyles.footer}>
         <Text style={pdfStyles.footerBold}>LEADER INTERIM ET SERVICES</Text>

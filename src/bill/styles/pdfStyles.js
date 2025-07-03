@@ -18,6 +18,15 @@ export const pdfStyles = StyleSheet.create({
     width: 140,
     height: 'auto',
     marginBottom: 10
+  },  
+  signatureContainer: {
+    marginTop: 5,
+    alignItems: 'flex-end',
+    width: '100%',
+  },
+  signatureImage: {
+    width: 120,
+    height: 50,
   },
   address: {
     fontSize: 7,

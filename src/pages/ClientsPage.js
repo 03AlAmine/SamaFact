@@ -91,25 +91,25 @@ const ClientsPage = ({
                     {/* Formulaire d'édition... */}
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="edit-nom" className="form-label">Nom <span className="required">*</span></label>
+                            <label htmlFor="edit-societe" className="form-label">Responsable </label>
                             <input
-                                id="edit-nom"
-                                name="nom"
+                                id="edit-societe"
+                                name="societe"
                                 value={editingClient.societe}
                                 onChange={handleEditChange}
-                                required
                                 className="form-input"
                             />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="edit-societe" className="form-label">Société</label>
+                            <label htmlFor="edit-nom" className="form-label">Raison sociale <span className="required">*</span></label>
                             <input
-                                id="edit-societe"
-                                name="societe"
+                                id="edit-nom"
+                                name="nom"
                                 value={editingClient.nom}
-                                onChange={(e) => setSocieteInput(e.target.value)}
+                                onChange={handleEditChange}
                                 onBlur={handleSocieteBlur}
+                                required
                                 className="form-input"
                             />
                             {editingClient.anciensNoms?.length > 0 && (
@@ -148,12 +148,13 @@ const ClientsPage = ({
                     <div className="form-row">
 
                         <div className="form-group">
-                            <label htmlFor="edit-adresse" className="form-label">Adresse</label>
+                            <label htmlFor="edit-adresse" className="form-label">Adresse <span className="required">*</span></label>
                             <input
                                 id="edit-adresse"
                                 name="adresse"
                                 value={editingClient.adresse}
                                 onChange={handleEditChange}
+                                required
                                 className="form-input"
                             />
                         </div>
