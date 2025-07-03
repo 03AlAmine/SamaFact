@@ -72,16 +72,12 @@ const Mentafact = () => {
 
             try {
                 let companyIdToSet = currentUser.companyId;
-
                 if (!companyIdToSet) {
                     const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
                     if (userDoc.exists()) {
                         companyIdToSet = userDoc.data().companyId;
-                    } else {
-                        throw new Error("Profil utilisateur incomplet");
                     }
                 }
-
                 setCompanyId(companyIdToSet);
                 return companyIdToSet;
             } catch (error) {
@@ -91,86 +87,83 @@ const Mentafact = () => {
             }
         };
 
-        const loadAllData = async () => {
-            setIsLoading(true);
-            setError(null);
+        // Cette fonction gère les abonnements aux données
+        const setupDataSubscriptions = async (companyId) => {
+            if (!companyId) return;
 
-            try {
-                const resolvedCompanyId = await fetchCompanyId();
-                if (!resolvedCompanyId) return;
+            // Unsubscribe functions
+            const unsubscribers = [];
 
-                // Unified data loader
-                const loadServiceData = async (service, ...args) => {
-                    try {
-                        if (typeof service === 'function') {
-                            if (service === teamService.getTeams) {
-                                return await service(resolvedCompanyId);
-                            }
-                            return await new Promise((resolve) => {
-                                const unsubscribe = service(resolvedCompanyId, resolve, ...args);
-                                return () => unsubscribe?.();
-                            });
-                        }
-                        return [];
-                    } catch (error) {
-                        console.error(`Error loading ${service.name}:`, error);
-                        return [];
-                    }
-                };
+            // Clients subscription
+            const clientsUnsub = clientService.getClients(companyId, (clientsData) => {
+                setClients(clientsData);
+                // Mettre à jour les stats quand les clients changent
+                setStats(prev => ({
+                    ...prev,
+                    totalClients: clientsData.length
+                }));
+            });
+            unsubscribers.push(clientsUnsub);
 
-                const [clientsData, invoicesData, devisData, avoirsData, equipesData] = await Promise.all([
-                    loadServiceData(clientService.getClients),
-                    loadServiceData(invoiceService.getInvoices, "facture"),
-                    loadServiceData(invoiceService.getInvoices, "devis"),
-                    loadServiceData(invoiceService.getInvoices, "avoir"),
-                    loadServiceData(teamService.getTeams)
-                ]);
-
-                // Validate and set data
-                setClients(Array.isArray(clientsData) ? clientsData : []);
-                setAllFactures(Array.isArray(invoicesData) ? invoicesData : []);
-                setAllDevis(Array.isArray(devisData) ? devisData : []);
-                setAllAvoirs(Array.isArray(avoirsData) ? avoirsData : []);
-                setEquipes(Array.isArray(equipesData) ? equipesData : []);
-
-                // Calculate stats
+            // Factures subscription
+            const invoicesUnsub = invoiceService.getInvoices(companyId, "facture", (invoicesData) => {
+                setAllFactures(invoicesData);
+                // Mettre à jour les stats quand les factures changent
                 const now = new Date();
-                setStats({
-                    totalClients: clientsData?.length || 0,
-                    totalFactures: invoicesData?.length || 0,
-                    revenusMensuels: (invoicesData || [])
+                setStats(prev => ({
+                    ...prev,
+                    totalFactures: invoicesData.length,
+                    revenusMensuels: invoicesData
                         .filter(f => f?.date && new Date(f.date).getMonth() === now.getMonth())
                         .reduce((sum, f) => sum + (parseFloat(f?.totalTTC) || 0), 0),
-                    facturesImpayees: (invoicesData || []).filter(f => f?.statut === "en attente").length,
-                    totalEquipes: equipesData?.length || 0
-                });
+                    facturesImpayees: invoicesData.filter(f => f?.statut === "en attente").length
+                }));
+            });
+            unsubscribers.push(invoicesUnsub);
 
-            } catch (err) {
-                console.error("Critical error:", {
-                    message: err.message,
-                    stack: err.stack,
-                    user: currentUser?.uid
-                });
-                setError(err.message.includes("permissions")
-                    ? "Accès refusé - Droits insuffisants"
-                    : "Erreur de chargement des données");
-            } finally {
+            // Devis subscription
+            const devisUnsub = invoiceService.getInvoices(companyId, "devis", setAllDevis);
+            unsubscribers.push(devisUnsub);
+
+            // Avoirs subscription
+            const avoirsUnsub = invoiceService.getInvoices(companyId, "avoir", setAllAvoirs);
+            unsubscribers.push(avoirsUnsub);
+
+            // Equipes subscription
+            const equipesUnsub = teamService.getTeams(companyId, (equipesData) => {
+                setEquipes(equipesData);
+                setStats(prev => ({
+                    ...prev,
+                    totalEquipes: equipesData.length
+                }));
+            });
+            unsubscribers.push(equipesUnsub);
+
+        };
+
+        const loadData = async () => {
+            setIsLoading(true);
+            try {
+                const companyId = await fetchCompanyId();
+                if (!companyId) return;
+
+                const unsubscribe = await setupDataSubscriptions(companyId);
                 setInitialLoadComplete(true);
+                setIsLoading(false);
+
+                return unsubscribe;
+            } catch (error) {
+                console.error("Error loading data:", error);
+                setError("Erreur de chargement des données");
                 setIsLoading(false);
             }
         };
 
-        loadAllData();
-        // Gestion du rechargement de page
-        const handleBeforeUnload = () => {
-            if (!isLoading) setIsLoading(true);
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
+        const unsubscribePromise = loadData();
 
         return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
+            // Cleanup function
+            unsubscribePromise.then(unsubscribe => unsubscribe?.());
         };
     }, [currentUser]);
 
@@ -198,6 +191,13 @@ const Mentafact = () => {
         if (result.success) {
             alert(result.message);
             setClient({ nom: "", adresse: "", email: "", telephone: "", societe: "", type: "client", anciensNoms: [] });
+
+            // Mettre à jour la liste des clients localement
+            setClients(prevClients => [...prevClients, {
+                id: result.client.id, // Assurez-vous que votre service retourne l'ID
+                ...client,
+                createdAt: new Date()
+            }]);
         } else {
             alert(result.message);
         }

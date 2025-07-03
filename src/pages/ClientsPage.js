@@ -38,6 +38,7 @@ const ClientsPage = ({
     const [sortBy, setSortBy] = useState('nom'); // 'nom', 'type', 'dateCreation'
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc' ou 'desc'
     const invoicesSectionRef = useRef(null);
+    
 
     const handleFileUpload = (e) => {
         if (!e.target.files || e.target.files.length === 0) return;
