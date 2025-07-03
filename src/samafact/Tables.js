@@ -9,9 +9,9 @@ export const CompanyTable = ({ companies, users, onDelete, onToggleStatus, onEdi
         setExpandedCompany(expandedCompany === companyId ? null : companyId);
     };
 
-    const getCompanyUsers = (companyId) => {
-        return users.filter(user => user.companyId === companyId);
-    };
+const getCompanyUsers = (companyId) => {
+    return (users || []).filter(user => user.companyId === companyId);
+};
 
     return (
         <div className="data-table">

@@ -1,27 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import {
-    collection, query, getDocs, deleteDoc, doc, updateDoc, addDoc
+    collection, query, getDocs, deleteDoc, doc, updateDoc, addDoc, writeBatch
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { deleteApp, initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { db, auth, firebaseConfig } from '../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { BarChart, PieChart } from './Charts';
 import { PasswordModal, CompanyModal, UserModal } from './Modals';
-import { FaBuilding, FaUsers, FaBell, FaHome } from 'react-icons/fa'; // Import FaUsers and FaBell icons
-import { CompanyTable, UserTable } from './Tables'; // or correct relative pathconst { CompanyTable, UserTable } = Tables;
-import './SamaFact.css'; // Assurez-vous d'avoir le bon chemin pour le CSS
+import { FaBuilding, FaUsers, FaBell, FaHome } from 'react-icons/fa';
+import { CompanyTable, UserTable } from './Tables';
+import './SamaFact.css';
 import { useNavigate } from 'react-router-dom';
-import SuperAdminModal from './SuperAdminModal';
-import { httpsCallable, getFunctions } from 'firebase/functions'; // <-- Ajouté pour corriger l'erreur
+import { getPermissionsForRole } from '../auth/permissions';
 import { message } from 'antd';
 
 
-
-
-const functions = getFunctions(); // Ajouté pour initialiser functions
-
 const SamaFact = () => {
-    // eslint-disable-next-line no-unused-vars
-    const { currentUser, isSuperAdmin, loading: authLoading } = useAuth();
+    const { currentUser, isSuperAdmin } = useAuth();
     const navigate = useNavigate();
 
     // États principaux
@@ -42,14 +39,13 @@ const SamaFact = () => {
         }
     });
 
-
     // États UI
     const [ui, setUi] = useState({
         searchTerm: '',
         activeTab: 'companies',
         selectedCompany: null,
-        showCompanyModal: false,  // Changé de showAddCompany
-        showUserModal: false,     // Ajouté
+        showCompanyModal: false,
+        showUserModal: false,
         showPasswordModal: false,
         selectedItem: null,
         modalType: 'add',
@@ -58,26 +54,25 @@ const SamaFact = () => {
             dateRange: 'all',
             role: 'all'
         },
-        modalMode: 'add', // Nouvel état spécifique pour le mode
-        showSuperAdminModal: false,
-        superAdminForm: {
-            email: '',
-            password: '',
-            confirmPassword: ''
-        }
+        modalMode: 'add',
     });
 
     // États formulaires
     const [forms, setForms] = useState({
-        newCompany: {
+        companyForm: {
             name: '',
             email: '',
             industry: '',
             status: 'active',
         },
-        newUsers: [
-            { name: '', email: '', password: '', role: 'admin' }
-        ],
+        userForm: {
+            name: '',
+            email: '',
+            password: '',
+            role: 'user',
+            companyId: '',
+            permissions: {}
+        },
         passwordForm: {
             newPassword: '',
             confirmPassword: ''
@@ -96,67 +91,53 @@ const SamaFact = () => {
                     getDocs(query(collection(db, 'users')))
                 ]);
 
-                // Traitement des utilisateurs d'abord
                 const usersData = processUsers(usersSnapshot);
-
-                // Passez les données utilisateurs pour le traitement des entreprises
                 const companiesData = processCompanies(companiesSnapshot, usersData);
 
-                // Mettre à jour l'état avec les données traitées
-                setData(prev => ({
-                    ...prev,
+                setData({
                     companies: companiesData,
                     users: usersData,
                     loading: false,
                     stats: calculateStats(companiesData, usersData),
                     charts: prepareChartData(companiesData, usersData)
-                }));
+                });
             } catch (error) {
                 console.error("Erreur chargement :", error);
+                message.error("Erreur lors du chargement des données");
             }
         };
 
         loadData();
-    }, [currentUser, isSuperAdmin]); // Dépendances ajoutées
+    }, [isSuperAdmin]);
 
     // Fonctions de traitement des données
     const processCompanies = (companiesSnapshot, usersData) => {
-        return companiesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const companyId = doc.id;
-
-            // Calculer le nombre d'utilisateurs pour cette entreprise
-            const usersCount = usersData.filter(user => user.companyId === companyId).length;
-
-            return {
-                id: companyId,
-                name: data.name || '',
-                email: data.email || '',
-                industry: data.industry || '',
-                status: data.status || 'active',
-                createdAt: data.createdAt?.toDate() || new Date(),
-                usersCount // Ajout du compteur d'utilisateurs
-            };
-        });
+        return companiesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().name || '',
+            email: doc.data().email || '',
+            industry: doc.data().industry || '',
+            status: doc.data().status || 'active',
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            usersCount: usersData.filter(user => user.companyId === doc.id).length
+        }));
     };
+
     const processUsers = (snapshot) => {
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                name: data.name || 'Non spécifié',
-                email: data.email || 'Non spécifié',
-                role: data.role || 'user',
-                companyId: data.companyId || '',
-                createdAt: data.createdAt?.toDate() || new Date(),
-                isSuperAdmin: data.isSuperAdmin || false
-            };
-        });
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().name || 'Non spécifié',
+            email: doc.data().email || 'Non spécifié',
+            role: doc.data().role || 'user',
+            companyId: doc.data().companyId || '',
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            isSuperAdmin: doc.data().isSuperAdmin || false
+        }));
     };
 
     const calculateStats = (companies, users) => {
-        const now = new Date();
-        const lastMonth = new Date(now.setMonth(now.getMonth() - 1));
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
 
         return {
             totalCompanies: companies.length,
@@ -168,20 +149,16 @@ const SamaFact = () => {
     };
 
     const prepareChartData = (companies, users) => {
-        // Préparation données pour graphiques
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const currentYear = new Date().getFullYear();
 
-        const companiesByMonth = Array(12).fill(0).map((_, i) => {
-            const monthCompanies = companies.filter(c =>
+        const companiesByMonth = monthNames.map((month, i) => ({
+            name: month,
+            count: companies.filter(c =>
                 c.createdAt.getFullYear() === currentYear &&
                 c.createdAt.getMonth() === i
-            );
-            return {
-                name: monthNames[i],
-                count: monthCompanies.length
-            };
-        });
+            ).length
+        }));
 
         const roleCounts = users.reduce((acc, user) => {
             acc[user.role] = (acc[user.role] || 0) + 1;
@@ -206,10 +183,11 @@ const SamaFact = () => {
                 ...prev,
                 [type]: prev[type].filter(item => item.id !== id)
             }));
-            // Mise à jour des stats
             refreshStats();
+            message.success(`${type === 'companies' ? 'Entreprise' : 'Utilisateur'} supprimé avec succès`);
         } catch (error) {
             console.error("Erreur suppression :", error);
+            message.error("Erreur lors de la suppression");
         }
     };
 
@@ -224,59 +202,144 @@ const SamaFact = () => {
                 )
             }));
             refreshStats();
+            message.success(`Statut mis à jour: ${newStatus}`);
         } catch (error) {
             console.error("Erreur changement statut :", error);
+            message.error("Erreur lors du changement de statut");
         }
     };
 
     const handleAddCompany = async (e) => {
         e.preventDefault();
-        setData(prev => ({ ...prev, loading: true }));
-
         try {
-            // Ajout entreprise
-            const companyRef = await addDoc(collection(db, 'companies'), {
-                ...forms.newCompany,
+            await addDoc(collection(db, 'companies'), {
+                ...forms.companyForm,
                 createdAt: new Date(),
             });
+            refreshData();
+            setUi(prev => ({ ...prev, showCompanyModal: false }));
+            message.success('Entreprise créée avec succès !');
+        } catch (error) {
+            console.error("Erreur ajout entreprise:", error);
+            message.error("Erreur lors de la création de l'entreprise");
+        }
+    };
 
-            // Ajout utilisateurs
-            await Promise.all(
-                forms.newUsers.map(user =>
-                    addDoc(collection(db, 'users'), {
-                        ...user,
-                        companyId: companyRef.id,
-                        createdAt: new Date(),
-                    })
-                )
+    const handleCreateUser = async (userData) => {
+        try {
+            // 1. Vérifier l'email
+            const methods = await fetchSignInMethodsForEmail(auth, userData.email);
+            if (methods.length > 0) {
+                throw new Error("Email déjà utilisé");
+            }
+
+            // 2. Créer une instance auth séparée
+            const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+            const secondaryAuth = getAuth(secondaryApp);
+
+            // 3. Créer l'utilisateur
+            const userCredential = await createUserWithEmailAndPassword(
+                secondaryAuth,
+                userData.email,
+                userData.password
             );
 
-            // Réinitialisation et rechargement
-            resetForms();
+            // 4. Utiliser une transaction batch pour garantir l'intégrité des données
+            const batch = writeBatch(db);
+
+            // Document principal dans 'users'
+            const userRef = doc(db, "users", userCredential.user.uid);
+            batch.set(userRef, {
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                companyId: userData.companyId,
+                isSuperAdmin: userData.role === 'superadmin',
+                createdAt: new Date(),
+                permissions: getPermissionsForRole(userData.role)
+            });
+
+            // Document profil dans la sous-collection company
+            const profileRef = doc(db, `companies/${userData.companyId}/profiles`, userCredential.user.uid);
+            batch.set(profileRef, {
+                firstName: userData.name.split(' ')[0] || '',
+                lastName: userData.name.split(' ').slice(1).join(' ') || '',
+                email: userData.email,
+                role: userData.role,
+                createdAt: new Date(),
+                createdBy: auth.currentUser.uid, // ID de l'admin qui a créé le compte
+                permissions: getPermissionsForRole(userData.role),
+                status: 'active'
+            });
+
+            // 5. Exécuter la transaction
+            await batch.commit();
+
+            // 6. Nettoyer
+            await secondaryAuth.signOut();
+            deleteApp(secondaryApp);
+
+            // 7. Fermer le modal et actualiser
+            setUi(prev => ({
+                ...prev,
+                showUserModal: false,
+                userForm: {
+                    name: '',
+                    email: '',
+                    password: '',
+                    role: 'user',
+                    companyId: '',
+                    permissions: {}
+                }
+            }));
+
             refreshData();
+            message.success('Utilisateur et profil créés avec succès !');
 
         } catch (error) {
-            console.error("Erreur ajout :", error);
-        } finally {
-            setData(prev => ({ ...prev, loading: false }));
+            console.error("Erreur création:", error);
+            message.error(error.message || "Erreur lors de la création");
         }
     };
 
     const handleUpdatePassword = async () => {
-        // Implémentez la logique de mise à jour du mot de passe
-        // (via Firebase Auth ou votre propre système)
-        console.log("Mot de passe mis à jour pour:", ui.selectedItem);
-        setUi(prev => ({ ...prev, showPasswordModal: false }));
+        try {
+            // Implémentez ici la logique de mise à jour du mot de passe
+            console.log("Mot de passe mis à jour pour:", ui.selectedItem);
+            message.success('Mot de passe mis à jour avec succès');
+            setUi(prev => ({ ...prev, showPasswordModal: false }));
+        } catch (error) {
+            console.error("Erreur mise à jour mot de passe:", error);
+            message.error("Erreur lors de la mise à jour du mot de passe");
+        }
     };
 
     // Fonctions utilitaires
-    const refreshData = () => {
-        // Recharge les données depuis Firestore
-        // (similaire à useEffect mais appelable manuellement)
+    const refreshData = async () => {
+        setData(prev => ({ ...prev, loading: true }));
+        try {
+            const [companiesSnapshot, usersSnapshot] = await Promise.all([
+                getDocs(query(collection(db, 'companies'))),
+                getDocs(query(collection(db, 'users')))
+            ]);
+
+            const usersData = processUsers(usersSnapshot);
+            const companiesData = processCompanies(companiesSnapshot, usersData);
+
+            setData({
+                companies: companiesData,
+                users: usersData,
+                loading: false,
+                stats: calculateStats(companiesData, usersData),
+                charts: prepareChartData(companiesData, usersData)
+            });
+        } catch (error) {
+            console.error("Erreur rechargement:", error);
+            message.error("Erreur lors du rechargement des données");
+        }
     };
 
     const refreshStats = () => {
-        // Recalcule les statistiques
         setData(prev => ({
             ...prev,
             stats: calculateStats(prev.companies, prev.users),
@@ -284,47 +347,31 @@ const SamaFact = () => {
         }));
     };
 
-    const resetForms = () => {
-        setForms({
-            newCompany: {
-                name: '',
-                email: '',
-                industry: '',
-                status: 'active',
-            },
-            newUsers: [
-                { name: '', email: '', password: '', role: 'admin' }
-            ],
-            passwordForm: {
-                newPassword: '',
-                confirmPassword: ''
-            }
-        });
-        setUi(prev => ({
-            ...prev,
-            showAddCompany: false,
-            showPasswordModal: false
-        }));
-    };
-
-    const addUserField = () => {
-        setForms(prev => ({
-            ...prev,
-            newUsers: [...prev.newUsers, { name: '', email: '', password: '', role: 'user' }]
-        }));
-    };
-
-    // Modifier la fonction openModal
     const openModal = (type, item = null) => {
+        // Réinitialisation du formulaire
+        if (type === 'User') {
+            setForms(prev => ({
+                ...prev,
+                userForm: {
+                    name: '',
+                    email: '',
+                    password: '',
+                    role: 'user',
+                    companyId: '',
+                    permissions: {}
+                }
+            }));
+        }
+
         setUi(prev => ({
             ...prev,
             [`show${type}Modal`]: true,
             selectedItem: item,
             modalType: type.toLowerCase(),
-            modalMode: item ? 'edit' : 'add' // Toujours définir 'add' ou 'edit'
+            modalMode: item ? 'edit' : 'add'
         }));
     };
-    // Ouvre le modal de réinitialisation du mot de passe
+
     const openPasswordModal = (item) => {
         setUi(prev => ({
             ...prev,
@@ -333,83 +380,32 @@ const SamaFact = () => {
         }));
     };
 
-
     // Filtrage des données
     const filteredCompanies = data.companies.filter(company => {
-        const matchesSearch =
-            (company.name ?? '').toLowerCase().includes(ui.searchTerm.toLowerCase()) ||
-            (company.email ?? '').toLowerCase().includes(ui.searchTerm.toLowerCase());
-
-        const matchesStatus =
-            ui.filters.status === 'all' || company.status === ui.filters.status;
-
+        const matchesSearch = ['name', 'email', 'industry'].some(field =>
+            (company[field] ?? '').toLowerCase().includes(ui.searchTerm.toLowerCase())
+        );
+        const matchesStatus = ui.filters.status === 'all' || company.status === ui.filters.status;
         return matchesSearch && matchesStatus;
     });
 
     const filteredUsers = data.users.filter(user => {
-        const matchesSearch =
-            (user.name?.toLowerCase() || '').includes(ui.searchTerm.toLowerCase()) ||
-            (user.email?.toLowerCase() || '').includes(ui.searchTerm.toLowerCase()) ||
-            (user.companyId?.toLowerCase() || '').includes(ui.searchTerm.toLowerCase());
-
-        const matchesRole =
-            ui.filters.role === 'all' || user.role === ui.filters.role;
-
+        const matchesSearch = ['name', 'email', 'companyId'].some(field =>
+            (user[field] ?? '').toLowerCase().includes(ui.searchTerm.toLowerCase())
+        );
+        const matchesRole = ui.filters.role === 'all' || user.role === ui.filters.role;
         return matchesSearch && matchesRole;
     });
+
     if (!isSuperAdmin()) {
-        return (
-            navigate('/access-denied')
-        );
+        return navigate('/access-denied');
     }
-    // Ajoutez cette fonction dans votre composant
-    const handleCreateSuperAdmin = async (values) => {
-        try {
-            setData(prev => ({ ...prev, loading: true }));
-
-            // Appel à votre Cloud Function
-            const createSuperAdmin = httpsCallable(functions, 'createSuperAdmin');
-            const result = await createSuperAdmin({
-                email: values.email,
-                password: values.password,
-                secret: process.env.REACT_APP_SUPERADMIN_SECRET
-            });
-
-            message.success('SuperAdmin créé avec succès');
-            console.log('Backup code:', result.data.backupCode); // À afficher de manière sécurisée
-
-            // Fermez le modal et réinitialisez
-            setUi(prev => ({
-                ...prev,
-                showSuperAdminModal: false,
-                superAdminForm: {
-                    email: '',
-                    password: '',
-                    confirmPassword: ''
-                }
-            }));
-
-            // Rafraîchir la liste des utilisateurs
-            refreshData();
-        } catch (error) {
-            console.error("Erreur création SuperAdmin:", error);
-            message.error(error.message);
-        } finally {
-            setData(prev => ({ ...prev, loading: false }));
-        }
-    };
-
-
 
     return (
         <div className="admin-dashboard">
-            {/* En-tête avec recherche et boutons */}
+            {/* En-tête */}
             <header className="dashboard-header">
-                <h1>
-                    <FaHome />
-                    Tableau de bord SuperAdmin
-                </h1>
-
+                <h1><FaHome /> Tableau de bord SuperAdmin</h1>
                 <div className="header-actions">
                     <div className="search-bar">
                         <i className="icon-search"></i>
@@ -420,7 +416,6 @@ const SamaFact = () => {
                             onChange={(e) => setUi(prev => ({ ...prev, searchTerm: e.target.value }))}
                         />
                     </div>
-
                     <button
                         className="primary-btn"
                         onClick={() => openModal(ui.activeTab === 'companies' ? 'Company' : 'User')}
@@ -428,55 +423,50 @@ const SamaFact = () => {
                         <i className="icon-plus"></i>
                         Ajouter {ui.activeTab === 'companies' ? 'une entreprise' : 'un utilisateur'}
                     </button>
-                    {isSuperAdmin() && (
-                        <button
-                            className="secondary-btn"
-                            onClick={() => setUi(prev => ({ ...prev, showSuperAdminModal: true }))}
-                        >
-                            <i className="icon-shield"></i>
-                            Créer SuperAdmin
-                        </button>
-                    )}
                 </div>
             </header>
 
             {/* Section Statistiques */}
             <section className="stats-section-admin">
-                <div className="stat-card">
-                    <div className="stat-icon bg-primary">
-                        <FaBuilding />
+                {[
+                    {
+                        icon: <FaBuilding />,
+                        title: "Entreprises",
+                        values: [
+                            `${data.stats.totalCompanies} total`,
+                            `${data.stats.activeCompanies} actives`
+                        ],
+                        growth: `+${data.stats.monthlyGrowth} ce mois`
+                    },
+                    {
+                        icon: <FaUsers />,
+                        title: "Utilisateurs",
+                        values: [
+                            `${data.stats.totalUsers} total`,
+                            `${data.stats.adminsCount} administrateurs`
+                        ]
+                    },
+                    {
+                        icon: <FaBell />,
+                        title: "Activité",
+                        values: ["30 jours", "5 nouvelles entreprises"]
+                    }
+                ].map((stat, i) => (
+                    <div key={i} className="stat-card">
+                        <div className={`stat-icon bg-${i === 0 ? 'primary' : i === 1 ? 'success' : 'warning'}`}>
+                            {stat.icon}
+                        </div>
+                        <div className="stat-info">
+                            <h3>{stat.title}</h3>
+                            {stat.values.map((val, j) => (
+                                <p key={j}>{j === 0 ? <strong>{val}</strong> : <small>{val}</small>}</p>
+                            ))}
+                        </div>
+                        {stat.growth && (
+                            <div className="stat-growth">{stat.growth}</div>
+                        )}
                     </div>
-                    <div className="stat-info">
-                        <h3>Entreprises</h3>
-                        <p>{data.stats.totalCompanies} total</p>
-                        <small>{data.stats.activeCompanies} actives</small>
-                    </div>
-                    <div className="stat-growth">
-                        +{data.stats.monthlyGrowth} ce mois
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon bg-success">
-                        <FaUsers />
-                    </div>
-                    <div className="stat-info">
-                        <h3>Utilisateurs</h3>
-                        <p>{data.stats.totalUsers} total</p>
-                        <small>{data.stats.adminsCount} administrateurs</small>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon bg-warning">
-                        <FaBell />
-                    </div>
-                    <div className="stat-info">
-                        <h3>Activité</h3>
-                        <p>30 jours</p>
-                        <small>5 nouvelles entreprises</small>
-                    </div>
-                </div>
+                ))}
             </section>
 
             {/* Graphiques */}
@@ -491,20 +481,18 @@ const SamaFact = () => {
                 </div>
             </section>
 
-            {/* Onglets et contenu principal */}
+            {/* Onglets */}
             <div className="content-tabs">
-                <button
-                    className={ui.activeTab === 'companies' ? 'active' : ''}
-                    onClick={() => setUi(prev => ({ ...prev, activeTab: 'companies' }))}
-                >
-                    <i className="icon-building"></i> Entreprises
-                </button>
-                <button
-                    className={ui.activeTab === 'users' ? 'active' : ''}
-                    onClick={() => setUi(prev => ({ ...prev, activeTab: 'users' }))}
-                >
-                    <i className="icon-users"></i> Utilisateurs
-                </button>
+                {['companies', 'users'].map((tab) => (
+                    <button
+                        key={tab}
+                        className={ui.activeTab === tab ? 'active' : ''}
+                        onClick={() => setUi(prev => ({ ...prev, activeTab: tab }))}
+                    >
+                        <i className={`icon-${tab === 'companies' ? 'building' : 'users'}`}></i>
+                        {tab === 'companies' ? 'Entreprises' : 'Utilisateurs'}
+                    </button>
+                ))}
             </div>
 
             {/* Filtres */}
@@ -517,9 +505,12 @@ const SamaFact = () => {
                             filters: { ...prev.filters, status: e.target.value }
                         }))}
                     >
-                        <option value="all">Tous les statuts</option>
-                        <option value="active">Actives</option>
-                        <option value="suspended">Suspendues</option>
+                        {['all', 'active', 'suspended'].map((status) => (
+                            <option key={status} value={status}>
+                                {status === 'all' ? 'Tous les statuts' :
+                                    status === 'active' ? 'Actives' : 'Suspendues'}
+                            </option>
+                        ))}
                     </select>
                 ) : (
                     <select
@@ -529,9 +520,12 @@ const SamaFact = () => {
                             filters: { ...prev.filters, role: e.target.value }
                         }))}
                     >
-                        <option value="all">Tous les rôles</option>
-                        <option value="admin">Administrateurs</option>
-                        <option value="user">Utilisateurs</option>
+                        {['all', 'admin', 'user'].map((role) => (
+                            <option key={role} value={role}>
+                                {role === 'all' ? 'Tous les rôles' :
+                                    role === 'admin' ? 'Administrateurs' : 'Utilisateurs'}
+                            </option>
+                        ))}
                     </select>
                 )}
 
@@ -542,32 +536,31 @@ const SamaFact = () => {
                         filters: { ...prev.filters, dateRange: e.target.value }
                     }))}
                 >
-                    <option value="all">Toutes les dates</option>
-                    <option value="month">Ce mois-ci</option>
-                    <option value="year">Cette année</option>
+                    {['all', 'month', 'year'].map((range) => (
+                        <option key={range} value={range}>
+                            {range === 'all' ? 'Toutes les dates' :
+                                range === 'month' ? 'Ce mois-ci' : 'Cette année'}
+                        </option>
+                    ))}
                 </select>
             </div>
 
-            {/* Contenu des tableaux */}
+            {/* Tableaux */}
             {ui.activeTab === 'companies' ? (
                 <CompanyTable
                     companies={filteredCompanies}
+                    users={data.users || []} // Fournir un tableau vide par défaut
                     onDelete={handleDelete}
                     onToggleStatus={handleToggleStatus}
-                    mode={ui.modalType}  // Passe 'add' ou 'edit'
-                    users={data.users} // <-- Ceci est essentiel
                     onEdit={openModal}
                     onPasswordReset={openPasswordModal}
                 />
             ) : (
-                // Pour UserTable
                 <UserTable
                     users={filteredUsers}
                     companies={data.companies}
                     onDelete={handleDelete}
-                    mode={ui.modalType}  // Passe 'add' ou 'edit'
-
-                    onEdit={openModal}
+                    onEdit={(user) => openModal('User', user)}
                     onPasswordReset={openPasswordModal}
                 />
             )}
@@ -577,33 +570,27 @@ const SamaFact = () => {
                 visible={ui.showCompanyModal}
                 onClose={() => setUi(prev => ({ ...prev, showCompanyModal: false }))}
                 onSubmit={handleAddCompany}
-                company={forms.newCompany}
-                users={forms.newUsers}
+                company={forms.companyForm}
                 onChange={(field, value) => setForms(prev => ({
                     ...prev,
-                    newCompany: { ...prev.newCompany, [field]: value }
+                    companyForm: { ...prev.companyForm, [field]: value }
                 }))}
-                onUserChange={(index, field, value) => {
-                    const updatedUsers = [...forms.newUsers];
-                    updatedUsers[index][field] = value;
-                    setForms(prev => ({ ...prev, newUsers: updatedUsers }));
-                }}
-                onAddUser={addUserField}
-                mode={ui.modalMode || 'add'} // Valeur de secours
+                mode={ui.modalMode}
             />
 
             <UserModal
                 visible={ui.showUserModal}
                 onClose={() => setUi(prev => ({ ...prev, showUserModal: false }))}
-                onSubmit={handleAddCompany}
-                user={forms.newUsers[0]}
+                onSubmit={handleCreateUser} // ← Important
+                user={forms.userForm}
                 companies={data.companies}
-                onChange={(field, value) => {
-                    const updatedUsers = [...forms.newUsers];
-                    updatedUsers[0][field] = value;
-                    setForms(prev => ({ ...prev, newUsers: updatedUsers }));
-                }}
-                mode={ui.modalMode || 'add'} // Valeur de secours
+                onChange={(field, value) => setForms(prev => ({
+                    ...prev,
+                    userForm: { ...prev.userForm, [field]: value }
+                }))}
+                mode={ui.modalMode}
+                isSuperAdmin={currentUser.isSuperAdmin}
+                currentUser={currentUser}
             />
 
             <PasswordModal
@@ -617,12 +604,6 @@ const SamaFact = () => {
                     passwordForm: { ...prev.passwordForm, [field]: value }
                 }))}
                 item={ui.selectedItem}
-            />
-            <SuperAdminModal
-                visible={ui.showSuperAdminModal}
-                onCancel={() => setUi(prev => ({ ...prev, showSuperAdminModal: false }))}
-                onCreate={handleCreateSuperAdmin}
-                loading={data.loading}
             />
         </div>
     );

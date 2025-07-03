@@ -12,6 +12,7 @@ import { doc, setDoc, getDoc, collection, writeBatch } from 'firebase/firestore'
 // Constants
 const AuthContext = createContext();
 const ROLES = {
+  SUPERADMIN: 'superadmin',
   ADMIN: 'admin',
   MANAGER: 'manager',
   EDITOR: 'editor',
@@ -19,6 +20,12 @@ const ROLES = {
 };
 
 const PERMISSIONS = {
+  [ROLES.SUPERADMIN]: {
+    manageCompany: true,
+    manageUsers: true,
+    manageDocuments: true,
+    viewAll: true
+  },
   [ROLES.ADMIN]: {
     manageCompany: true,
     manageUsers: true,
@@ -47,38 +54,45 @@ const PERMISSIONS = {
 
 export function AuthProvider({ children }) {
 
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+const [currentUser, setCurrentUser] = useState(null);
+const [loading, setLoading] = useState(true);
 
-  // Dans votre AuthProvider
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Récupère à la fois les claims ET les données Firestore
-        const [idTokenResult, userDoc] = await Promise.all([
-          user.getIdTokenResult(),
-          getDoc(doc(db, 'users', user.uid))
-        ]);
+// Dans votre AuthProvider
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // Récupère à la fois les claims ET les données Firestore
+      const [idTokenResult, userDoc] = await Promise.all([
+        user.getIdTokenResult(),
+        getDoc(doc(db, 'users', user.uid))
+      ]);
 
-        setCurrentUser({
-          uid: user.uid,
-          email: user.email,
-          // Gestion complète des rôles
-          isSuperAdmin: idTokenResult.claims.superAdmin ||
-            idTokenResult.claims.role === 'super-admin' ||
-            userDoc.data()?.role === 'super-admin',
-          // Fusion des données
-          ...userDoc.data(),
-          ...idTokenResult.claims
-        });
-      } else {
+      if (!userDoc.exists()) {
+        console.warn('⚠️ Le document utilisateur n’existe pas encore.');
         setCurrentUser(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
 
-    return unsubscribe;
-  }, []);
+      setCurrentUser({
+        uid: user.uid,
+        email: user.email,
+        // Gestion complète des rôles
+        isSuperAdmin: idTokenResult.claims.superAdmin ||
+          idTokenResult.claims.role === 'super-admin' ||
+          userDoc.data()?.role === 'super-admin',
+        // Fusion des données
+        ...userDoc.data(),
+        ...idTokenResult.claims
+      });
+    } else {
+      setCurrentUser(null);
+    }
+    setLoading(false);
+  });
+
+  return unsubscribe;
+}, []);
 
   // State
 
@@ -274,22 +288,16 @@ export function AuthProvider({ children }) {
     return normalizedPermissions[requiredPermission] ?? false;
   }
   // Dans votre AuthContext
-// Dans votre AuthContext
-function isSuperAdmin() {
-  if (!currentUser) return false;
-  
-  // Vérification à 3 niveaux
-  return (
-    currentUser.isSuperAdmin || // Firestore
-    currentUser.customClaims?.superAdmin || // Claims JWT
-    currentUser.role === 'super-admin' // Alternative
-  );
-}
+  function isSuperAdmin() {
+    if (!currentUser) return false;
 
-  // Ajoutez cette fonction au value du contexte
-
-  // Auth state listener
-
+    // Vérification à 3 niveaux
+    return (
+      currentUser.isSuperAdmin || // Firestore
+      currentUser.customClaims?.superAdmin || // Claims JWT
+      currentUser.role === 'super-admin' // Alternative
+    );
+  }
 
   // Context value
   const value = {
