@@ -12,50 +12,50 @@ import {
 } from "firebase/firestore";
 
 export const clientService = {
-getClients: (companyId, callback) => {
-    if (!companyId) return () => {};
+  getClients: (companyId, callback) => {
+    if (!companyId) return () => { };
 
     const clientsRef = collection(db, `companies/${companyId}/clients`);
     const q = query(clientsRef);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        const clientsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            // Convertir les timestamps Firebase en Dates si nécessaire
-            createdAt: doc.data().createdAt?.toDate?.() || null
-        }));
-        callback(clientsData);
+      const clientsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || null
+      }));
+      callback(clientsData);
     });
 
-    return unsubscribe; // Retourne la fonction de désabonnement
-},
+    return unsubscribe;
+  },
 
-addClient: async (companyId, clientData) => {
-  try {
-    const clientsRef = collection(db, `companies/${companyId}/clients`);
-    const docRef = await addDoc(clientsRef, {
-      ...clientData,
-      createdAt: new Date()
-    });
-    
-    // Récupérer le document nouvellement créé
-    const newClient = {
-      id: docRef.id,
-      ...clientData,
-      createdAt: new Date()
-    };
-    
-    return { 
-      success: true, 
-      message: "Client ajouté avec succès !",
-      client: newClient
-    };
-  } catch (error) {
-    console.error("Erreur:", error);
-    return { success: false, message: "Erreur lors de l'ajout du client." };
-  }
-},
+
+  addClient: async (companyId, clientData) => {
+    try {
+      const clientsRef = collection(db, `companies/${companyId}/clients`);
+      const docRef = await addDoc(clientsRef, {
+        ...clientData,
+        createdAt: new Date()
+      });
+
+      // Récupérer le document nouvellement créé
+      const newClient = {
+        id: docRef.id,
+        ...clientData,
+        createdAt: new Date()
+      };
+
+      return {
+        success: true,
+        message: "Client ajouté avec succès !",
+        client: newClient
+      };
+    } catch (error) {
+      console.error("Erreur:", error);
+      return { success: false, message: "Erreur lors de l'ajout du client." };
+    }
+  },
   updateClient: async (companyId, clientId, clientData) => {
     try {
       const clientRef = doc(db, `companies/${companyId}/clients/${clientId}`);
@@ -79,45 +79,45 @@ addClient: async (companyId, clientData) => {
     }
   },
 
-loadClientInvoices: async (companyId, clientId, type) => {
-  
-  try {
-    const chemin = `companies/${companyId}/factures`;
+  loadClientInvoices: async (companyId, clientId, type) => {
 
-    const invoicesRef = collection(db, chemin);
-    const q = query(
-      invoicesRef,
-      where("clientId", "==", clientId),
-      where("type", "==", type)
-    );
+    try {
+      const chemin = `companies/${companyId}/factures`;
 
-    
-    const querySnapshot = await getDocs(q);
+      const invoicesRef = collection(db, chemin);
+      const q = query(
+        invoicesRef,
+        where("clientId", "==", clientId),
+        where("type", "==", type)
+      );
 
-  /*  if (querySnapshot.empty) {
-      console.warn("Aucun document trouvé pour cette requête");
-      return [];
-    }*/
 
-    const resultats = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      
-      return {
-        id: doc.id,
-        ...data,
-        date: data.date?.toDate?.() || null
-      };
-    });
+      const querySnapshot = await getDocs(q);
 
-    return resultats;
-  } catch (error) {
-    console.error("❌ Erreur complète:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    throw error;
+      /*  if (querySnapshot.empty) {
+          console.warn("Aucun document trouvé pour cette requête");
+          return [];
+        }*/
+
+      const resultats = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+
+        return {
+          id: doc.id,
+          ...data,
+          date: data.date?.toDate?.() || null
+        };
+      });
+
+      return resultats;
+    } catch (error) {
+      console.error("❌ Erreur complète:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      throw error;
+    }
   }
-}
 
 };

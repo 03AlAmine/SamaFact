@@ -406,6 +406,9 @@ const SamaFact = () => {
             {/* En-tête */}
             <header className="dashboard-header">
                 <h1><FaHome /> Tableau de bord SuperAdmin</h1>
+                <button onClick={() => navigate('/')} className='first-btn'>
+                    Test
+                </button>
                 <div className="header-actions">
                     <div className="search-bar">
                         <i className="icon-search"></i>

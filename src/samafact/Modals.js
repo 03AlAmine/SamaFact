@@ -139,7 +139,7 @@ export const UserModal = ({
             onChange('permissions', perms);
         }
         // ✅ Ne pas mettre `onChange` ici sauf s’il est `useCallback`
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode, user.role]);
 
 
@@ -207,21 +207,6 @@ export const UserModal = ({
                             </div>
                         )}
 
-                        <div className="form-group">
-                            <label htmlFor="user-role">Rôle</label>
-                            <select
-                                id="user-role"
-                                className="form-control"
-                                value={user.role}
-                                onChange={(e) => onChange('role', e.target.value)}
-                            >
-                                <option value="admin">Administrateur</option>
-                                <option value="manager">Manager</option>
-                                <option value="user">Utilisateur standard</option>
-                                {isSuperAdmin && <option value="superadmin">Super Admin</option>}
-                            </select>
-                        </div>
-
                         {showCompanyField && availableCompanies.length > 0 && (
                             <div className="form-group">
                                 <label htmlFor="user-company">Entreprise</label>
@@ -250,6 +235,24 @@ export const UserModal = ({
                                 Aucune entreprise disponible pour l'affectation
                             </div>
                         )}
+                        <div className="form-group">
+                            <label htmlFor="user-role">Rôle</label>
+                            <select
+                                id="user-role"
+                                className="form-control"
+                                value={user.role}
+                                onChange={(e) => onChange('role', e.target.value)}
+                            >
+                                <option value="admin">Administrateur</option>
+                                <option value="manager">Manager</option>
+                                <option value="user">Utilisateur standard</option>
+                                <option value="editor">Éditeur</option>
+                                <option value="viewer">Lecteur</option>
+                                {isSuperAdmin && <option value="superadmin">Super Admin</option>}
+                            </select>
+                        </div>
+
+
 
                         <div className="form-actions">
                             <button

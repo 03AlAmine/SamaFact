@@ -10,40 +10,42 @@ import {
   where,
 } from "firebase/firestore";
 
-/*const convertIfTimestamp = (value) => {
+const convertIfTimestamp = (value) => {
   return value && typeof value.toDate === 'function' ? value.toDate() : value;
 };
-*/
+
 export const invoiceService = {
 getInvoices: (companyId, type, callback) => {
     if (!companyId) return () => {};
     
-    const invoicesRef = collection(db, `companies/${companyId}/factures`);
-    
-    // Vérifiez que 'type' est une string valide
+    // Vérification du type
     if (typeof type !== 'string') {
-        console.error("Type must be a string");
+        console.error("Type parameter must be a string");
         return () => {};
     }
+
+    const invoicesRef = collection(db, `companies/${companyId}/factures`);
     
-    // Construisez la query correctement
-    const q = query(
-        invoicesRef,
-        where("type", "==", type) // 'type' doit être une string
-    );
+    // Construction sécurisée de la requête
+    let q;
+    try {
+        q = query(invoicesRef, where("type", "==", type));
+    } catch (error) {
+        console.error("Error building query:", error);
+        return () => {};
+    }
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const invoicesData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            date: doc.data().date?.toDate?.() || null
+            date: convertIfTimestamp(doc.data().date)
         }));
         callback(invoicesData);
     });
     
     return unsubscribe;
 },
-
   addInvoice: async (companyId, invoiceData, type = "facture") => {
     try {
       const invoiceToSave = {

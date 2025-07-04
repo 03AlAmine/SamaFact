@@ -9,7 +9,7 @@ import { db, storage } from '../firebase';
 const Profile = () => {
   // State management
   const { currentUser, createSubUser, checkPermission } = useAuth();
-  
+
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -158,7 +158,7 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) return;
-    
+
     try {
       if (!companyId) {
         setErrorMessage("Impossible de trouver l'identifiant de l'entreprise.");
@@ -179,7 +179,7 @@ const Profile = () => {
   const shouldShowSection = (section) => {
     if (!currentUser) return false;
 
-    if ([ROLES.ADMIN, ROLES.MANAGER].includes(currentUser.role)) return true;
+    if ([ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPERADMIN].includes(currentUser.role)) return true;
 
     if (currentUser.role === ROLES.EDITOR) {
       return section !== 'company' && section !== 'bank';
@@ -206,8 +206,8 @@ const Profile = () => {
       <Sidebar
         sidebarOpen={true}
         activeTab="profile"
-        setActiveTab={() => {}}
-        setSidebarOpen={() => {}}
+        setActiveTab={() => { }}
+        setSidebarOpen={() => { }}
       />
 
       <div className="profile-container">
@@ -449,7 +449,7 @@ const Profile = () => {
               </div>
             </div>
           )}
-          
+
           <div className="form-actions">
             <button type="submit" className="btn-save">
               Enregistrer les modifications
@@ -485,13 +485,28 @@ const Profile = () => {
                   value={subUserForm.role}
                   onChange={(e) => setSubUserForm({ ...subUserForm, role: e.target.value })}
                 >
-                  {Object.values(ROLES).map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
+                  {/* Filtrer les rôles selon le rôle de l'utilisateur actuel */}
+                  {Object.values(ROLES)
+                    .filter(role => {
+                      // Un admin ne peut pas créer de superadmin
+                      if (currentUser.role === ROLES.ADMIN && role === ROLES.SUPERADMIN) {
+                        return false;
+                      }
+                      // Un manager ne peut créer que des viewers et editors
+                      if (currentUser.role === ROLES.MANAGER &&
+                        [ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.MANAGER].includes(role)) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
                 </select>
               </div>
+
               <div className="form-group">
                 <label>Mot de passe temporaire</label>
                 <input

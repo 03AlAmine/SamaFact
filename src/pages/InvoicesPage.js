@@ -186,6 +186,8 @@ const InvoicesPage = ({
             state: {
                 facture: duplicatedDocument,
                 isDuplicate: true,
+                type: document.type, // <--- AJOUTÉ ICI
+
                 client: {
                     nom: document.clientNom,
                     adresse: document.clientAdresse

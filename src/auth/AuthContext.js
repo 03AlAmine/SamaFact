@@ -54,45 +54,45 @@ const PERMISSIONS = {
 
 export function AuthProvider({ children }) {
 
-const [currentUser, setCurrentUser] = useState(null);
-const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-// Dans votre AuthProvider
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // Récupère à la fois les claims ET les données Firestore
-      const [idTokenResult, userDoc] = await Promise.all([
-        user.getIdTokenResult(),
-        getDoc(doc(db, 'users', user.uid))
-      ]);
+  // Dans votre AuthProvider
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Récupère à la fois les claims ET les données Firestore
+        const [idTokenResult, userDoc] = await Promise.all([
+          user.getIdTokenResult(),
+          getDoc(doc(db, 'users', user.uid))
+        ]);
 
-      if (!userDoc.exists()) {
-        console.warn('⚠️ Le document utilisateur n’existe pas encore.');
+        if (!userDoc.exists()) {
+          console.warn('⚠️ Le document utilisateur n’existe pas encore.');
+          setCurrentUser(null);
+          setLoading(false);
+          return;
+        }
+
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          // Gestion complète des rôles
+          isSuperAdmin: idTokenResult.claims.superAdmin ||
+            idTokenResult.claims.role === 'super-admin' ||
+            userDoc.data()?.role === 'super-admin',
+          // Fusion des données
+          ...userDoc.data(),
+          ...idTokenResult.claims
+        });
+      } else {
         setCurrentUser(null);
-        setLoading(false);
-        return;
       }
+      setLoading(false);
+    });
 
-      setCurrentUser({
-        uid: user.uid,
-        email: user.email,
-        // Gestion complète des rôles
-        isSuperAdmin: idTokenResult.claims.superAdmin ||
-          idTokenResult.claims.role === 'super-admin' ||
-          userDoc.data()?.role === 'super-admin',
-        // Fusion des données
-        ...userDoc.data(),
-        ...idTokenResult.claims
-      });
-    } else {
-      setCurrentUser(null);
-    }
-    setLoading(false);
-  });
-
-  return unsubscribe;
-}, []);
+    return unsubscribe;
+  }, []);
 
   // State
 
@@ -198,9 +198,10 @@ useEffect(() => {
 
   // User management functions
   async function createSubUser(email, password, userName, role = ROLES.VIEWER) {
-    if (!currentUser || currentUser.role !== ROLES.ADMIN) {
-      throw new Error("Unauthorized: Only admins can create sub-users");
+    if (!currentUser || (currentUser.role !== ROLES.ADMIN && !isSuperAdmin())) {
+      throw new Error("Unauthorized: Only admins or superadmins can create sub-users");
     }
+
 
     try {
       // Create user

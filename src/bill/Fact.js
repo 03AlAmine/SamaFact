@@ -8,6 +8,7 @@ import Sidebar from "../Sidebar";
 import { useAuth } from '../auth/AuthContext';
 import InvoicePDF from './InvoicePDF';
 import DynamicPDFViewer from '../components/DynamicPDFViewer';
+import empty from '../assets/empty_article.png';
 
 
 
@@ -21,6 +22,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
   });
   const [selectedClientId, setSelectedClientId] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
+  const [showClientInfo, setShowClientInfo] = useState(true);
 
 
   const handleClientChange = (e) => {
@@ -255,181 +257,198 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
           </button>
         </div>
         <div className="section">
-          <h2>Informations du client</h2>
-
-
-          <div className="form-group">
-            <label className="label">Client:</label>
-            <select
-              className="select"
-              onChange={handleClientChange}
-              value={selectedClientId || (data.client?.Nom?.[0] ?
-                clients.find(c => c.nom === data.client.Nom[0])?.id || ""
-                : "")
-              }
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>Informations du client</h2>
+            <button
+              className="first-btn"
+              onClick={() => setShowClientInfo(!showClientInfo)}
+              style={{ fontSize: '0.9rem' }}
             >
-              <option value="">Sélectionner un client</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>
-                  {client.nom} - {client.adresse} - {client.ville}
-                </option>
-              ))}
-            </select>
+              {showClientInfo ? "Masquer" : "Afficher"}
+            </button>
           </div>
 
-          {data.client?.Nom?.[0] && (
-            <div style={{
-              marginTop: '1.5rem',
-              padding: '1rem',
-              backgroundColor: 'var(--light-color)',
-              borderRadius: 'var(--radius-sm)',
-              borderLeft: '4px solid var(--primary-color)'
-            }}>
-              <p><strong>Nom:</strong> {data.client.Nom[0]}</p>
-              <p><strong>Adresse:</strong> {data.client.Adresse[0]}</p>
-              <p><strong>Ville:</strong> {data.client.Ville[0]}</p>
-            </div>
-          )}
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '1.5rem',
-            marginTop: '1.5rem'
-          }}>
-            <div className="form-group">
-              <label className="label">Numéro de facture:</label>
-              <input
-                className="input"
-                type="text"
-                value={data.facture.Numéro[0]}
-                onChange={(e) => setData({
-                  ...data,
-                  facture: {
-                    ...data.facture,
-                    Numéro: [e.target.value]
-                  }
-                })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="label">Date:</label>
-              <input
-                className="input"
-                type="date"
-                value={data.facture.Date[0]}
-                onChange={(e) => setData({
-                  ...data,
-                  facture: {
-                    ...data.facture,
-                    Date: [e.target.value]
-                  }
-                })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="label">Date d'échéance:</label>
-              <input
-                className="input"
-                type="date"
-                value={data.facture.DateEcheance[0]}
-                onChange={(e) => setData({
-                  ...data,
-                  facture: {
-                    ...data.facture,
-                    DateEcheance: [e.target.value]
-                  }
-                })}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="section">
-          <h2>Type de document</h2>
-          <div className="form-group">
-            <select
-              className="select"
-              value={data.facture.Type?.[0] || "facture"}
-              onChange={async (e) => {
-                const newType = e.target.value;
-                try {
-                  const newNumber = await generateInvoiceNumber(new Date(data.facture.Date[0]), newType);
-                  setData({
-                    ...data,
-                    facture: {
-                      ...data.facture,
-                      Type: [newType],
-                      Numéro: [newNumber]
-                    }
-                  });
-                } catch (error) {
-                  console.error("Erreur génération numéro:", error);
-                  setData({
-                    ...data,
-                    facture: {
-                      ...data.facture,
-                      Type: [newType]
-                    }
-                  });
-                }
-              }}
-            >
-              <option value="facture">Facture</option>
-              <option value="avoir">Avoir</option>
-              <option value="devis">Devis</option>
-            </select>
-          </div>
-          <div className="section" style={{ marginTop: '2rem' }}>
-            <h2>Objet de la facture</h2>
-            <div className="form-group">
-              <input
-                type="text"
-                value={objet}
-                onChange={(e) => setObjet(e.target.value)}
-                placeholder="Objet de la facture"
-                className="input"
-              />
-
-            </div>
-            <div className="section" style={{ marginTop: '2rem' }}>
-              <h2>Banque(s) pour le paiement:</h2>
+          {showClientInfo && (
+            <>
               <div className="form-group">
-                <div className="rib-selector">
-                  <label className="rib-option">
-                    <input
-                      type="checkbox"
-                      className="rib-checkbox"
-                      checked={selectedRibs.includes("CBAO")}
-                      onChange={(e) => setSelectedRibs(
-                        e.target.checked
-                          ? [...selectedRibs, "CBAO"]
-                          : selectedRibs.filter(rib => rib !== "CBAO")
-                      )}
-                    />
-                    <span className="rib-checkmark"></span>
-                    <span className="rib-label">CBAO</span>
-                  </label>
+                <label className="label">Client:</label>
+                <select
+                  className="select"
+                  onChange={handleClientChange}
+                  value={selectedClientId || (data.client?.Nom?.[0] ?
+                    clients.find(c => c.nom === data.client.Nom[0])?.id || ""
+                    : "")
+                  }
+                >
+                  <option value="">Sélectionner un client</option>
+                  {clients.map(client => (
+                    <option key={client.id} value={client.id}>
+                      {client.nom} - {client.adresse} - {client.ville}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                  <label className="rib-option">
-                    <input
-                      type="checkbox"
-                      className="rib-checkbox"
-                      checked={selectedRibs.includes("BIS")}
-                      onChange={(e) => setSelectedRibs(
-                        e.target.checked
-                          ? [...selectedRibs, "BIS"]
-                          : selectedRibs.filter(rib => rib !== "BIS")
-                      )}
-                    />
-                    <span className="rib-checkmark"></span>
-                    <span className="rib-label">BIS</span>
-                  </label>
+              {data.client?.Nom?.[0] && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  backgroundColor: 'var(--light-color)',
+                  borderRadius: 'var(--radius-sm)',
+                  borderLeft: '4px solid var(--primary-color)'
+                }}>
+                  <p><strong>Nom:</strong> {data.client.Nom[0]}</p>
+                  <p><strong>Adresse:</strong> {data.client.Adresse[0]}</p>
+                  <p><strong>Ville:</strong> {data.client.Ville[0]}</p>
+                </div>
+              )}
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '1.5rem',
+                marginTop: '1.5rem'
+              }}>
+                <div className="form-group">
+                  <label className="label">Numéro de facture:</label>
+                  <input
+                    className="input"
+                    type="text"
+                    value={data.facture.Numéro[0]}
+                    onChange={(e) => setData({
+                      ...data,
+                      facture: {
+                        ...data.facture,
+                        Numéro: [e.target.value]
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="label">Date:</label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={data.facture.Date[0]}
+                    onChange={(e) => setData({
+                      ...data,
+                      facture: {
+                        ...data.facture,
+                        Date: [e.target.value]
+                      }
+                    })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="label">Date d'échéance:</label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={data.facture.DateEcheance[0]}
+                    onChange={(e) => setData({
+                      ...data,
+                      facture: {
+                        ...data.facture,
+                        DateEcheance: [e.target.value]
+                      }
+                    })}
+                  />
                 </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
+        </div>
 
+        <div className="section">
+          <h2>Type de document</h2>
+
+          {showClientInfo && (
+            <>
+              <div className="form-group">
+                <select
+                  className="select"
+                  value={data.facture.Type?.[0] || "facture"}
+                  onChange={async (e) => {
+                    const newType = e.target.value;
+                    try {
+                      const newNumber = await generateInvoiceNumber(new Date(data.facture.Date[0]), newType);
+                      setData({
+                        ...data,
+                        facture: {
+                          ...data.facture,
+                          Type: [newType],
+                          Numéro: [newNumber]
+                        }
+                      });
+                    } catch (error) {
+                      console.error("Erreur génération numéro:", error);
+                      setData({
+                        ...data,
+                        facture: {
+                          ...data.facture,
+                          Type: [newType]
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <option value="facture">Facture</option>
+                  <option value="avoir">Avoir</option>
+                  <option value="devis">Devis</option>
+                </select>
+              </div>
+              <div className="section" style={{ marginTop: '2rem' }}>
+                <h2>Objet de la facture</h2>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    value={objet}
+                    onChange={(e) => setObjet(e.target.value)}
+                    placeholder="Objet de la facture"
+                    className="input"
+                  />
+
+                </div>
+                <div className="section" style={{ marginTop: '2rem' }}>
+                  <h2>Banque(s) pour le paiement:</h2>
+                  <div className="form-group">
+                    <div className="rib-selector">
+                      <label className="rib-option">
+                        <input
+                          type="checkbox"
+                          className="rib-checkbox"
+                          checked={selectedRibs.includes("CBAO")}
+                          onChange={(e) => setSelectedRibs(
+                            e.target.checked
+                              ? [...selectedRibs, "CBAO"]
+                              : selectedRibs.filter(rib => rib !== "CBAO")
+                          )}
+                        />
+                        <span className="rib-checkmark"></span>
+                        <span className="rib-label">CBAO</span>
+                      </label>
+
+                      <label className="rib-option">
+                        <input
+                          type="checkbox"
+                          className="rib-checkbox"
+                          checked={selectedRibs.includes("BIS")}
+                          onChange={(e) => setSelectedRibs(
+                            e.target.checked
+                              ? [...selectedRibs, "BIS"]
+                              : selectedRibs.filter(rib => rib !== "BIS")
+                          )}
+                        />
+                        <span className="rib-checkmark"></span>
+                        <span className="rib-label">BIS</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="section">
@@ -642,7 +661,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             </div>
           ) : (
             <div className="empty-state">
-              Aucun article ajouté à la facture
+              <img src={empty} alt="Aucun document" className="empty-image" />
             </div>
           )}
         </div>
@@ -751,47 +770,48 @@ const Fact = () => {
   const [objet, setObjet] = useState(""); // Ajout de l'état objet
   const [selectedRibs, setSelectedRibs] = useState(["CBAO"]); // Ajout de l'état selectedRibs
   const location = useLocation();
-const generateInvoiceNumber = useCallback(
-  async (date = new Date(), type = "facture") => {
-    if (!currentUser?.companyId) return `${type}-TEMP`;
 
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+  const generateInvoiceNumber = useCallback(
+    async (date = new Date(), type = "facture") => {
+      if (!currentUser?.companyId) return `${type}-TEMP`;
 
-    let typePrefix;
-    switch (type) {
-      case "avoir": typePrefix = "AV"; break;
-      case "devis": typePrefix = "D"; break;
-      default: typePrefix = "F"; // facture
-    }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
 
-    const prefix = `${typePrefix}-${year}${month}`;
+      let typePrefix;
+      switch (type) {
+        case "avoir": typePrefix = "AV"; break;
+        case "devis": typePrefix = "D"; break;
+        default: typePrefix = "F"; // facture
+      }
 
-    try {
-      const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
-      const snapshot = await getDocs(facturesRef);
+      const prefix = `${typePrefix}-${year}${month}`;
 
-      let maxNumber = 0;
+      try {
+        const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
+        const snapshot = await getDocs(facturesRef);
 
-      snapshot.forEach(doc => {
-        const numero = doc.data().numero;
-        if (numero && numero.startsWith(prefix)) {
-          const match = numero.match(/-(\d+)$/);
-          if (match) {
-            const num = parseInt(match[1]);
-            if (num > maxNumber) maxNumber = num;
+        let maxNumber = 0;
+
+        snapshot.forEach(doc => {
+          const numero = doc.data().numero;
+          if (numero && numero.startsWith(prefix)) {
+            const match = numero.match(/-(\d+)$/);
+            if (match) {
+              const num = parseInt(match[1]);
+              if (num > maxNumber) maxNumber = num;
+            }
           }
-        }
-      });
+        });
 
-      return `${prefix}-${maxNumber + 1}`;
-    } catch (error) {
-      console.error("Erreur génération numéro:", error);
-      return `${prefix}-1`;
-    }
-  },
-  [currentUser?.companyId]
-);
+        return `${prefix}-${maxNumber + 1}`;
+      } catch (error) {
+        console.error("Erreur génération numéro:", error);
+        return `${prefix}-1`;
+      }
+    },
+    [currentUser?.companyId]
+  );
 
 
 
@@ -897,6 +917,8 @@ const generateInvoiceNumber = useCallback(
           const factureData = transformFactureData(location.state.facture);
           factureData.facture.Numéro = [invoiceNumber];
           factureData.facture.Date = [new Date().toISOString().split('T')[0]];
+
+          factureData.facture.Type = [documentType]; // très important pour que le type soit conservé
 
           // Copie aussi les RIBs de la facture originale
           setSelectedRibs(location.state.facture.ribs || ["CBAO"]);

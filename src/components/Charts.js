@@ -39,19 +39,35 @@ export const InvoiceChart = ({ invoices }) => {
       monthlyData[month] += parseFloat(invoice.totalTTC) || 0;
     }
   });
+  const backgroundColors = [
+    'rgba(255, 99, 132, 0.6)',  // Jan
+    'rgba(54, 162, 235, 0.6)',  // Fév
+    'rgba(255, 206, 86, 0.6)',  // Mar
+    'rgba(75, 192, 192, 0.6)',  // Avr
+    'rgba(153, 102, 255, 0.6)', // Mai
+    'rgba(0, 128, 128, 0.6)',   // Jun
+    'rgba(255, 159, 64, 0.6)',  // Jul
+    'rgba(255, 105, 180, 0.6)', // Aoû
+    'rgba(0, 191, 255, 0.6)',   // Sep
+    'rgba(34, 139, 34, 0.6)',   // Oct
+    'rgba(255, 140, 0, 0.6)',   // Nov
+    'rgba(128, 0, 128, 0.6)'    // Déc
+  ];
 
+  const borderColors = backgroundColors.map(color => color.replace('0.6', '1'));
   const data = {
     labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
     datasets: [
       {
-        label: 'Chiffre d\'affaires (FCFA)',
+        label: "Chiffre d'affaires (FCFA)",
         data: monthlyData,
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: backgroundColors,
+        borderColor: borderColors,
         borderWidth: 1,
       },
     ],
   };
+
 
   const options = {
     responsive: true,
@@ -85,21 +101,30 @@ export const ClientChart = ({ clients }) => {
   // ✅ Vérification sécurisée
   if (Array.isArray(clients)) {
     clients.forEach(client => {
-      const company = client.societe || 'Non spécifié';
+      const company = client.nom || 'Non spécifié';
       companies[company] = (companies[company] || 0) + 1;
     });
   } else {
     console.warn('clients est vide ou non défini');
   }
 
-  const backgroundColors = [
-    'rgba(255, 99, 132, 0.6)',
-    'rgba(54, 162, 235, 0.6)',
-    'rgba(255, 206, 86, 0.6)',
-    'rgba(75, 192, 192, 0.6)',
-    'rgba(153, 102, 255, 0.6)',
-    'rgba(255, 159, 64, 0.6)',
-  ];
+  function generateRandomColors(count) {
+    const colors = [];
+
+    for (let i = 0; i < count; i++) {
+      const r = Math.floor(Math.random() * 256);   // Rouge: 0-255
+      const g = Math.floor(Math.random() * 256);   // Vert
+      const b = Math.floor(Math.random() * 256);   // Bleu
+      const a = 0.6;                                // Opacité constante
+
+      colors.push(`rgba(${r}, ${g}, ${b}, ${a})`);
+    }
+
+    return colors;
+  }
+
+  const backgroundColors = generateRandomColors(100); // génère 10 couleurs aléatoires
+
 
   const data = {
     labels: Object.keys(companies),

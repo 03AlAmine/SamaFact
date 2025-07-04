@@ -456,6 +456,30 @@
     grid-template-columns: 1fr;
   }
 }
+
+.first-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--secondary-dark);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--box-shadow);
+}
+
+.first-btn:hover {
+  background: var(--secondary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  color: black;
+}
+
 .primary-btn {
   padding: 0.75rem 1.5rem;
   background: var(--primary-color);

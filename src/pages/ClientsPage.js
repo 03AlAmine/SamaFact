@@ -38,7 +38,8 @@ const ClientsPage = ({
     const [sortBy, setSortBy] = useState('nom'); // 'nom', 'type', 'dateCreation'
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc' ou 'desc'
     const invoicesSectionRef = useRef(null);
-    
+    const [showAddForm, setShowAddForm] = useState(false);
+
 
     const handleFileUpload = (e) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -198,112 +199,122 @@ const ClientsPage = ({
                     </div>
                 </form>
             ) : (
-                <form onSubmit={handleSubmit} className="client-form">
-                    <h2 className="form-title">
-                        <FaPlus style={{ marginRight: "10px" }} />
-                        Ajouter un nouveau client
-                    </h2>
+                showAddForm && (
+                    <form onSubmit={handleSubmit} className="client-form">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <h2 className="form-title">
+                                <FaPlus style={{ marginRight: "10px" }} />
+                                Ajouter un nouveau client
+                            </h2>
 
-                    {/* Formulaire d'ajout... */}
-                    <div className="form-row">
-
-                        <div className="form-group">
-                            <label htmlFor="societe" className="form-label">Responsable</label>
-                            <input
-                                id="societe"
-                                name="societe"
-                                value={client.societe}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="Monsieur Diop - Dame"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="nom" className="form-label">Raison sociale <span className="required">*</span></label>
-                            <input
-                                id="nom"
-                                name="nom"
-                                value={client.nom}
-                                onChange={handleChange}
-                                required
-                                className="form-input"
-                                placeholder="Leader Interim"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="email" className="form-label">Email</label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                value={client.email}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="leader@gmail.com"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="telephone" className="form-label">Téléphone</label>
-                            <input
-                                id="telephone"
-                                name="telephone"
-                                value={client.telephone}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="781234567"
-                            />
-                        </div>
-                    </div>
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="adresse" className="form-label">Adresse <span className="required">*</span></label>
-                            <input
-                                id="adresse"
-                                name="adresse"
-                                value={client.adresse}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="Ouest Foire, Route de l'Aéroport"
-
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="ville" className="form-label">Ville/Pays</label>
-                            <input
-                                id="ville"
-                                name="ville"
-                                value={client.ville}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="Dakar, Sénégal"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="type" className="form-label">Type</label>
-                            <select
-                                id="type"
-                                name="type"
-                                value={client.type}
-                                onChange={handleChange}
-                                className="form-input"
+                            <button
+                                className="primary-btn"
+                                onClick={() => setShowAddForm(!showAddForm)}
                             >
-                                <option value="client">Client</option>
-                                <option value="prospect">Prospect</option>
-                                <option value="partenaire">Partenaire</option>
-                                <option value="fournisseur">Fournisseur</option>
-
-                            </select>
+                                <FaPlus /> {showAddForm ? "Fermer le formulaire" : "Ajouter un client"}
+                            </button>
                         </div>
-                    </div>
-                    <button type="submit" className="submit-btn">
-                        Ajouter le client
-                    </button>
-                </form>
-            )}
+
+                        {/* Formulaire d'ajout... */}
+                        <div className="form-row">
+
+                            <div className="form-group">
+                                <label htmlFor="societe" className="form-label">Responsable</label>
+                                <input
+                                    id="societe"
+                                    name="societe"
+                                    value={client.societe}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="Monsieur Diop - Dame"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="nom" className="form-label">Raison sociale <span className="required">*</span></label>
+                                <input
+                                    id="nom"
+                                    name="nom"
+                                    value={client.nom}
+                                    onChange={handleChange}
+                                    required
+                                    className="form-input"
+                                    placeholder="Leader Interim"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="email" className="form-label">Email</label>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    value={client.email}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="leader@gmail.com"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="telephone" className="form-label">Téléphone</label>
+                                <input
+                                    id="telephone"
+                                    name="telephone"
+                                    value={client.telephone}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="781234567"
+                                />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="adresse" className="form-label">Adresse <span className="required">*</span></label>
+                                <input
+                                    id="adresse"
+                                    name="adresse"
+                                    value={client.adresse}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="Ouest Foire, Route de l'Aéroport"
+
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="ville" className="form-label">Ville/Pays</label>
+                                <input
+                                    id="ville"
+                                    name="ville"
+                                    value={client.ville}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="Dakar, Sénégal"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="type" className="form-label">Type</label>
+                                <select
+                                    id="type"
+                                    name="type"
+                                    value={client.type}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                >
+                                    <option value="client">Client</option>
+                                    <option value="prospect">Prospect</option>
+                                    <option value="partenaire">Partenaire</option>
+                                    <option value="fournisseur">Fournisseur</option>
+
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" className="submit-btn">
+                            Ajouter le client
+                        </button>
+                    </form>
+                ))}
             <div className="clients-section">
                 <div className="section-header">
                     <div className="header-left">
@@ -358,6 +369,14 @@ const ClientsPage = ({
                                 {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                             </button>
                         </div>
+
+
+                        <button
+                            className="primary-btn"
+                            onClick={() => setShowAddForm(!showAddForm)}
+                        >
+                            <FaPlus /> {showAddForm ? "Fermer le formulaire" : "Ajouter un client"}
+                        </button>
 
                         <label htmlFor="file-upload" className="import-btn">
                             <FaFileExcel /> Importer
