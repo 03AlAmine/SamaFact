@@ -57,6 +57,7 @@ const Mentafact = () => {
     const [equipes, setEquipes] = useState([]);
     const [editingEquipe, setEditingEquipe] = useState(null);
     const [isEditingEquipe, setIsEditingEquipe] = useState(false);
+    const { createSubUser, checkPermission } = useAuth();
 
     const [stats, setStats] = useState({
         totalClients: 0,
@@ -185,23 +186,23 @@ const Mentafact = () => {
     const handleChange = (e) => setClient({ ...client, [e.target.name]: e.target.value });
     const handleEditChange = (e) => setEditingClient({ ...editingClient, [e.target.name]: e.target.value });
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    const result = await clientService.addClient(companyId, client);
-    if (result.success) {
-        alert(result.message);
-        setClient({ nom: "", adresse: "", email: "", telephone: "", societe: "", type: "client", anciensNoms: [] });
-        
-        // SUPPRIMEZ cette partie qui cause le double comptage
-        // setClients(prevClients => [...prevClients, {
-        //    id: result.client.id,
-        //    ...client,
-        //    createdAt: new Date()
-        // }]);
-    } else {
-        alert(result.message);
-    }
-};
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const result = await clientService.addClient(companyId, client);
+        if (result.success) {
+            alert(result.message);
+            setClient({ nom: "", adresse: "", email: "", telephone: "", societe: "", type: "client", anciensNoms: [] });
+
+            // SUPPRIMEZ cette partie qui cause le double comptage
+            // setClients(prevClients => [...prevClients, {
+            //    id: result.client.id,
+            //    ...client,
+            //    createdAt: new Date()
+            // }]);
+        } else {
+            alert(result.message);
+        }
+    };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
@@ -534,6 +535,8 @@ const handleSubmit = async (e) => {
                     handleEquipeSubmit={handleEquipeSubmit}
                     handleEquipeEdit={handleEquipeEdit}
                     handleEquipeDelete={handleEquipeDelete}
+                    checkPermission={checkPermission}
+                    createSubUser={createSubUser}
                 />;
             default:
                 return <div>Sélectionnez une section</div>;
