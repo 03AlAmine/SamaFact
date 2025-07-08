@@ -13,10 +13,13 @@ import {
     FaSortAlphaDown,
     FaSortNumericDown,
     FaCalendarAlt,
-    FaMoneyBillWave
+    FaMoneyBillWave,
+    FaUser
 } from 'react-icons/fa';
 import empty from '../assets/empty.png';
 import '../css/DocumentSection.css'; // Assurez-vous d'avoir un fichier CSS pour le style
+import UserNameLookup from './UserNameLookup';
+
 
 const DocumentSection = ({
     title,
@@ -187,6 +190,10 @@ const DocumentSection = ({
                                 <div className="detail-item">
                                     <FaMoneyBillWave className="detail-icon" />
                                     <span>{f.totalTTC.toLocaleString()} FCFA</span>
+                                </div>
+                                <div className="detail-item">
+                                    <FaUser className="detail-icon" />
+                                    <UserNameLookup userId={f.userId} />
                                 </div>
                             </div>
 

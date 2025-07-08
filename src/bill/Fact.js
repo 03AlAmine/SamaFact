@@ -23,6 +23,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
   const [selectedClientId, setSelectedClientId] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
   const [showClientInfo, setShowClientInfo] = useState(true);
+  const { currentUser } = useAuth();
 
 
   const handleClientChange = (e) => {
@@ -249,6 +250,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
       <div className="container">
         <div className='pre-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h1 className="header">Création de {data.facture.Type?.[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"}</h1>
+          <h2>{currentUser?.name}</h2>
           <button
             className="button primary-button"
             onClick={togglePreview}  // Utilise la nouvelle fonction

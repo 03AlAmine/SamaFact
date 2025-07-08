@@ -14,7 +14,8 @@ export const PrivateRoute = ({ children, allowedRoles = [] }) => {
   const userRole = currentUser.role?.toLowerCase() || 'guest';
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-    console.warn(`Access denied for ${userRole}. Required: ${allowedRoles.join(', ')}`);
+    console.warn(`Access denied for you !!!`);
+   // console.warn(`Access denied for ${userRole}. Required: ${allowedRoles.join(', ')}`);
     return <Navigate to="/access-denied" state={{ 
       requiredRoles: allowedRoles,
       userRole
