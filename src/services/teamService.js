@@ -1,4 +1,3 @@
-import { db } from "../firebase";
 import { 
   collection, 
   addDoc, 
@@ -12,17 +11,20 @@ import {
   orderBy,
   setDoc
 } from "firebase/firestore";
+import { initializeApp, deleteApp } from 'firebase/app';
+import { 
+  getAuth,
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  sendPasswordResetEmail,
+  signOut
+} from 'firebase/auth';
+import { db, firebaseConfig } from '../firebase';
+import { writeBatch } from 'firebase/firestore';
 
 export const teamService = {
-  // ==============================================
   // SECTION GESTION DES ÉQUIPES
-  // ==============================================
   
-  /**
-   * Récupère toutes les équipes d'une entreprise
-   * @param {string} companyId - ID de l'entreprise
-   * @returns {Promise<Array>} Liste des équipes
-   */
   getTeams: async (companyId) => {
     const q = query(
       collection(db, "teams"), 
@@ -36,12 +38,6 @@ export const teamService = {
     }));
   },
 
-  /**
-   * Ajoute une nouvelle équipe
-   * @param {string} companyId - ID de l'entreprise
-   * @param {object} teamData - Données de l'équipe
-   * @returns {Promise<object>} Résultat de l'opération
-   */
   addTeam: async (companyId, teamData) => {
     try {
       const docRef = await addDoc(collection(db, "teams"), {
@@ -61,12 +57,6 @@ export const teamService = {
     }
   },
 
-  /**
-   * Met à jour une équipe existante
-   * @param {string} teamId - ID de l'équipe
-   * @param {object} teamData - Nouvelles données de l'équipe
-   * @returns {Promise<object>} Résultat de l'opération
-   */
   updateTeam: async (teamId, teamData) => {
     try {
       await updateDoc(doc(db, "teams", teamId), {
@@ -80,11 +70,6 @@ export const teamService = {
     }
   },
 
-  /**
-   * Supprime une équipe
-   * @param {string} teamId - ID de l'équipe
-   * @returns {Promise<object>} Résultat de l'opération
-   */
   deleteTeam: async (teamId) => {
     try {
       await deleteDoc(doc(db, "teams", teamId));
@@ -95,12 +80,6 @@ export const teamService = {
     }
   },
 
-  /**
-   * Vérifie si un nom d'équipe existe déjà dans l'entreprise
-   * @param {string} companyId - ID de l'entreprise
-   * @param {string} name - Nom à vérifier
-   * @returns {Promise<boolean>} True si le nom existe déjà
-   */
   checkTeamNameExists: async (companyId, name) => {
     const q = query(
       collection(db, "teams"),
@@ -111,15 +90,8 @@ export const teamService = {
     return !querySnapshot.empty;
   },
 
-  // ==============================================
   // SECTION GESTION DES UTILISATEURS
-  // ==============================================
 
-  /**
-   * Récupère tous les utilisateurs d'une entreprise
-   * @param {string} companyId - ID de l'entreprise
-   * @returns {Promise<Array>} Liste des utilisateurs
-   */
   getCompanyUsers: async (companyId) => {
     const companyRef = doc(db, 'companies', companyId);
     const q = query(
@@ -134,13 +106,6 @@ export const teamService = {
     }));
   },
 
-  /**
-   * Crée un nouvel utilisateur dans l'entreprise
-   * @param {string} companyId - ID de l'entreprise
-   * @param {string} userId - ID de l'utilisateur
-   * @param {object} userData - Données de l'utilisateur
-   * @returns {Promise<string>} ID de l'utilisateur créé
-   */
   createCompanyUser: async (companyId, userId, userData) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(collection(companyRef, 'users'), userId);
@@ -155,13 +120,6 @@ export const teamService = {
     return userRef.id;
   },
 
-  /**
-   * Met à jour les informations d'un utilisateur
-   * @param {string} companyId - ID de l'entreprise
-   * @param {string} userId - ID de l'utilisateur
-   * @param {object} updates - Données à mettre à jour
-   * @returns {Promise<void>}
-   */
   updateUser: async (companyId, userId, updates) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(companyRef, 'users', userId);
@@ -172,13 +130,6 @@ export const teamService = {
     });
   },
 
-  /**
-   * Bascule le statut actif/désactivé d'un utilisateur
-   * @param {string} companyId - ID de l'entreprise
-   * @param {string} userId - ID de l'utilisateur
-   * @param {boolean} currentStatus - Statut actuel
-   * @returns {Promise<void>}
-   */
   toggleUserStatus: async (companyId, userId, currentStatus) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(companyRef, 'users', userId);
@@ -189,12 +140,6 @@ export const teamService = {
     });
   },
 
-  /**
-   * Vérifie si un email existe déjà dans l'entreprise
-   * @param {string} companyId - ID de l'entreprise
-   * @param {string} email - Email à vérifier
-   * @returns {Promise<boolean>} True si l'email existe déjà
-   */
   checkEmailExists: async (companyId, email) => {
     const companyRef = doc(db, 'companies', companyId);
     const q = query(
@@ -206,17 +151,80 @@ export const teamService = {
     return !querySnapshot.empty;
   },
 
-  /**
-   * Récupère les informations d'un utilisateur spécifique
-   * @param {string} companyId - ID de l'entreprise
-   * @param {string} userId - ID de l'utilisateur
-   * @returns {Promise<object|null>} Données de l'utilisateur ou null
-   */
   getUser: async (companyId, userId) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(companyRef, 'users', userId);
     
     const docSnap = await getDoc(userRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+  },
+
+  createUserWithIsolatedAuth: async (userData, currentUserId) => {
+    try {
+      // 1. Vérification de l'email
+      const methods = await fetchSignInMethodsForEmail(getAuth(), userData.email);
+      if (methods.length > 0) {
+        throw new Error("Cet email est déjà utilisé");
+      }
+
+      // 2. Création d'une instance auth isolée
+      const tempApp = initializeApp(firebaseConfig, "TempUserCreation");
+      const tempAuth = getAuth(tempApp);
+
+      // 3. Création de l'utilisateur
+      const userCredential = await createUserWithEmailAndPassword(
+        tempAuth,
+        userData.email,
+        userData.password
+      );
+      const userId = userCredential.user.uid;
+
+      // 4. Envoi d'email de réinitialisation
+      await sendPasswordResetEmail(tempAuth, userData.email);
+
+      // 5. Déconnexion de l'instance temporaire
+      await signOut(tempAuth);
+
+      // 6. Création des documents utilisateur
+      const batch = writeBatch(db);
+
+      // Document principal
+      const userRef = doc(db, "users", userId);
+      batch.set(userRef, {
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        companyId: userData.companyId,
+        createdAt: new Date(),
+        createdBy: currentUserId,
+        isActive: true
+      });
+
+      // Document profil
+      const profileRef = doc(db, `companies/${userData.companyId}/profiles`, userId);
+      batch.set(profileRef, {
+        firstName: userData.name.split(' ')[0] || '',
+        lastName: userData.name.split(' ').slice(1).join(' ') || '',
+        email: userData.email,
+        role: userData.role,
+        createdAt: new Date(),
+        createdBy: currentUserId
+      });
+
+      await batch.commit();
+
+      // 7. Nettoyage
+      await deleteApp(tempApp);
+
+      return {
+        success: true,
+        userId,
+        email: userData.email
+      };
+
+    } catch (error) {
+      console.error("Erreur création utilisateur:", error);
+      throw error;
+    }
   }
 };

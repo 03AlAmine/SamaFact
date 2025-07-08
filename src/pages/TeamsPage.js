@@ -9,14 +9,19 @@ import {
     FaUserEdit,
     FaUser,
     FaTimes,
-    FaCheck
+    FaCheck,
+    FaCheckCircle,
+    FaExclamationTriangle
 } from "react-icons/fa";
 import empty_team from '../assets/empty_team.png';
 import { ROLES } from '../auth/AuthContext';
 import { teamService } from '../services/teamService';
-import "../css/TeamPage.css"
+import "../css/TeamPage.css";
+import { useAuth } from '../auth/AuthContext';
 
-const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
+const TeamsPage = ({  checkPermission }) => {
+    const { currentUser, loading } = useAuth();
+
     // États pour la gestion des équipes
     const [equipes, setEquipes] = useState([]);
     const [filteredEquipes, setFilteredEquipes] = useState([]);
@@ -38,16 +43,24 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
         role: ROLES.VIEWER
     });
     const [subUserPassword, setSubUserPassword] = useState(generateRandomPassword());
-    const [subUserSuccess, setSubUserSuccess] = useState('');
-    const [subUserError, setSubUserError] = useState('');
+    const [subUserSuccess, setSubUserSuccess] = useState(null);
+    const [subUserError, setSubUserError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Charger les équipes au montage
     useEffect(() => {
         const fetchTeams = async () => {
             if (currentUser?.companyId) {
-                const teams = await teamService.getTeams(currentUser.companyId);
-                setEquipes(teams);
-                setFilteredEquipes(teams);
+                try {
+                    const teams = await teamService.getTeams(currentUser.companyId);
+                    setEquipes(teams);
+                    setFilteredEquipes(teams);
+                } catch (error) {
+                    setSubUserError({
+                        title: "Erreur",
+                        message: "Impossible de charger les équipes"
+                    });
+                }
             }
         };
         fetchTeams();
@@ -62,8 +75,10 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
                     const users = await teamService.getCompanyUsers(currentUser.companyId);
                     setUsers(users);
                 } catch (error) {
-                    console.error("Error loading users:", error);
-                    setSubUserError("Erreur lors du chargement des utilisateurs");
+                    setSubUserError({
+                        title: "Erreur",
+                        message: "Impossible de charger les utilisateurs"
+                    });
                 } finally {
                     setLoadingUsers(false);
                 }
@@ -95,15 +110,22 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
     const handleEquipeSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { success } = await teamService.addTeam(currentUser.companyId, equipe);
-            if (success) {
+            const result = await teamService.addTeam(currentUser.companyId, equipe);
+            if (result.success) {
                 setEquipe({ nom: '', responsable: '', description: '' });
                 const updatedTeams = await teamService.getTeams(currentUser.companyId);
                 setEquipes(updatedTeams);
                 setFilteredEquipes(updatedTeams);
+                setSubUserSuccess({
+                    title: "Succès",
+                    message: "Équipe ajoutée avec succès"
+                });
             }
         } catch (error) {
-            console.error("Error adding team:", error);
+            setSubUserError({
+                title: "Erreur",
+                message: error.message || "Erreur lors de l'ajout de l'équipe"
+            });
         }
     };
 
@@ -126,8 +148,15 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
             setFilteredEquipes(updatedTeams);
             setIsEditingEquipe(false);
             setEditingEquipe(null);
+            setSubUserSuccess({
+                title: "Succès",
+                message: "Équipe mise à jour avec succès"
+            });
         } catch (error) {
-            console.error("Error updating team:", error);
+            setSubUserError({
+                title: "Erreur",
+                message: error.message || "Erreur lors de la mise à jour de l'équipe"
+            });
         }
     };
 
@@ -143,46 +172,118 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
                 const updatedTeams = await teamService.getTeams(currentUser.companyId);
                 setEquipes(updatedTeams);
                 setFilteredEquipes(updatedTeams);
+                setSubUserSuccess({
+                    title: "Succès",
+                    message: "Équipe supprimée avec succès"
+                });
             } catch (error) {
-                console.error("Error deleting team:", error);
+                setSubUserError({
+                    title: "Erreur",
+                    message: error.message || "Erreur lors de la suppression de l'équipe"
+                });
             }
         }
     };
 
-    // Gestion des utilisateurs
-    const handleCreateSubUser = async () => {
-        try {
-            await createSubUser(
-                subUserForm.email,
-                subUserPassword,
-                subUserForm.name,
-                subUserForm.role
-            );
-            setSubUserSuccess("Utilisateur créé avec succès");
+// Gestion des utilisateurs
+const handleCreateSubUser = async () => {
+    // Vérification initiale de currentUser
+    if (!currentUser) {
+        setSubUserError({
+            title: "Erreur",
+            message: "Utilisateur non connecté",
+            details: "Veuillez vous reconnecter"
+        });
+        return;
+    }
+
+    if (!currentUser.companyId) {
+        setSubUserError({
+            title: "Erreur",
+            message: "Company ID manquant",
+            details: "L'utilisateur n'est pas associé à une entreprise"
+        });
+        return;
+    }
+
+    try {
+        setIsSubmitting(true);
+        setSubUserError(null);
+
+        console.log('Données soumises:', {
+            email: subUserForm.email,
+            role: subUserForm.role,
+            companyId: currentUser.companyId
+        });
+
+        const result = await teamService.createUserWithIsolatedAuth(
+            {
+                email: subUserForm.email,
+                password: subUserPassword,
+                name: subUserForm.name,
+                role: subUserForm.role,
+                companyId: currentUser.companyId
+            },
+            currentUser.uid
+        );
+
+        console.log('Résultat de création:', result);
+
+        if (result.success) {
+            setSubUserSuccess({
+                title: "Succès",
+                message: `Utilisateur créé - ID: ${result.userId}`,
+                userId: result.userId
+            });
+
+            // Réinitialisation du formulaire
             setSubUserForm({ email: '', name: '', role: ROLES.VIEWER });
             setSubUserPassword(generateRandomPassword());
 
-            // Rafraîchir la liste des utilisateurs
+            // Mise à jour de la liste
             const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
             setUsers(updatedUsers);
-
-            setTimeout(() => setSubUserSuccess(''), 3000);
-        } catch (error) {
-            setSubUserError(`Erreur: ${error.message}`);
-            setTimeout(() => setSubUserError(''), 3000);
         }
-    };
+    } catch (error) {
+        console.error('Erreur complète:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        });
 
+        let errorMessage = "Échec de la création";
+        
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = "Email déjà utilisé";
+        } else if (error.message.includes('already-in-use')) {
+            errorMessage = "Email déjà enregistré";
+        } else if (error.code === 'permission-denied') {
+            errorMessage = "Permissions insuffisantes";
+        }
+
+        setSubUserError({
+            title: "Erreur",
+            message: errorMessage,
+            details: error.message
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
     const toggleUserStatus = async (userId, currentStatus) => {
         try {
             await teamService.toggleUserStatus(currentUser.companyId, userId, currentStatus);
             const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
             setUsers(updatedUsers);
-            setSubUserSuccess(`Utilisateur ${!currentStatus ? 'activé' : 'désactivé'} avec succès`);
-            setTimeout(() => setSubUserSuccess(''), 3000);
+            setSubUserSuccess({
+                title: "Succès",
+                message: `Utilisateur ${!currentStatus ? 'activé' : 'désactivé'} avec succès`
+            });
         } catch (error) {
-            setSubUserError(`Erreur: ${error.message}`);
-            setTimeout(() => setSubUserError(''), 3000);
+            setSubUserError({
+                title: "Erreur",
+                message: error.message || "Erreur lors du changement de statut"
+            });
         }
     };
 
@@ -201,9 +302,46 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
         const date = timestamp.toDate();
         return date.toLocaleDateString('fr-FR');
     };
+        if (loading) {
+        return <div>Chargement en cours...</div>;
+    }
+    
+    if (!currentUser) {
+        return <div>Veuillez vous connecter</div>;
+    }
 
     return (
         <div className="teams-container">
+            {/* Notifications */}
+            <div className="notifications-container">
+                {subUserSuccess && (
+                    <div className="notification success">
+                        <FaCheckCircle />
+                        <div>
+                            <h4>{subUserSuccess.title}</h4>
+                            <p>{subUserSuccess.message}</p>
+                            {subUserSuccess.userId && <small>ID: {subUserSuccess.userId}</small>}
+                        </div>
+                        <button onClick={() => setSubUserSuccess(null)}>
+                            <FaTimes />
+                        </button>
+                    </div>
+                )}
+
+                {subUserError && (
+                    <div className="notification error">
+                        <FaExclamationTriangle />
+                        <div>
+                            <h4>{subUserError.title}</h4>
+                            <p>{subUserError.message}</p>
+                        </div>
+                        <button onClick={() => setSubUserError(null)}>
+                            <FaTimes />
+                        </button>
+                    </div>
+                )}
+            </div>
+
             {/* Formulaire d'édition/création d'équipe */}
             {isEditingEquipe ? (
                 <form onSubmit={handleEquipeUpdate} className="form-card">
@@ -379,9 +517,6 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
                         Gestion des Utilisateurs
                     </h2>
 
-                    {subUserSuccess && <div className="alert success">{subUserSuccess}</div>}
-                    {subUserError && <div className="alert error">{subUserError}</div>}
-
                     {/* Formulaire de création d'utilisateur */}
                     <div className="form-card">
                         <h3 className="form-subtitle">Ajouter un nouvel utilisateur</h3>
@@ -417,21 +552,10 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
                                     className="form-input"
                                     required
                                 >
-                                    {Object.values(ROLES)
-                                        .filter(role => {
-                                            // Vérifiez d'abord si currentUser existe
-                                            if (!currentUser) return false;
-
-                                            if (currentUser.role === ROLES.ADMIN && role === ROLES.SUPERADMIN) return false;
-                                            if (currentUser.role === ROLES.MANAGER &&
-                                                [ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.MANAGER].includes(role)) return false;
-                                            return true;
-                                        })
-                                        .map((role) => (
-                                            <option key={role} value={role}>
-                                                {role}
-                                            </option>
-                                        ))}
+                                    <option value={ROLES.ADMIN}>Administrateur</option>
+                                    <option value={ROLES.MANAGER}>Manager</option>
+                                    <option value={ROLES.EDITOR}>Éditeur</option>
+                                    <option value={ROLES.VIEWER}>Lecteur</option>
                                 </select>
                             </div>
 
@@ -460,9 +584,9 @@ const TeamsPage = ({ currentUser, checkPermission, createSubUser }) => {
                         <button
                             onClick={handleCreateSubUser}
                             className="btn-primary"
-                            disabled={!subUserForm.email || !subUserForm.role}
+                            disabled={!subUserForm.email || !subUserForm.role || isSubmitting}
                         >
-                            <FaPlus /> Créer l'utilisateur
+                            {isSubmitting ? 'Création en cours...' : <><FaPlus /> Créer l'utilisateur</>}
                         </button>
                     </div>
 
