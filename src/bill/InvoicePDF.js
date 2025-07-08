@@ -2,6 +2,8 @@ import React from 'react';
 import { Page, Text, View, Document, Image } from '@react-pdf/renderer';
 import { pdfStyles } from './styles/pdfStyles';
 import n2words from 'n2words';
+import sign from '../assets/sign.png'
+
 
 const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
   const ribData = {
@@ -190,7 +192,7 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
           <View style={pdfStyles.signatureContainer}>
             <Image
               style={pdfStyles.signatureImage}
-              src="./Logo_LIS.png" // Chemin vers votre image de signature
+              src={sign} alt="Aucun document"
             />
           </View>
         </>
@@ -307,7 +309,7 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
       <View style={pdfStyles.signatureContainer}>
         <Image
           style={pdfStyles.signatureImage}
-          src="./Logo_LIS.png" // Chemin vers votre image de signature
+          src={sign} alt="Aucun document"
         />
       </View>
       {/* Pied de page */}

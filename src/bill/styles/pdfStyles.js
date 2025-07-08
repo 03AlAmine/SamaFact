@@ -20,13 +20,13 @@ export const pdfStyles = StyleSheet.create({
     marginBottom: 10
   },  
   signatureContainer: {
-    marginTop: 5,
+    marginTop: -20,
     alignItems: 'flex-end',
     width: '100%',
   },
   signatureImage: {
-    width: 120,
-    height: 50,
+    width: 140,
+    height: 80,
   },
   address: {
     fontSize: 7,
