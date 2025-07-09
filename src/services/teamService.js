@@ -92,10 +92,20 @@ export const teamService = {
 
   // SECTION GESTION DES UTILISATEURS
 
-  getCompanyUsers: async (companyId) => {
+getCompanyUsers: async (companyId) => {
+  try {
+    // Vérifiez d'abord si la company existe
     const companyRef = doc(db, 'companies', companyId);
+    const companySnap = await getDoc(companyRef);
+    
+    if (!companySnap.exists()) {
+      throw new Error("Company not found");
+    }
+
+    // Récupérez les utilisateurs
     const q = query(
-      collection(companyRef, 'users'),
+      collection(db, 'users'),
+      where('companyId', '==', companyId),
       orderBy('createdAt', 'desc')
     );
     
@@ -104,7 +114,11 @@ export const teamService = {
       id: doc.id,
       ...doc.data()
     }));
-  },
+  } catch (error) {
+    console.error("Error getting company users:", error);
+    throw error;
+  }
+},
 
   createCompanyUser: async (companyId, userId, userData) => {
     const companyRef = doc(db, 'companies', companyId);

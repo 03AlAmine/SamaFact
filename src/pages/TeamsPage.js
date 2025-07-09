@@ -19,7 +19,7 @@ import { teamService } from '../services/teamService';
 import "../css/TeamPage.css";
 import { useAuth } from '../auth/AuthContext';
 
-const TeamsPage = ({  checkPermission }) => {
+const TeamsPage = ({ checkPermission }) => {
     const { currentUser, loading } = useAuth();
 
     // États pour la gestion des équipes
@@ -40,7 +40,7 @@ const TeamsPage = ({  checkPermission }) => {
     const [subUserForm, setSubUserForm] = useState({
         email: '',
         name: '',
-        role: ROLES.VIEWER
+        role: ROLES.EDITOR
     });
     const [subUserPassword, setSubUserPassword] = useState(generateRandomPassword());
     const [subUserSuccess, setSubUserSuccess] = useState(null);
@@ -69,22 +69,27 @@ const TeamsPage = ({  checkPermission }) => {
     // Charger les utilisateurs si permission
     useEffect(() => {
         const fetchUsers = async () => {
-            if (checkPermission('manageUsers') && currentUser?.companyId) {
-                setLoadingUsers(true);
+            if (checkPermission('manageUsers')) {
                 try {
+                    setLoadingUsers(true);
                     const users = await teamService.getCompanyUsers(currentUser.companyId);
                     setUsers(users);
                 } catch (error) {
+                    console.error("Failed to load users:", error);
                     setSubUserError({
                         title: "Erreur",
-                        message: "Impossible de charger les utilisateurs"
+                        message: error.message || "Impossible de charger les utilisateurs",
+                        details: error.toString()
                     });
                 } finally {
                     setLoadingUsers(false);
                 }
             }
         };
-        fetchUsers();
+
+        if (currentUser?.companyId) {
+            fetchUsers();
+        }
     }, [currentUser, checkPermission]);
 
     // Filtrer les équipes selon le terme de recherche
@@ -185,91 +190,91 @@ const TeamsPage = ({  checkPermission }) => {
         }
     };
 
-// Gestion des utilisateurs
-const handleCreateSubUser = async () => {
-    // Vérification initiale de currentUser
-    if (!currentUser) {
-        setSubUserError({
-            title: "Erreur",
-            message: "Utilisateur non connecté",
-            details: "Veuillez vous reconnecter"
-        });
-        return;
-    }
+    // Gestion des utilisateurs
+    const handleCreateSubUser = async () => {
+        // Vérification initiale de currentUser
+        if (!currentUser) {
+            setSubUserError({
+                title: "Erreur",
+                message: "Utilisateur non connecté",
+                details: "Veuillez vous reconnecter"
+            });
+            return;
+        }
 
-    if (!currentUser.companyId) {
-        setSubUserError({
-            title: "Erreur",
-            message: "Company ID manquant",
-            details: "L'utilisateur n'est pas associé à une entreprise"
-        });
-        return;
-    }
+        if (!currentUser.companyId) {
+            setSubUserError({
+                title: "Erreur",
+                message: "Company ID manquant",
+                details: "L'utilisateur n'est pas associé à une entreprise"
+            });
+            return;
+        }
 
-    try {
-        setIsSubmitting(true);
-        setSubUserError(null);
+        try {
+            setIsSubmitting(true);
+            setSubUserError(null);
 
-        console.log('Données soumises:', {
-            email: subUserForm.email,
-            role: subUserForm.role,
-            companyId: currentUser.companyId
-        });
-
-        const result = await teamService.createUserWithIsolatedAuth(
-            {
+            console.log('Données soumises:', {
                 email: subUserForm.email,
-                password: subUserPassword,
-                name: subUserForm.name,
                 role: subUserForm.role,
                 companyId: currentUser.companyId
-            },
-            currentUser.uid
-        );
-
-        console.log('Résultat de création:', result);
-
-        if (result.success) {
-            setSubUserSuccess({
-                title: "Succès",
-                message: `Utilisateur créé - ID: ${result.userId}`,
-                userId: result.userId
             });
 
-            // Réinitialisation du formulaire
-            setSubUserForm({ email: '', name: '', role: ROLES.VIEWER });
-            setSubUserPassword(generateRandomPassword());
+            const result = await teamService.createUserWithIsolatedAuth(
+                {
+                    email: subUserForm.email,
+                    password: subUserPassword,
+                    name: subUserForm.name,
+                    role: subUserForm.role,
+                    companyId: currentUser.companyId
+                },
+                currentUser.uid
+            );
 
-            // Mise à jour de la liste
-            const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
-            setUsers(updatedUsers);
+            console.log('Résultat de création:', result);
+
+            if (result.success) {
+                setSubUserSuccess({
+                    title: "Succès",
+                    message: `Utilisateur créé - ID: ${result.userId}`,
+                    userId: result.userId
+                });
+
+                // Réinitialisation du formulaire
+                setSubUserForm({ email: '', name: '', role: ROLES.VIEWER });
+                setSubUserPassword(generateRandomPassword());
+
+                // Mise à jour de la liste
+                const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+                setUsers(updatedUsers);
+            }
+        } catch (error) {
+            console.error('Erreur complète:', {
+                message: error.message,
+                code: error.code,
+                stack: error.stack
+            });
+
+            let errorMessage = "Échec de la création";
+
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = "Email déjà utilisé";
+            } else if (error.message.includes('already-in-use')) {
+                errorMessage = "Email déjà enregistré";
+            } else if (error.code === 'permission-denied') {
+                errorMessage = "Permissions insuffisantes";
+            }
+
+            setSubUserError({
+                title: "Erreur",
+                message: errorMessage,
+                details: error.message
+            });
+        } finally {
+            setIsSubmitting(false);
         }
-    } catch (error) {
-        console.error('Erreur complète:', {
-            message: error.message,
-            code: error.code,
-            stack: error.stack
-        });
-
-        let errorMessage = "Échec de la création";
-        
-        if (error.code === 'auth/email-already-in-use') {
-            errorMessage = "Email déjà utilisé";
-        } else if (error.message.includes('already-in-use')) {
-            errorMessage = "Email déjà enregistré";
-        } else if (error.code === 'permission-denied') {
-            errorMessage = "Permissions insuffisantes";
-        }
-
-        setSubUserError({
-            title: "Erreur",
-            message: errorMessage,
-            details: error.message
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+    };
     const toggleUserStatus = async (userId, currentStatus) => {
         try {
             await teamService.toggleUserStatus(currentUser.companyId, userId, currentStatus);
@@ -302,10 +307,10 @@ const handleCreateSubUser = async () => {
         const date = timestamp.toDate();
         return date.toLocaleDateString('fr-FR');
     };
-        if (loading) {
+    if (loading) {
         return <div>Chargement en cours...</div>;
     }
-    
+
     if (!currentUser) {
         return <div>Veuillez vous connecter</div>;
     }
@@ -342,6 +347,149 @@ const handleCreateSubUser = async () => {
                 )}
             </div>
 
+            {/* Gestion des utilisateurs */}
+            {checkPermission('manageUsers') && (
+                <div className="section-card">
+                    <h2 className="section-title">
+                        <FaUsers style={{ marginRight: "10px" }} />
+                        Gestion des Utilisateurs
+                    </h2>
+
+                    {/* Formulaire de création d'utilisateur */}
+                    <div className="form-card">
+                        <h3 className="form-subtitle">Ajouter un nouvel utilisateur</h3>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Email <span className="required">*</span></label>
+                                <input
+                                    type="email"
+                                    value={subUserForm.email}
+                                    onChange={(e) => setSubUserForm({ ...subUserForm, email: e.target.value })}
+                                    placeholder="Email de l'utilisateur"
+                                    className="form-input"
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Nom complet</label>
+                                <input
+                                    value={subUserForm.name}
+                                    onChange={(e) => setSubUserForm({ ...subUserForm, name: e.target.value })}
+                                    placeholder="Nom de l'utilisateur"
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Rôle <span className="required">*</span></label>
+                                <select
+                                    value={subUserForm.role}
+                                    onChange={(e) => setSubUserForm({ ...subUserForm, role: e.target.value })}
+                                    className="form-input"
+                                    required
+                                >
+                                    <option value={ROLES.ADMIN}>Administrateur</option>
+                                    <option value={ROLES.MANAGER}>Manager</option>
+                                    <option value={ROLES.EDITOR}>Éditeur</option>
+                                    <option value={ROLES.VIEWER}>Lecteur</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Mot de passe temporaire</label>
+                                <div className="password-input">
+                                    <input
+                                        type="text"
+                                        value={subUserPassword}
+                                        readOnly
+                                        className="form-input"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setSubUserPassword(generateRandomPassword())}
+                                        className="icon-btn"
+                                        title="Générer un nouveau mot de passe"
+                                    >
+                                        <FaPlus />
+                                    </button>
+                                </div>
+                                <small className="hint">Ce mot de passe sera envoyé à l'utilisateur</small>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleCreateSubUser}
+                            className="btn-primary"
+                            disabled={!subUserForm.email || !subUserForm.role || isSubmitting}
+                        >
+                            {isSubmitting ? 'Création en cours...' : <><FaPlus /> Créer l'utilisateur</>}
+                        </button>
+                    </div>
+
+                    {/* Liste des utilisateurs */}
+                    <div className="users-section">
+                        <h3 className="section-subtitle">Liste des Utilisateurs ({users.length})</h3>
+
+                        {loadingUsers ? (
+                            <div className="loading">Chargement des utilisateurs...</div>
+                        ) : users.length === 0 ? (
+                            <div className="empty-state">
+                                <p>Aucun utilisateur trouvé</p>
+                            </div>
+                        ) : (
+                            <div className="table-container">
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Utilisateur</th>
+                                            <th>Email</th>
+                                            <th>Rôle</th>
+                                            <th>Créé le</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.map((user) => (
+                                            <tr key={user.id}>
+                                                <td>
+                                                    <div className="user-cell">
+                                                        {getRoleIcon(user.role)}
+                                                        <span>{user.name || 'N/A'}</span>
+                                                    </div>
+                                                </td>
+                                                <td>{user.email}</td>
+                                                <td>
+                                                    <span className={`badge role-${user.role.toLowerCase()}`}>
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td>{formatDate(user.createdAt)}</td>
+                                                <td>
+                                                    <span className={`badge status-${user.disabled ? 'inactive' : 'active'}`}>
+                                                        {user.disabled ? 'Désactivé' : 'Actif'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <button
+                                                        onClick={() => toggleUserStatus(user.id, user.disabled)}
+                                                        className={`icon-btn ${user.disabled ? 'activate' : 'deactivate'}`}
+                                                        title={user.disabled ? 'Activer' : 'Désactiver'}
+                                                    >
+                                                        {user.disabled ? <FaCheck /> : <FaTimes />}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             {/* Formulaire d'édition/création d'équipe */}
             {isEditingEquipe ? (
                 <form onSubmit={handleEquipeUpdate} className="form-card">
@@ -508,150 +656,6 @@ const handleCreateSubUser = async () => {
                     </div>
                 )}
             </div>
-
-            {/* Gestion des utilisateurs */}
-            {checkPermission('manageUsers') && (
-                <div className="section-card">
-                    <h2 className="section-title">
-                        <FaUsers style={{ marginRight: "10px" }} />
-                        Gestion des Utilisateurs
-                    </h2>
-
-                    {/* Formulaire de création d'utilisateur */}
-                    <div className="form-card">
-                        <h3 className="form-subtitle">Ajouter un nouvel utilisateur</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Email <span className="required">*</span></label>
-                                <input
-                                    type="email"
-                                    value={subUserForm.email}
-                                    onChange={(e) => setSubUserForm({ ...subUserForm, email: e.target.value })}
-                                    placeholder="Email de l'utilisateur"
-                                    className="form-input"
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Nom complet</label>
-                                <input
-                                    value={subUserForm.name}
-                                    onChange={(e) => setSubUserForm({ ...subUserForm, name: e.target.value })}
-                                    placeholder="Nom de l'utilisateur"
-                                    className="form-input"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Rôle <span className="required">*</span></label>
-                                <select
-                                    value={subUserForm.role}
-                                    onChange={(e) => setSubUserForm({ ...subUserForm, role: e.target.value })}
-                                    className="form-input"
-                                    required
-                                >
-                                    <option value={ROLES.ADMIN}>Administrateur</option>
-                                    <option value={ROLES.MANAGER}>Manager</option>
-                                    <option value={ROLES.EDITOR}>Éditeur</option>
-                                    <option value={ROLES.VIEWER}>Lecteur</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Mot de passe temporaire</label>
-                                <div className="password-input">
-                                    <input
-                                        type="text"
-                                        value={subUserPassword}
-                                        readOnly
-                                        className="form-input"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setSubUserPassword(generateRandomPassword())}
-                                        className="icon-btn"
-                                        title="Générer un nouveau mot de passe"
-                                    >
-                                        <FaPlus />
-                                    </button>
-                                </div>
-                                <small className="hint">Ce mot de passe sera envoyé à l'utilisateur</small>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleCreateSubUser}
-                            className="btn-primary"
-                            disabled={!subUserForm.email || !subUserForm.role || isSubmitting}
-                        >
-                            {isSubmitting ? 'Création en cours...' : <><FaPlus /> Créer l'utilisateur</>}
-                        </button>
-                    </div>
-
-                    {/* Liste des utilisateurs */}
-                    <div className="users-section">
-                        <h3 className="section-subtitle">Liste des Utilisateurs ({users.length})</h3>
-
-                        {loadingUsers ? (
-                            <div className="loading">Chargement des utilisateurs...</div>
-                        ) : users.length === 0 ? (
-                            <div className="empty-state">
-                                <p>Aucun utilisateur trouvé</p>
-                            </div>
-                        ) : (
-                            <div className="table-container">
-                                <table className="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Utilisateur</th>
-                                            <th>Email</th>
-                                            <th>Rôle</th>
-                                            <th>Créé le</th>
-                                            <th>Statut</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {users.map((user) => (
-                                            <tr key={user.id}>
-                                                <td>
-                                                    <div className="user-cell">
-                                                        {getRoleIcon(user.role)}
-                                                        <span>{user.name || 'N/A'}</span>
-                                                    </div>
-                                                </td>
-                                                <td>{user.email}</td>
-                                                <td>
-                                                    <span className={`badge role-${user.role.toLowerCase()}`}>
-                                                        {user.role}
-                                                    </span>
-                                                </td>
-                                                <td>{formatDate(user.createdAt)}</td>
-                                                <td>
-                                                    <span className={`badge status-${user.disabled ? 'inactive' : 'active'}`}>
-                                                        {user.disabled ? 'Désactivé' : 'Actif'}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button
-                                                        onClick={() => toggleUserStatus(user.id, user.disabled)}
-                                                        className={`icon-btn ${user.disabled ? 'activate' : 'deactivate'}`}
-                                                        title={user.disabled ? 'Activer' : 'Désactiver'}
-                                                    >
-                                                        {user.disabled ? <FaCheck /> : <FaTimes />}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
