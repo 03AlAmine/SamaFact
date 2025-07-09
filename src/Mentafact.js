@@ -64,7 +64,7 @@ const Mentafact = () => {
         totalFactures: 0,
         revenusMensuels: 0,
         facturesImpayees: 0,
-        totalEquipes: 0
+        totalEquipes: 0,
     });
 
     useEffect(() => {
@@ -122,13 +122,26 @@ const Mentafact = () => {
             });
             unsubscribers.push(invoicesUnsub);
 
-            // Devis subscription
-            const devisUnsub = invoiceService.getInvoices(companyId, "devis", setAllDevis);
+            // Devis
+            const devisUnsub = invoiceService.getInvoices(companyId, "devis", (devisData) => {
+                setAllDevis(devisData);
+                setStats(prev => ({
+                    ...prev,
+                    totalDevis: devisData.length
+                }));
+            });
             unsubscribers.push(devisUnsub);
 
-            // Avoirs subscription
-            const avoirsUnsub = invoiceService.getInvoices(companyId, "avoir", setAllAvoirs);
+            // Avoirs
+            const avoirsUnsub = invoiceService.getInvoices(companyId, "avoir", (avoirsData) => {
+                setAllAvoirs(avoirsData);
+                setStats(prev => ({
+                    ...prev,
+                    totalAvoirs: avoirsData.length
+                }));
+            });
             unsubscribers.push(avoirsUnsub);
+
 
             // Equipes subscription
             const equipesUnsub = teamService.getTeams(companyId, (equipesData) => {
@@ -473,6 +486,8 @@ const Mentafact = () => {
                 return <DashboardPage
                     stats={stats}
                     allFactures={allFactures}
+                    allDevis={allDevis}
+                    allAvoirs={allAvoirs}
                     navigate={navigate}
                     clients={clients}
                 />;
@@ -519,6 +534,9 @@ const Mentafact = () => {
                     stats={stats}
                     allFactures={allFactures}
                     clients={clients}
+                    allDevis={allDevis}
+                    allAvoirs={allAvoirs}
+
                 />;
             case "equipes":
                 return <TeamsPage

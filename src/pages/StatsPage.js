@@ -1,9 +1,11 @@
 import React from "react";
-import { FaUsers, FaFileInvoiceDollar, FaChartLine, FaBell } from "react-icons/fa";
+import { FaUsers, FaBell } from "react-icons/fa";
 import { FaChartBar } from "react-icons/fa";
 import { InvoiceChart, ClientChart, StatusChart, MonthlyComparisonChart } from "../components/Charts";
+import { DocumentSliderCard, MonthlyAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
 
-const StatsPage = ({ stats, allFactures, clients }) => {
+const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients }) => {
+
     return (
         <div className="stats-section">
             <h2 className="section-title">
@@ -19,38 +21,22 @@ const StatsPage = ({ stats, allFactures, clients }) => {
                     <div className="stat-info">
                         <h3>{stats.totalClients}</h3>
                         <p>Clients enregistrés</p>
-                        <div className="stat-trend up">
-                            +5% ce mois-ci
-                        </div>
+                        <div className="stat-trend up">+12% ce mois-ci</div>
                     </div>
                 </div>
+                <DocumentSliderCard stats={stats} className="large" showTrend={true} showName={false}
 
-                <div className="stat-card large">
-                    <div className="stat-icon invoices">
-                        <FaFileInvoiceDollar />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.totalFactures}</h3>
-                        <p>Factures émises</p>
-                        <div className="stat-trend up">
-                            +12% ce mois-ci
-                        </div>
-                    </div>
-                </div>
+                />
+                <MonthlyAmountSliderCard
+                    stats={stats}
+                    allFactures={allFactures}
+                    allDevis={allDevis}
+                    allAvoirs={allAvoirs}
+                    className="large"
+                    showTrend={true}
+                    showName={false}
 
-                <div className="stat-card large">
-                    <div className="stat-icon revenue">
-                        <FaChartLine />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.revenusMensuels.toLocaleString()} Fcfa</h3>
-                        <p>Revenus mensuels</p>
-                        <div className="stat-trend down">
-                            -3% ce mois-ci
-                        </div>
-                    </div>
-                </div>
-
+                />
                 <div className="stat-card large">
                     <div className="stat-icon pending">
                         <FaBell />
@@ -58,9 +44,7 @@ const StatsPage = ({ stats, allFactures, clients }) => {
                     <div className="stat-info">
                         <h3>{stats.facturesImpayees}</h3>
                         <p>Factures impayées</p>
-                        <div className="stat-trend up">
-                            +2 ce mois-ci
-                        </div>
+                        <div className="stat-trend up">+2 ce mois-ci</div>
                     </div>
                 </div>
 
@@ -71,9 +55,7 @@ const StatsPage = ({ stats, allFactures, clients }) => {
                     <div className="stat-info">
                         <h3>{stats.totalEquipes}</h3>
                         <p>Équipes actives</p>
-                        <div className="stat-trend neutral">
-                            Stable
-                        </div>
+                        <div className="stat-trend neutral">Stable</div>
                     </div>
                 </div>
             </div>

@@ -1,11 +1,20 @@
-import React from "react";
-import { FaUsers, FaFileInvoiceDollar, FaChartLine, FaBell, FaPlus } from "react-icons/fa";
+import React, { useState } from "react";
+import { FaUsers, FaFileInvoiceDollar, FaBell, FaPlus } from "react-icons/fa";
 import { InvoiceChart, ClientChart } from "../components/Charts";
+import { DocumentSliderCard, MonthlyAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
 
-const DashboardPage = ({ stats, allFactures, navigate, clients }) => {
-    const getLastThreeInvoices = () => [...allFactures]
+const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, clients }) => {
+    const [activeSlide, setActiveSlide] = useState("factures");
+
+    const getLastThreeItems = (items) => [...items]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 3);
+
+    const currentItems = {
+        factures: getLastThreeItems(allFactures),
+        devis: getLastThreeItems(allDevis),
+        avoirs: getLastThreeItems(allAvoirs)
+    };
 
     return (
         <>
@@ -19,24 +28,8 @@ const DashboardPage = ({ stats, allFactures, navigate, clients }) => {
                         <p>Clients</p>
                     </div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon invoices">
-                        <FaFileInvoiceDollar />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.totalFactures}</h3>
-                        <p>Factures</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon revenue">
-                        <FaChartLine />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.revenusMensuels.toLocaleString()} FCFA</h3>
-                        <p>Facturations mensuels</p>
-                    </div>
-                </div>
+                <DocumentSliderCard stats={stats} />
+                <MonthlyAmountSliderCard stats={stats} allFactures={allFactures} allDevis={allDevis} allAvoirs={allAvoirs} />
                 <div className="stat-card">
                     <div className="stat-icon pending">
                         <FaBell />
@@ -63,12 +56,12 @@ const DashboardPage = ({ stats, allFactures, navigate, clients }) => {
                     </div>
                 </div>
             </div>
-
+            {/* Derniers documents (factures/devis/avoirs) */}
             <div className="recent-invoices">
                 <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                     <h2 className="section-title" style={{ display: "flex", alignItems: "center", margin: 0 }}>
                         <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
-                        Dernières factures
+                        Derniers documents
                     </h2>
 
                     <div className="invoices-actions" style={{ display: "flex", gap: "10px" }}>
@@ -79,21 +72,42 @@ const DashboardPage = ({ stats, allFactures, navigate, clients }) => {
                     </div>
                 </div>
 
-                {allFactures.length > 0 ? (
+                {/* Onglets de sélection */}
+                <div className="slider-tabs" style={{ display: "flex", gap: "20px", marginBottom: "10px" }}>
+                    {["factures", "devis", "avoirs"].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveSlide(tab)}
+                            style={{
+                                padding: "8px 16px",
+                                background: activeSlide === tab ? "#333" : "#eee",
+                                color: activeSlide === tab ? "#fff" : "#000",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: "pointer"
+                            }}
+                        >
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Affichage des documents */}
+                {currentItems[activeSlide].length > 0 ? (
                     <div className="invoices-list">
-                        {getLastThreeInvoices().map(invoice => (
-                            <div key={invoice.id} className="invoice-card">
+                        {currentItems[activeSlide].map(item => (
+                            <div key={item.id} className="invoice-card">
                                 <div className="invoice-header">
-                                    <span className="invoice-number">{invoice.numero}</span>
-                                    <span className={`invoice-status ${invoice.statut}`}>
-                                        {invoice.statut}
+                                    <span className="invoice-number">{item.numero}</span>
+                                    <span className={`invoice-status ${item.statut}`}>
+                                        {item.statut}
                                     </span>
                                 </div>
-                                <div className="invoice-client">{invoice.clientNom}</div>
+                                <div className="invoice-client">{item.clientNom}</div>
                                 <div className="invoice-details">
-                                    <span className="invoice-amount">{invoice.totalTTC} FCFA</span>
+                                    <span className="invoice-amount">{item.totalTTC} FCFA</span>
                                     <span className="invoice-date">
-                                        {invoice.date ? new Date(invoice.date).toLocaleDateString('fr-FR') : 'Date invalide'}
+                                        {item.date ? new Date(item.date).toLocaleDateString('fr-FR') : 'Date invalide'}
                                     </span>
                                 </div>
                             </div>
@@ -101,7 +115,7 @@ const DashboardPage = ({ stats, allFactures, navigate, clients }) => {
                     </div>
                 ) : (
                     <div className="empty-state">
-                        <p>Aucune facture trouvée</p>
+                        <p>Aucun {activeSlide} trouvé</p>
                     </div>
                 )}
             </div>
