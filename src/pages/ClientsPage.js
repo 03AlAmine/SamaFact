@@ -407,7 +407,10 @@ const ClientsPage = ({
                         <img src={empty_client} alt="Aucun client" className="empty-image" />
                         <h3>Aucun client trouvé</h3>
                         <p>Commencez par créer votre premier client</p>
-                        <button className="primary-btn">
+                        <button
+                            className="primary-btn"
+                            onClick={() => setShowAddForm(!showAddForm)}
+                        >
                             <FaPlus /> Ajouter un client
                         </button>
                     </div>

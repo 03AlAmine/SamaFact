@@ -1,18 +1,18 @@
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  doc, 
-  deleteDoc, 
-  updateDoc, 
-  where, 
+import {
+  collection,
+  addDoc,
+  query,
+  doc,
+  deleteDoc,
+  updateDoc,
+  where,
   getDocs,
   getDoc,
   orderBy,
   setDoc
 } from "firebase/firestore";
 import { initializeApp, deleteApp } from 'firebase/app';
-import { 
+import {
   getAuth,
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
@@ -24,10 +24,10 @@ import { writeBatch } from 'firebase/firestore';
 
 export const teamService = {
   // SECTION GESTION DES ÉQUIPES
-  
+
   getTeams: async (companyId) => {
     const q = query(
-      collection(db, "teams"), 
+      collection(db, "teams"),
       where("companyId", "==", companyId),
       orderBy("createdAt", "desc")
     );
@@ -46,10 +46,10 @@ export const teamService = {
         createdAt: new Date(),
         updatedAt: new Date()
       });
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: "Équipe ajoutée avec succès !",
-        teamId: docRef.id 
+        teamId: docRef.id
       };
     } catch (error) {
       console.error("Erreur:", error);
@@ -92,52 +92,44 @@ export const teamService = {
 
   // SECTION GESTION DES UTILISATEURS
 
-getCompanyUsers: async (companyId) => {
-  try {
-    // Vérifiez d'abord si la company existe
-    const companyRef = doc(db, 'companies', companyId);
-    const companySnap = await getDoc(companyRef);
-    
-    if (!companySnap.exists()) {
-      throw new Error("Company not found");
-    }
+  getCompanyUsers: async (companyId) => {
+    try {
 
-    // Récupérez les utilisateurs
-    const q = query(
-      collection(db, 'users'),
-      where('companyId', '==', companyId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error getting company users:", error);
-    throw error;
-  }
-},
+      const q = query(
+        collection(db, 'users'),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error("Error getting company users:", error);
+      throw error;
+    }
+  },
 
   createCompanyUser: async (companyId, userId, userData) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(collection(companyRef, 'users'), userId);
-    
+
     await setDoc(userRef, {
       ...userData,
       createdAt: new Date(),
       lastLoginAt: null,
       disabled: false
     });
-    
+
     return userRef.id;
   },
 
   updateUser: async (companyId, userId, updates) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(companyRef, 'users', userId);
-    
+
     await updateDoc(userRef, {
       ...updates,
       updatedAt: new Date()
@@ -147,7 +139,7 @@ getCompanyUsers: async (companyId) => {
   toggleUserStatus: async (companyId, userId, currentStatus) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(companyRef, 'users', userId);
-    
+
     await updateDoc(userRef, {
       disabled: !currentStatus,
       updatedAt: new Date()
@@ -160,7 +152,7 @@ getCompanyUsers: async (companyId) => {
       collection(companyRef, 'users'),
       where('email', '==', email)
     );
-    
+
     const querySnapshot = await getDocs(q);
     return !querySnapshot.empty;
   },
@@ -168,7 +160,7 @@ getCompanyUsers: async (companyId) => {
   getUser: async (companyId, userId) => {
     const companyRef = doc(db, 'companies', companyId);
     const userRef = doc(companyRef, 'users', userId);
-    
+
     const docSnap = await getDoc(userRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
   },
@@ -207,6 +199,7 @@ getCompanyUsers: async (companyId) => {
       batch.set(userRef, {
         email: userData.email,
         name: userData.name,
+        username: userData.username,
         role: userData.role,
         companyId: userData.companyId,
         createdAt: new Date(),
@@ -219,6 +212,7 @@ getCompanyUsers: async (companyId) => {
       batch.set(profileRef, {
         firstName: userData.name.split(' ')[0] || '',
         lastName: userData.name.split(' ').slice(1).join(' ') || '',
+        username: userData.username,
         email: userData.email,
         role: userData.role,
         createdAt: new Date(),
@@ -238,6 +232,17 @@ getCompanyUsers: async (companyId) => {
 
     } catch (error) {
       console.error("Erreur création utilisateur:", error);
+      throw error;
+    }
+  },
+
+  resetUserPassword: async (email) => {
+    try {
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, email);
+      return { success: true, message: "Email de réinitialisation envoyé" };
+    } catch (error) {
+      console.error("Erreur réinitialisation mot de passe:", error);
       throw error;
     }
   }

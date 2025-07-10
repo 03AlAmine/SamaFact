@@ -10,7 +10,7 @@ export const BarChart = ({ data }) => {
             label: 'Entreprises créées',
             data: data.map(item => item.count),
             backgroundColor: 'rgba(67, 97, 238, 0.7)',
-            borderColor: 'rgba(67, 97, 238, 1)',
+            borderColor: 'rgb(67, 238, 115)',
             borderWidth: 1
         }]
     };
@@ -43,7 +43,7 @@ export const BarChart = ({ data }) => {
 export const PieChart = ({ data }) => {
     const colors = [
         'rgba(67, 97, 238, 0.7)',
-        'rgba(76, 201, 240, 0.7)',
+        'rgba(76, 240, 163, 0.7)',
         'rgba(248, 150, 30, 0.7)'
     ];
 

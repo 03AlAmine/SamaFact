@@ -7,50 +7,58 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, writeBatch } from 'firebase/firestore';
-
+import { doc, setDoc, getDoc, collection, writeBatch,  query, where, getDocs } from 'firebase/firestore';
 // Constants
 const AuthContext = createContext();
 const ROLES = {
-  SUPERADMIN: 'superadmin',
-  ADMIN: 'admin',
-  MANAGER: 'manager',
-  EDITOR: 'editor',
-  VIEWER: 'viewer'
+  SUPERADMIN: 'superadmin',      // Créateur / plateforme
+  ADMIN: 'admin',                // Admin entreprise
+  COMPTABLE: 'comptable',        // Peut gérer devis/factures/avoirs
+  CHARGE_COMPTE: 'charge_compte',// Assistant / Secrétaire
+  LECTEUR: 'lecteur'             // Lecture seule
 };
 
+// ✅ Permissions associées à chaque rôle
 const PERMISSIONS = {
+
   [ROLES.SUPERADMIN]: {
-    manageCompany: true,
-    manageUsers: true,
-    manageDocuments: true,
-    viewAll: true
+    manageCompany: true,         // Gérer l’entreprise (logo, mentions, etc.)
+    manageUsers: true,           // Gérer les utilisateurs
+    manageDocuments: true,       // Gérer devis/factures/avoirs
+    viewAll: true,               // Tout voir
+    isSuperAdmin: true
   },
   [ROLES.ADMIN]: {
     manageCompany: true,
     manageUsers: true,
     manageDocuments: true,
-    viewAll: true
+    viewAll: true,
+    isSuperAdmin: false
   },
-  [ROLES.MANAGER]: {
+  [ROLES.COMPTABLE]: {
     manageCompany: false,
     manageUsers: false,
-    manageDocuments: true,
-    viewAll: true
+    manageDocuments: true,       // Peut créer, modifier, supprimer les documents
+    viewAll: true,
+    isSuperAdmin: false
   },
-  [ROLES.EDITOR]: {
+  [ROLES.CHARGE_COMPTE]: {
     manageCompany: false,
     manageUsers: false,
-    manageDocuments: true,
-    viewAll: false
+    manageDocuments: true,       // Peut créer/modifier mais avec des restrictions si besoin
+    viewAll: false,              // Peut ne voir que ce qui le concerne
+    isSuperAdmin: false
   },
-  [ROLES.VIEWER]: {
+  [ROLES.LECTEUR]: {
     manageCompany: false,
     manageUsers: false,
     manageDocuments: false,
-    viewAll: true
+    viewAll: true,
+    isSuperAdmin: false
   }
 };
+
+
 
 export function AuthProvider({ children }) {
 
@@ -98,15 +106,25 @@ export function AuthProvider({ children }) {
 
 
   // Auth functions
-  async function signup(email, password, companyName, userName) {
-    try {
-      if (!companyName || !userName) {
-        throw new Error("Company name and user name are required");
-      }
+async function signup(email, password, companyName, userName, username) {
+  try {
+    if (!companyName || !userName || !username) {
+      throw new Error("Company name, user name and username are required");
+    }
 
-      // 1. Create auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userId = userCredential.user.uid;
+    // Vérifier si le username existe déjà
+    const usernameCheck = await getDocs(
+      query(collection(db, 'users'), where('username', '==', username)
+    )
+  );
+    
+    if (!usernameCheck.empty) {
+      throw new Error("Ce nom d'utilisateur est déjà pris");
+    }
+
+    // 1. Create auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userId = userCredential.user.uid;
 
       // 2. Create company
       const companyRef = doc(collection(db, 'companies'));
@@ -151,6 +169,8 @@ export function AuthProvider({ children }) {
         email,
         name: userName,
         companyId,
+              username, // Ajout du nom d'utilisateur
+
         role: 'admin',
         createdAt: new Date(),
         lastLogin: new Date()
@@ -164,33 +184,51 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function login(email, password) {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Get additional user data from Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) {
-        throw new Error("User document not found");
+async function login(identifier, password) {
+  try {
+    // Vérifier si l'identifiant est un email ou un username
+    let email = identifier;
+    
+    // Si ce n'est pas un email (ne contient pas @), chercher le username dans Firestore
+    if (!identifier.includes('@')) {
+      const usersRef = collection(db, 'users');
+      const querySnapshot = await getDocs(
+        query(usersRef, where('username', '==', identifier))
+      );
+      
+      if (querySnapshot.empty) {
+        throw new Error("Nom d'utilisateur non trouvé");
       }
-
-      const userData = userDoc.data();
-
-      // Update last login time
-      await setDoc(doc(db, 'users', user.uid), {
-        lastLogin: new Date()
-      }, { merge: true });
-
-      return {
-        ...user,
-        role: userData.role,
-        companyId: userData.companyId
-      };
-    } catch (error) {
-      throw error;
+      
+      // Prend le premier utilisateur trouvé (les usernames doivent être uniques)
+      email = querySnapshot.docs[0].data().email;
     }
+
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Get additional user data from Firestore
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (!userDoc.exists()) {
+      throw new Error("User document not found");
+    }
+
+    const userData = userDoc.data();
+
+    // Update last login time
+    await setDoc(doc(db, 'users', user.uid), {
+      lastLogin: new Date()
+    }, { merge: true });
+
+    return {
+      ...user,
+      role: userData.role,
+      companyId: userData.companyId
+    };
+  } catch (error) {
+    throw error;
   }
+}
 
   function logout() {
     return signOut(auth);

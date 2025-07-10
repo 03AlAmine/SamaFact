@@ -15,7 +15,9 @@ const InvoicesPage = ({
     setSearchTerm,
     navigate,
     handleDeleteFacture,
-    selectedClient
+    selectedClient,
+    currentUser 
+
 }) => {
     const [dateRange, setDateRange] = useState({
         from: null,
@@ -271,6 +273,8 @@ const InvoicesPage = ({
                     onView={handleViewDocument}
                     onDownload={handleDownload}
                     onDuplicate={handleDuplicateDocument}
+                    currentUser={currentUser}
+
                 />
             )}
             {activeTab_0 === "devis" && (
@@ -286,6 +290,8 @@ const InvoicesPage = ({
                     onView={handleViewDocument}
                     onDownload={handleDownload}
                     onDuplicate={handleDuplicateDocument}
+                    currentUser={currentUser}
+
                 />
             )}
             {activeTab_0 === "avoirs" && (
@@ -301,6 +307,8 @@ const InvoicesPage = ({
                     onView={handleViewDocument}
                     onDownload={handleDownload}
                     onDuplicate={handleDuplicateDocument}
+                    currentUser={currentUser}
+
                 />
             )}
         </>

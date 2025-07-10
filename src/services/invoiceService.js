@@ -15,37 +15,37 @@ const convertIfTimestamp = (value) => {
 };
 
 export const invoiceService = {
-getInvoices: (companyId, type, callback) => {
-    if (!companyId) return () => {};
-    
+  getInvoices: (companyId, type, callback) => {
+    if (!companyId) return () => { };
+
     // Vérification du type
     if (typeof type !== 'string') {
-        console.error("Type parameter must be a string");
-        return () => {};
+      console.error("Type parameter must be a string");
+      return () => { };
     }
 
     const invoicesRef = collection(db, `companies/${companyId}/factures`);
-    
+
     // Construction sécurisée de la requête
     let q;
     try {
-        q = query(invoicesRef, where("type", "==", type));
+      q = query(invoicesRef, where("type", "==", type));
     } catch (error) {
-        console.error("Error building query:", error);
-        return () => {};
+      console.error("Error building query:", error);
+      return () => { };
     }
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        const invoicesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            date: convertIfTimestamp(doc.data().date)
-        }));
-        callback(invoicesData);
+      const invoicesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: convertIfTimestamp(doc.data().date)
+      }));
+      callback(invoicesData);
     });
-    
+
     return unsubscribe;
-},
+  },
   addInvoice: async (companyId, invoiceData, type = "facture") => {
     try {
       const invoiceToSave = {

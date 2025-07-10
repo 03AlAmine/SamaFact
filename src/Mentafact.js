@@ -67,6 +67,14 @@ const Mentafact = () => {
         totalEquipes: 0,
     });
 
+    const roleLabels = {
+        superadmin: "Super Administrateur",
+        admin: "Administrateur",
+        comptable: "Comptable",
+        charge_compte: "Chargé de compte",
+        lecteur: "Lecteur",
+        user: "Utilisateur"
+    };
     useEffect(() => {
         const fetchCompanyId = async () => {
             if (!currentUser) return;
@@ -528,6 +536,8 @@ const Mentafact = () => {
                     navigate={navigate}
                     handleDeleteFacture={handleDeleteFacture}
                     selectedClient={selectedClient}
+                    currentUser={currentUser}
+
                 />;
             case "stats":
                 return <StatsPage
@@ -615,7 +625,7 @@ const Mentafact = () => {
                                 </div>
                                 <div className="user-info">
                                     <span className="user-name">{currentUser?.name || "Admin"}</span>
-                                    <span className="user-role">Administrateur</span>
+                                    <span className="user-role">{roleLabels[currentUser?.role] || "Rôle inconnu"}</span>
                                 </div>
                                 <FaChevronDown className="dropdown-arrow" />
                             </div>

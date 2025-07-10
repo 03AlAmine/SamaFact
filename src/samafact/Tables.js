@@ -9,9 +9,9 @@ export const CompanyTable = ({ companies, users, onDelete, onToggleStatus, onEdi
         setExpandedCompany(expandedCompany === companyId ? null : companyId);
     };
 
-const getCompanyUsers = (companyId) => {
-    return (users || []).filter(user => user.companyId === companyId);
-};
+    const getCompanyUsers = (companyId) => {
+        return (users || []).filter(user => user.companyId === companyId);
+    };
 
     return (
         <div className="data-table">
@@ -108,7 +108,7 @@ const getCompanyUsers = (companyId) => {
                                                         <small>{user.email}</small>
                                                     </div>
                                                     <span className={`user-role ${user.role}`}>
-                                                        {user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+                                                        {user.role === 'admin' ? 'Administrateur' : 'superadmin' ? 'SuperAdmin' : 'Utilisateur'}
                                                     </span>
                                                 </div>
                                             ))}
@@ -186,7 +186,7 @@ export const UserTable = ({ users, companies, onDelete, onEdit, onPasswordReset 
 
                         <div className="table-cell">
                             <span className={`user-role ${user.role}`}>
-                                {user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+                                {user.role === 'admin' ? 'Administrateur' : 'superadmin' ? 'SuperAdmin' : 'Utilisateur'}
                             </span>
                         </div>
 

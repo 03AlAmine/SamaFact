@@ -5,7 +5,7 @@ import n2words from 'n2words';
 import sign from '../assets/sign.png'
 
 
-const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
+const InvoicePDF = ({ data, ribType = ["CBAO"], objet, showSignature = true }) => {
   const ribData = {
     CBAO: {
       banque: "CBAO",
@@ -189,12 +189,14 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
               </View>
             </View>
           </View>
-          <View style={pdfStyles.signatureContainer}>
-            <Image
-              style={pdfStyles.signatureImage}
-              src={sign} alt="Aucun document"
-            />
-          </View>
+          {showSignature && (
+            <View style={pdfStyles.signatureContainer}>
+              <Image
+                style={pdfStyles.signatureImage}
+                src={sign} alt="Aucune signature"
+              />
+            </View>
+          )}
         </>
 
       )}
@@ -306,12 +308,14 @@ const InvoicePDF = ({ data, ribType = ["CBAO"], objet }) => {
           </View>
         </View>
       </View>
-      <View style={pdfStyles.signatureContainer}>
-        <Image
-          style={pdfStyles.signatureImage}
-          src={sign} alt="Aucun document"
-        />
-      </View>
+      {showSignature && (
+        <View style={pdfStyles.signatureContainer}>
+          <Image
+            style={pdfStyles.signatureImage}
+            src={sign} alt="Aucune signature"
+          />
+        </View>
+      )}
       {/* Pied de page */}
       <View style={pdfStyles.footer}>
         <Text style={pdfStyles.footerBold}>LEADER INTERIM ET SERVICES</Text>

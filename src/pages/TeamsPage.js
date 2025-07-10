@@ -5,13 +5,15 @@ import {
     FaTrash,
     FaPlus,
     FaSearch,
-    FaUserShield,
     FaUserEdit,
     FaUser,
     FaTimes,
     FaCheck,
     FaCheckCircle,
-    FaExclamationTriangle
+    FaExclamationTriangle,
+    FaKey,
+    FaUserTie,
+    FaUserCog
 } from "react-icons/fa";
 import empty_team from '../assets/empty_team.png';
 import { ROLES } from '../auth/AuthContext';
@@ -20,7 +22,7 @@ import "../css/TeamPage.css";
 import { useAuth } from '../auth/AuthContext';
 
 const TeamsPage = ({ checkPermission }) => {
-    const { currentUser, loading } = useAuth();
+    const { currentUser } = useAuth();
 
     // États pour la gestion des équipes
     const [equipes, setEquipes] = useState([]);
@@ -40,13 +42,18 @@ const TeamsPage = ({ checkPermission }) => {
     const [subUserForm, setSubUserForm] = useState({
         email: '',
         name: '',
-        role: ROLES.EDITOR
+        username: '',
+        role: ROLES.CHARGE_COMPTE
     });
     const [subUserPassword, setSubUserPassword] = useState(generateRandomPassword());
     const [subUserSuccess, setSubUserSuccess] = useState(null);
     const [subUserError, setSubUserError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+
+    const [editingUser, setEditingUser] = useState(null);
+    const [showResetPassword, setShowResetPassword] = useState(false);
+    const [userToReset, setUserToReset] = useState(null);
     // Charger les équipes au montage
     useEffect(() => {
         const fetchTeams = async () => {
@@ -79,7 +86,6 @@ const TeamsPage = ({ checkPermission }) => {
                     setSubUserError({
                         title: "Erreur",
                         message: error.message || "Impossible de charger les utilisateurs",
-                        details: error.toString()
                     });
                 } finally {
                     setLoadingUsers(false);
@@ -202,32 +208,19 @@ const TeamsPage = ({ checkPermission }) => {
             return;
         }
 
-        if (!currentUser.companyId) {
-            setSubUserError({
-                title: "Erreur",
-                message: "Company ID manquant",
-                details: "L'utilisateur n'est pas associé à une entreprise"
-            });
-            return;
-        }
 
         try {
             setIsSubmitting(true);
             setSubUserError(null);
-
-            console.log('Données soumises:', {
-                email: subUserForm.email,
-                role: subUserForm.role,
-                companyId: currentUser.companyId
-            });
 
             const result = await teamService.createUserWithIsolatedAuth(
                 {
                     email: subUserForm.email,
                     password: subUserPassword,
                     name: subUserForm.name,
+                    username: subUserForm.username,
                     role: subUserForm.role,
-                    companyId: currentUser.companyId
+                    companyId: currentUser.companyId,
                 },
                 currentUser.uid
             );
@@ -237,12 +230,11 @@ const TeamsPage = ({ checkPermission }) => {
             if (result.success) {
                 setSubUserSuccess({
                     title: "Succès",
-                    message: `Utilisateur créé - ID: ${result.userId}`,
-                    userId: result.userId
+                    message: `Utilisateur créé `,
                 });
 
                 // Réinitialisation du formulaire
-                setSubUserForm({ email: '', name: '', role: ROLES.VIEWER });
+                setSubUserForm({ email: '', name: '', username: '', role: ROLES.CHARGE_COMPTE });
                 setSubUserPassword(generateRandomPassword());
 
                 // Mise à jour de la liste
@@ -295,10 +287,16 @@ const TeamsPage = ({ checkPermission }) => {
     // Helper functions
     const getRoleIcon = (role) => {
         switch (role) {
-            case ROLES.ADMIN: return <FaUserShield className="role-icon admin" />;
-            case ROLES.MANAGER: return <FaUserEdit className="role-icon manager" />;
-            case ROLES.EDITOR: return <FaUserEdit className="role-icon editor" />;
-            default: return <FaUser className="role-icon viewer" />;
+            case ROLES.ADMIN:
+                return <FaUserTie className="role-icon admin" />;
+            case ROLES.COMPTABLE:
+                return <FaUserCog className="role-icon comptable" />;
+            case ROLES.CHARGE_COMPTE:
+                return <FaUserEdit className="role-icon charge-compte" />;
+            case ROLES.LECTEUR:
+                return <FaUser className="role-icon lecteur" />;
+            default:
+                return <FaUser className="role-icon default" />;
         }
     };
 
@@ -307,13 +305,86 @@ const TeamsPage = ({ checkPermission }) => {
         const date = timestamp.toDate();
         return date.toLocaleDateString('fr-FR');
     };
-    if (loading) {
-        return <div>Chargement en cours...</div>;
-    }
 
-    if (!currentUser) {
-        return <div>Veuillez vous connecter</div>;
-    }
+
+    const handleEditUser = (user) => {
+        setEditingUser(user);
+        setSubUserForm({
+            email: user.email,
+            name: user.name || '',
+            username: user.username || '',
+            role: user.role
+        });
+    };
+
+    const handleUpdateUser = async () => {
+        try {
+            setIsSubmitting(true);
+            await teamService.updateUser(currentUser.companyId, editingUser.id, {
+                email: subUserForm.email,
+                name: subUserForm.name,
+                username: subUserForm.username,
+                role: subUserForm.role,
+                updatedAt: new Date()
+            });
+
+            const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+            setUsers(updatedUsers);
+            setEditingUser(null);
+            setSubUserSuccess({
+                title: "Succès",
+                message: "Utilisateur mis à jour avec succès"
+            });
+        } catch (error) {
+            setSubUserError({
+                title: "Erreur",
+                message: error.message || "Erreur lors de la mise à jour de l'utilisateur"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId) => {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+            try {
+                await teamService.toggleUserStatus(currentUser.companyId, userId, false);
+                const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+                setUsers(updatedUsers);
+                setSubUserSuccess({
+                    title: "Succès",
+                    message: "Utilisateur désactivé avec succès"
+                });
+            } catch (error) {
+                setSubUserError({
+                    title: "Erreur",
+                    message: error.message || "Erreur lors de la suppression de l'utilisateur"
+                });
+            }
+        }
+    };
+
+    const handleResetPassword = async (user) => {
+        setUserToReset(user);
+        setShowResetPassword(true);
+    };
+
+    const confirmResetPassword = async () => {
+        try {
+            await teamService.resetUserPassword(userToReset.email);
+            setShowResetPassword(false);
+            setSubUserSuccess({
+                title: "Succès",
+                message: `Email de réinitialisation envoyé à ${userToReset.email}`
+            });
+        } catch (error) {
+            setSubUserError({
+                title: "Erreur",
+                message: error.message || "Erreur lors de l'envoi de l'email de réinitialisation"
+            });
+        }
+    };
+
 
     return (
         <div className="teams-container">
@@ -383,6 +454,15 @@ const TeamsPage = ({ checkPermission }) => {
 
                         <div className="form-row">
                             <div className="form-group">
+                                <label>Utilisateur</label>
+                                <input
+                                    value={subUserForm.username}
+                                    onChange={(e) => setSubUserForm({ ...subUserForm, username: e.target.value })}
+                                    placeholder="Pseudo"
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>Rôle <span className="required">*</span></label>
                                 <select
                                     value={subUserForm.role}
@@ -391,9 +471,10 @@ const TeamsPage = ({ checkPermission }) => {
                                     required
                                 >
                                     <option value={ROLES.ADMIN}>Administrateur</option>
-                                    <option value={ROLES.MANAGER}>Manager</option>
-                                    <option value={ROLES.EDITOR}>Éditeur</option>
-                                    <option value={ROLES.VIEWER}>Lecteur</option>
+                                    <option value={ROLES.COMPTABLE}>Comptable</option>
+                                    <option value={ROLES.CHARGE_COMPTE}>Chargé de compte</option>
+                                    <option value={ROLES.LECTEUR}>Lecteur</option>
+
                                 </select>
                             </div>
 
@@ -429,8 +510,12 @@ const TeamsPage = ({ checkPermission }) => {
                     </div>
 
                     {/* Liste des utilisateurs */}
+                    {/* Liste des utilisateurs */}
                     <div className="users-section">
-                        <h3 className="section-subtitle">Liste des Utilisateurs ({users.length})</h3>
+                        <h3 className="section-title">
+                            <FaUsers style={{ marginRight: "10px" }} />
+                            Liste des Utilisateurs ({users.length})
+                        </h3>
 
                         {loadingUsers ? (
                             <div className="loading">Chargement des utilisateurs...</div>
@@ -473,18 +558,129 @@ const TeamsPage = ({ checkPermission }) => {
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <button
-                                                        onClick={() => toggleUserStatus(user.id, user.disabled)}
-                                                        className={`icon-btn ${user.disabled ? 'activate' : 'deactivate'}`}
-                                                        title={user.disabled ? 'Activer' : 'Désactiver'}
-                                                    >
-                                                        {user.disabled ? <FaCheck /> : <FaTimes />}
-                                                    </button>
+                                                    <div className="action-buttons">
+                                                        <button
+                                                            onClick={() => handleEditUser(user)}
+                                                            className="icon-btn edit"
+                                                            title="Modifier"
+                                                        >
+                                                            <FaEdit />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user.id)}
+                                                            className="icon-btn delete"
+                                                            title="Supprimer"
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleResetPassword(user)}
+                                                            className="icon-btn reset"
+                                                            title="Réinitialiser le mot de passe"
+                                                        >
+                                                            <FaKey />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => toggleUserStatus(user.id, user.disabled)}
+                                                            className={`icon-btn ${user.disabled ? 'activate' : 'deactivate'}`}
+                                                            title={user.disabled ? 'Activer' : 'Désactiver'}
+                                                        >
+                                                            {user.disabled ? <FaCheck /> : <FaTimes />}
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        )}
+                        {/* Modal de réinitialisation de mot de passe */}
+                        {showResetPassword && (
+                            <div className="modal-overlay">
+                                <div className="modal">
+                                    <div className="modal-header">
+                                        <h3>Réinitialiser le mot de passe</h3>
+                                        <button onClick={() => setShowResetPassword(false)} className="close-btn">
+                                            <FaTimes />
+                                        </button>
+                                    </div>
+                                    <div className="modal-body">
+                                        <p>Voulez-vous envoyer un email de réinitialisation de mot de passe à <strong>{userToReset?.email}</strong> ?</p>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button onClick={() => setShowResetPassword(false)} className="btn-secondary">
+                                            Annuler
+                                        </button>
+                                        <button onClick={confirmResetPassword} className="btn-primary">
+                                            Confirmer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal d'édition d'utilisateur */}
+                        {editingUser && (
+                            <div className="modal-overlay">
+                                <div className="modal">
+                                    <div className="modal-header">
+                                        <h3>Modifier l'utilisateur</h3>
+                                        <button onClick={() => setEditingUser(null)} className="close-btn">
+                                            <FaTimes />
+                                        </button>
+                                    </div>
+                                    <div className="modal-body">
+                                        <div className="form-group">
+                                            <label>Email <span className="required">*</span></label>
+                                            <input
+                                                type="email"
+                                                value={subUserForm.email}
+                                                onChange={(e) => setSubUserForm({ ...subUserForm, email: e.target.value })}
+                                                className="form-input"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Nom complet</label>
+                                            <input
+                                                value={subUserForm.name}
+                                                onChange={(e) => setSubUserForm({ ...subUserForm, name: e.target.value })}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Nom d'utilisateur</label>
+                                            <input
+                                                value={subUserForm.username}
+                                                onChange={(e) => setSubUserForm({ ...subUserForm, username: e.target.value })}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Rôle <span className="required">*</span></label>
+                                            <select
+                                                value={subUserForm.role}
+                                                onChange={(e) => setSubUserForm({ ...subUserForm, role: e.target.value })}
+                                                className="form-input"
+                                                required
+                                            >
+                                                <option value={ROLES.ADMIN}>Administrateur</option>
+                                                <option value={ROLES.COMPTABLE}>Comptable</option>
+                                                <option value={ROLES.CHARGE_COMPTE}>Chargé de compte</option>
+                                                <option value={ROLES.LECTEUR}>Lecteur</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button onClick={() => setEditingUser(null)} className="btn-secondary">
+                                            Annuler
+                                        </button>
+                                        <button onClick={handleUpdateUser} className="btn-primary" disabled={isSubmitting}>
+                                            {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useAuth, ROLES } from '../auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import './Profile.css';
 import Sidebar from "../Sidebar";
 import { db, storage } from '../firebase';
+import { ROLES } from '../auth/permissions'; // adapte le chemin si nécessaire
 
 const Profile = () => {
   // State management
-  const { currentUser, createSubUser, checkPermission } = useAuth();
+  const { currentUser } = useAuth();
 
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -29,30 +30,18 @@ const Profile = () => {
     pdfQuality: 'high'
   });
 
-  const [subUserForm, setSubUserForm] = useState({
-    email: '',
-    name: '',
-    role: ROLES.VIEWER
-  });
-
   const [loading, setLoading] = useState(true);
   const [logoUploading, setLogoUploading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [companyId, setCompanyId] = useState('');
-  const [subUserPassword, setSubUserPassword] = useState(generateRandomPassword());
-
-  // Helper functions
-  function generateRandomPassword() {
-    return Math.random().toString(36).slice(-8) + 'A1!';
-  }
 
   // Data fetching
   useEffect(() => {
     const fetchProfile = async () => {
       if (currentUser) {
         try {
-          // 1. Fetch user information
+          // 1. Récupérer le document utilisateur
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (!userDoc.exists()) throw new Error("Utilisateur non trouvé");
 
@@ -60,32 +49,43 @@ const Profile = () => {
           const companyId = userData.companyId;
           setCompanyId(companyId);
 
-          // 2. Fetch profile
+          // 2. Récupérer les infos de l'entreprise
+          const companyRef = doc(db, 'companies', companyId);
+          const companySnap = await getDoc(companyRef);
+          let companyData = {};
+          if (companySnap.exists()) {
+            companyData = companySnap.data();
+          }
+          // 3. Récupérer ou initialiser le profil utilisateur
           const profileRef = doc(db, `companies/${companyId}/profiles`, currentUser.uid);
           const profileSnap = await getDoc(profileRef);
 
           if (profileSnap.exists()) {
             setProfileData(profileSnap.data());
           } else {
-            // Create default profile if needed
-            await setDoc(profileRef, {
+            // Fusion des données pour init par défaut
+            const defaultData = {
               firstName: '',
               lastName: '',
-              companyName: userData.companyName || '',
+              companyName: companyData.name || userData.companyName || '',
+              companyStatus: companyData.status || '',
+              address: companyData.address || '',
+              phone: companyData.phone || '',
+              website: companyData.website || '',
+              rcNumber: companyData.rcNumber || '',
+              ninea: companyData.ninea || '',
               email: currentUser.email,
-              createdAt: new Date(),
-            });
-            setProfileData({
-              firstName: '',
-              lastName: '',
-              companyName: userData.companyName || '',
-              email: currentUser.email
-            });
+              companyLogo: companyData.logo || '',
+              createdAt: new Date()
+            };
+
+            await setDoc(profileRef, defaultData);
+            setProfileData(defaultData);
           }
 
           setLoading(false);
         } catch (error) {
-          console.error("Error fetching profile:", error);
+          console.error("Erreur lors du chargement du profil:", error);
           setErrorMessage("Erreur lors du chargement du profil");
           setLoading(false);
         }
@@ -95,6 +95,7 @@ const Profile = () => {
     fetchProfile();
   }, [currentUser]);
 
+
   // Event handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -102,22 +103,6 @@ const Profile = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleCreateSubUser = async () => {
-    try {
-      await createSubUser(
-        subUserForm.email,
-        generateRandomPassword(),
-        subUserForm.name,
-        subUserForm.role
-      );
-      setSuccessMessage("Sous-utilisateur créé avec succès");
-      setSubUserForm({ email: '', name: '', role: ROLES.VIEWER });
-      setSubUserPassword(generateRandomPassword());
-    } catch (error) {
-      setErrorMessage(`Erreur: ${error.message}`);
-    }
   };
 
   const handleLogoUpload = async (e) => {
@@ -179,13 +164,21 @@ const Profile = () => {
   const shouldShowSection = (section) => {
     if (!currentUser) return false;
 
-    if ([ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPERADMIN].includes(currentUser.role)) return true;
+    const role = currentUser.role;
 
-    if (currentUser.role === ROLES.EDITOR) {
-      return section !== 'company' && section !== 'bank';
+    if ([ROLES.SUPERADMIN, ROLES.ADMIN].includes(role)) {
+      return true; // Accès total
     }
 
-    if (currentUser.role === ROLES.VIEWER) {
+    if (role === ROLES.COMPTABLE) {
+      return section !== 'company'; // Comptable ne touche pas à la structure
+    }
+
+    if (role === ROLES.CHARGE_COMPTE) {
+      return section === 'personal' || section === 'invoice'; // accès limité
+    }
+
+    if (role === ROLES.LECTEUR) {
       return section === 'personal';
     }
 
@@ -457,95 +450,6 @@ const Profile = () => {
           </div>
         </form>
 
-        {/* Sub-user Management Section */}
-        {checkPermission('manageUsers') && (
-          <div className="subuser-section">
-            <h2>Gestion des Sous-utilisateurs</h2>
-            <div className="subuser-form">
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={subUserForm.email}
-                  onChange={(e) => setSubUserForm({ ...subUserForm, email: e.target.value })}
-                  placeholder="Email du sous-utilisateur"
-                />
-              </div>
-              <div className="form-group">
-                <label>Nom complet</label>
-                <input
-                  value={subUserForm.name}
-                  onChange={(e) => setSubUserForm({ ...subUserForm, name: e.target.value })}
-                  placeholder="Nom du sous-utilisateur"
-                />
-              </div>
-              <div className="form-group">
-                <label>Rôle</label>
-                <select
-                  value={subUserForm.role}
-                  onChange={(e) => setSubUserForm({ ...subUserForm, role: e.target.value })}
-                >
-                  {/* Filtrer les rôles selon le rôle de l'utilisateur actuel */}
-                  {Object.values(ROLES)
-                    .filter(role => {
-                      // Un admin ne peut pas créer de superadmin
-                      if (currentUser.role === ROLES.ADMIN && role === ROLES.SUPERADMIN) {
-                        return false;
-                      }
-                      // Un manager ne peut créer que des viewers et editors
-                      if (currentUser.role === ROLES.MANAGER &&
-                        [ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.MANAGER].includes(role)) {
-                        return false;
-                      }
-                      return true;
-                    })
-                    .map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Mot de passe temporaire</label>
-                <input
-                  type="text"
-                  value={subUserPassword}
-                  readOnly
-                  placeholder="Mot de passe temporaire"
-                />
-                <small>Ce mot de passe sera envoyé à l'administrateur uniquement</small>
-              </div>
-
-              <button
-                onClick={handleCreateSubUser}
-                className="btn-create-user"
-              >
-                Créer le sous-utilisateur
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Basic Info for Viewers */}
-        {currentUser?.role === ROLES.VIEWER && (
-          <div className="basic-info">
-            <h2>Informations de base</h2>
-            <div className="info-item">
-              <span className="label">Nom de l'entreprise:</span>
-              <span className="value">{profileData.companyName}</span>
-            </div>
-            <div className="info-item">
-              <span className="label">Votre nom:</span>
-              <span className="value">{`${profileData.firstName} ${profileData.lastName}`}</span>
-            </div>
-            <div className="info-item">
-              <span className="label">Votre email:</span>
-              <span className="value">{profileData.email}</span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ const AuthForm = ({ type }) => {
     const location = useLocation();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
     const [showSuccess, setShowSuccess] = useState(false);
-
+    const [username, setUsername] = useState('');
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
         setError('');
@@ -38,67 +38,65 @@ const AuthForm = ({ type }) => {
         setIsAdminVerified(true);
     };
 
-async function handleSubmit(e, formType) {
-    e.preventDefault();
+    async function handleSubmit(e, formType) {
+        e.preventDefault();
 
-    // Validation pour l'inscription
-    if (formType === 'register') {
-        if (password !== passwordConfirm) {
-            return setError("Les mots de passe ne correspondent pas");
+        // Validation pour l'inscription
+        if (formType === 'register') {
+            if (password !== passwordConfirm) {
+                return setError("Les mots de passe ne correspondent pas");
+            }
+            if (!companyName.trim()) {
+                return setError("Le nom de l'entreprise est requis");
+            }
         }
-        if (!companyName.trim()) {
-            return setError("Le nom de l'entreprise est requis");
-        }
-    }
+        try {
+            setError('');
+            setLoading(true);
 
-    try {
-        setError('');
-        setLoading(true);
+            if (formType === 'login') {
+                // Utilisez soit le username soit l'email pour la connexion
+                const identifier = username || email;
+                const user = await login(identifier, password);
+                setShowSuccess(true);
 
-        if (formType === 'login') {
-            // Ici, nous supposons que login() renvoie maintenant les infos utilisateur dont le rôle
-            const user = await login(email, password);
-            setShowSuccess(true);
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Afficher le message de succès pendant 1.5 secondes avant la redirection
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Redirection en fonction du rôle
-            if (user.role === 'superadmin') {
-                window.location.assign('/samafact');
-            } else if (user.role === 'admin' || user.role === 'user') {
-                window.location.assign('/');
+                if (user.role === 'superadmin') {
+                    window.location.assign('/samafact');
+                } else if (user.role === 'admin' || user.role === 'user') {
+                    window.location.assign('/');
+                } else {
+                    window.location.assign('/');
+                }
             } else {
-                // Par défaut, rediriger vers la page d'accueil
-                window.location.assign('/');
+                await signup(email, password, companyName, userName, username);
+                setShowSuccess(true);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                navigate('/profile');
             }
-        } else {
-            await signup(email, password, companyName, userName);
-            setShowSuccess(true);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            navigate('/profile');
-        }
-    } catch (err) {
-        setLoading(false);
-        setShowSuccess(false);
 
-        if (formType === 'login') {
-            switch (err.code) {
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                    setError("Identifiants incorrects");
-                    break;
-                case 'auth/too-many-requests':
-                    setError("Trop de tentatives. Réessayez plus tard");
-                    break;
-                default:
-                    setError("Erreur de connexion");
+        } catch (err) {
+            setLoading(false);
+            setShowSuccess(false);
+
+            if (formType === 'login') {
+                switch (err.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        setError("Identifiants incorrects");
+                        break;
+                    case 'auth/too-many-requests':
+                        setError("Trop de tentatives. Réessayez plus tard");
+                        break;
+                    default:
+                        setError("Erreur de connexion");
+                }
+            } else {
+                setError(err.message || "Erreur d'inscription");
             }
-        } else {
-            setError(err.message || "Erreur d'inscription");
         }
     }
-}
 
     const renderRegisterForm = () => {
         if (type === 'register' && !isAdminVerified) {
@@ -137,6 +135,16 @@ async function handleSubmit(e, formType) {
                         required
                     />
                     <FaEnvelope className="auth-icon" />
+                </div>
+                <div className="auth-input-box">
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Nom d'utilisateur"
+                        required
+                    />
+                    <FaUser className="auth-icon" />
                 </div>
                 <div className="auth-input-box">
                     <input
@@ -204,13 +212,13 @@ async function handleSubmit(e, formType) {
                             <h1>Connexion</h1>
                             <div className="auth-input-box">
                                 <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Nom d'utilisateur"
                                     required
                                 />
-                                <FaEnvelope className="auth-icon" />
+                                <FaUser className="auth-icon" />
                             </div>
                             <div className="auth-input-box">
                                 <input

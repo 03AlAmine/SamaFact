@@ -630,19 +630,6 @@ body {
   background: var(--warning-gradient);
 }
 
-.stat-info h3 {
-  font-size: 1.8rem;
-  margin-bottom: 0.25rem;
-  font-weight: 700;
-  color: var(--dark-color);
-}
-
-.stat-info p {
-  color: var(--gray-dark);
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
 /* Recent Invoices */
 .recent-invoices {
   background-color: white;

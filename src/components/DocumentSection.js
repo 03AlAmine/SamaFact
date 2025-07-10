@@ -32,7 +32,8 @@ const DocumentSection = ({
     type,
     onDuplicate,
     onView,
-    onDownload
+    onDownload,
+    currentUser // <-- juste ça ici
 }) => {
     const [sortBy, setSortBy] = useState('numero');
     const [sortOrder, setSortOrder] = useState('asc');
@@ -40,28 +41,37 @@ const DocumentSection = ({
     const [hoveredItem, setHoveredItem] = useState(null);
 
     // Filtre et tri
-    const filteredItems = items
-        .filter(item =>
-        (item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.clientNom && item.clientNom.toLowerCase().includes(searchTerm.toLowerCase())))
-        )
-        .sort((a, b) => {
-            let compareValue;
-            if (sortBy === 'numero') {
-                // Utilisez parseInt pour convertir en nombre avant de comparer
-                const numA = parseInt(a.numero.replace(/\D/g, ''));
-                const numB = parseInt(b.numero.replace(/\D/g, ''));
-                compareValue = numA - numB;
-            } else if (sortBy === 'clientNom') {
-                compareValue = (a.clientNom || '').localeCompare(b.clientNom || '');
-            } else if (sortBy === 'date') {
-                compareValue = new Date(a.date) - new Date(b.date);
-            } else if (sortBy === 'totalTTC') {
-                compareValue = a.totalTTC - b.totalTTC;
-            }
+const filteredItems = items
+    // Filtrer par chargé de compte uniquement les factures qu’il a créées
+    .filter(item => {
+        const matchesSearch = item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.clientNom && item.clientNom.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        // Si c’est un chargé de compte → ne voir que ses propres factures
+        if (currentUser?.role === 'charge_compte') {
+            return matchesSearch && item.userId === currentUser.uid;
+        }
 
-            return sortOrder === 'asc' ? compareValue : -compareValue;
-        })
+        // Sinon (admin, comptable, superadmin...) → voir tout
+        return matchesSearch;
+    })
+    .sort((a, b) => {
+        let compareValue;
+        if (sortBy === 'numero') {
+            const numA = parseInt(a.numero.replace(/\D/g, ''));
+            const numB = parseInt(b.numero.replace(/\D/g, ''));
+            compareValue = numA - numB;
+        } else if (sortBy === 'clientNom') {
+            compareValue = (a.clientNom || '').localeCompare(b.clientNom || '');
+        } else if (sortBy === 'date') {
+            compareValue = new Date(a.date) - new Date(b.date);
+        } else if (sortBy === 'totalTTC') {
+            compareValue = a.totalTTC - b.totalTTC;
+        }
+
+        return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+
     const toggleSort = (field) => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');

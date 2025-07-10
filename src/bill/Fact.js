@@ -25,6 +25,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
   const [showClientInfo, setShowClientInfo] = useState(true);
   const { currentUser } = useAuth();
 
+  const [showSignature, setShowSignature] = useState(true);
 
   const handleClientChange = (e) => {
     const clientId = e.target.value;
@@ -447,6 +448,20 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                       </label>
                     </div>
                   </div>
+                  <div className="section" style={{ marginTop: '2rem' }}>
+                    <h2>Options</h2>
+                    <div className="form-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={showSignature}
+                          onChange={(e) => setShowSignature(e.target.checked)}
+                        />
+                        <span className="checkbox-text-label">Inclure la signature</span>
+
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
@@ -692,7 +707,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
             {/* Bouton TÉLÉCHARGER */}
             {isSaved ? (
               <PDFDownloadLink
-                document=<InvoicePDF data={data} ribType={selectedRibs} objet={objet} />
+                document={<InvoicePDF data={data} ribType={selectedRibs} objet={objet} showSignature={showSignature} />}
                 fileName={`facture_${data.facture.Numéro[0]}.pdf`}
                 className="button success-button"
               >
@@ -716,7 +731,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               height="800px"
               style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
             >
-              <InvoicePDF data={data} ribType={selectedRibs} objet={objet} />
+              <InvoicePDF data={data} ribType={selectedRibs} objet={objet} showSignature={showSignature} />
             </DynamicPDFViewer>
           )}
         </div>

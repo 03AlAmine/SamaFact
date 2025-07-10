@@ -242,6 +242,17 @@ const CompanyUserView = ({
                                             required
                                         />
                                         <input
+                                            type="text"
+                                            placeholder="Nom utilisateur"
+                                            value={user.username}
+                                            onChange={(e) => {
+                                                const updated = [...newUsers];
+                                                updated[index].username = e.target.value;
+                                                setNewUsers(updated);
+                                            }}
+                                            required
+                                        />
+                                        <input
                                             type="email"
                                             placeholder="Email"
                                             value={user.email}

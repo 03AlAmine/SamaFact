@@ -86,7 +86,9 @@ export const CompanyModal = ({
                                 disabled={loading}
                             >
                                 {loading ? (
-                                    <span className="spinner-border spinner-border-sm" />
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" /> Création en cours...
+                                    </>
                                 ) : (
                                     mode === 'edit' ? 'Mettre à jour' : 'Créer'
                                 )}
@@ -169,6 +171,17 @@ export const UserModal = ({
                                 autoFocus
                             />
                         </div>
+                        <div className="form-group">
+                            <label htmlFor="user-pseudo">Pseudo</label>
+                            <input
+                                id="user-pseudo"
+                                type="text"
+                                className="form-control"
+                                value={user.username}
+                                onChange={(e) => onChange('username', e.target.value)}
+                                required
+                            />
+                        </div>
 
                         <div className="form-group">
                             <label htmlFor="user-email">Email</label>
@@ -244,16 +257,12 @@ export const UserModal = ({
                                 onChange={(e) => onChange('role', e.target.value)}
                             >
                                 <option value="admin">Administrateur</option>
-                                <option value="manager">Manager</option>
-                                <option value="user">Utilisateur standard</option>
-                                <option value="editor">Éditeur</option>
-                                <option value="viewer">Lecteur</option>
+                                <option value="comptable">Comptable</option>
+                                <option value="charge_compte">Chargé de compte</option>
+                                <option value="lecteur">Lecteur</option>
                                 {isSuperAdmin && <option value="superadmin">Super Admin</option>}
                             </select>
                         </div>
-
-
-
                         <div className="form-actions">
                             <button
                                 type="button"
@@ -271,7 +280,7 @@ export const UserModal = ({
                                 {loading ? (
                                     <span className="spinner-border spinner-border-sm" />
                                 ) : (
-                                    mode === 'edit' ? 'Mettre à jour' : 'Créer'
+                                    mode === 'edit' ? 'Mettre à jour' : 'Création en cours...'
                                 )}
                             </button>
                         </div>
@@ -383,7 +392,9 @@ export const PasswordModal = ({
                                 disabled={!isValid || loading}
                             >
                                 {loading ? (
-                                    <span className="spinner-border spinner-border-sm" />
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" /> Enregistrement...
+                                    </>
                                 ) : (
                                     'Enregistrer'
                                 )}
