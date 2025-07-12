@@ -177,6 +177,7 @@ export const teamService = {
       const tempApp = initializeApp(firebaseConfig, "TempUserCreation");
       const tempAuth = getAuth(tempApp);
 
+
       // 3. Création de l'utilisateur
       const userCredential = await createUserWithEmailAndPassword(
         tempAuth,
@@ -219,7 +220,15 @@ export const teamService = {
         createdBy: currentUserId
       });
 
+      // 🔥 Nouveau : pseudo enregistré séparément
+      const pseudoRef = doc(db, 'pseudos', userData.username);
+      batch.set(pseudoRef, {
+        email: userData.email,
+        createdAt: new Date()
+      });
+
       await batch.commit();
+
 
       // 7. Nettoyage
       await deleteApp(tempApp);
@@ -234,6 +243,7 @@ export const teamService = {
       console.error("Erreur création utilisateur:", error);
       throw error;
     }
+
   },
 
   resetUserPassword: async (email) => {

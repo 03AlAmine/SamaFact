@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { db } from "../firebase";
 import { useLocation } from 'react-router-dom';
 import { Page, Text, View, Document, PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
-import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 import { pdfStyles } from '../bill/styles/pdfStyles';
 import './css/Fact.css';
 import Sidebar from "../Sidebar";
 import { useAuth } from '../auth/AuthContext';
 import { Image } from '@react-pdf/renderer';
 import n2words from 'n2words';
+import { invoiceService } from '../services/invoiceService';
 
 
 // Composant InvoicePDF (inchangé)
@@ -158,7 +159,7 @@ const InvoicePDF = ({ data, ribType = "CBAO", objet }) => {
 };
 
 // Composant InvoiceForm (inchangé)
-const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
+const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "",
@@ -684,20 +685,18 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
               className="button primary-button"
               onClick={() => setShowPreview(!showPreview)}
             >
-              <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
+              <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : " l'aperçu"}
             </button>
 
             <button
               className="button success-button"
               onClick={handleSave}
-              disabled={isSaving}
             >
-              {isSaving ? (
-                <><i className="fas fa-spinner fa-spin"></i> Enregistrement...</>
-              ) : (
-                <><i className="fas fa-save"></i> Enregistrer</>
-              )}
+              disabled={isSaving || isSaved}
+
+              {isSaving ? 'Enregistrement...' : isSaved ? 'Déjà enregistré' : 'Enregistrer'}
             </button>
+
 
             {/* Bouton TÉLÉCHARGER */}
             {isSaved ? (
@@ -746,94 +745,6 @@ const Fact = () => {
   const [isSaved, setIsSaved] = useState(false);
   const location = useLocation();
 
-  // Fonction pour générer le numéro de facture séquentiel
-  const generateInvoiceNumber = useCallback(
-    async (date = new Date(), type = "facture") => {
-      if (!currentUser?.companyId) return `${type}-TEMP`;
-
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-
-      let typePrefix;
-      switch (type) {
-        case "avoir": typePrefix = "AV"; break;
-        case "devis": typePrefix = "D"; break;
-        default: typePrefix = "F";
-      }
-
-      const prefix = `${typePrefix}-${year}${month}`;
-
-      try {
-        const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
-        const q = query(facturesRef, orderBy("numero", "desc"), limit(10));
-        const querySnapshot = await getDocs(q);
-
-        let maxNumber = 0;
-        querySnapshot.forEach(doc => {
-          const numero = doc.data().numero;
-          const match = numero.match(/-(\d+)$/);
-          if (match) {
-            const num = parseInt(match[1]);
-            if (num > maxNumber) maxNumber = num;
-          }
-        });
-
-        return `${prefix}-${maxNumber + 1}`;
-      } catch (error) {
-        console.error("Erreur génération numéro:", error);
-        return `${prefix}-1`;
-      }
-    },
-    [currentUser?.companyId]
-  );
-
-  // Fonction pour transformer les données de Firebase
-  const transformFactureData = (facture) => {
-    if (!facture) return null;
-
-    const items = {
-      Designation: [],
-      Quantite: [],
-      "Prix Unitaire": [],
-      TVA: [],
-      "Montant HT": [],
-      "Montant TVA": [],
-      "Prix Total": []
-    };
-
-    if (facture.items && facture.items.length > 0) {
-      facture.items.forEach(item => {
-        items.Designation.push(item.designation);
-        items.Quantite.push(item.quantite);
-        items["Prix Unitaire"].push(item.prixUnitaire);
-        items.TVA.push(item.tva);
-        items["Montant HT"].push(item.montantHT);
-        items["Montant TVA"].push(item.montantTVA);
-        items["Prix Total"].push(item.prixTotal);
-      });
-    }
-
-    return {
-      facture: {
-        Numéro: [facture.numero || ""],
-        Date: [facture.date || new Date().toISOString().split('T')[0]],
-        DateEcheance: [facture.dateEcheance || ""], // Ajouté
-
-        Type: [facture.type || "facture"]
-      },
-      client: {
-        Nom: [facture.clientNom || ""],
-        Adresse: [facture.clientAdresse || ""]
-      },
-      items: items,
-      totals: {
-        "Total HT": [facture.totalHT || "0,00"],
-        "Total TVA": [facture.totalTVA || "0,00"],
-        "Total TTC": [facture.totalTTC || "0,00"]
-      }
-    };
-  };
-
   // Initialisation des données
   const [data, setData] = useState({
     facture: {
@@ -868,7 +779,7 @@ const Fact = () => {
       const documentType = location.state?.type || "facture";
 
       if (location.state && location.state.facture) {
-        setData(transformFactureData(location.state.facture));
+        setData(invoiceService.transformFactureData(location.state.facture));
         setLoadingData(false);
         return;
       }
@@ -881,7 +792,12 @@ const Fact = () => {
         : { Nom: [], Adresse: [] };
 
       try {
-        const invoiceNumber = await generateInvoiceNumber(new Date(), documentType);
+        const invoiceNumber = await invoiceService.generateInvoiceNumber(
+          currentUser.companyId,
+          new Date(),
+          documentType
+        );
+
         setData(prev => ({
           ...prev,
           facture: {
@@ -909,7 +825,7 @@ const Fact = () => {
     };
 
     initializeData();
-  }, [location.state, currentUser?.companyId, generateInvoiceNumber]);
+  }, [location.state, currentUser?.companyId]);
 
   // Chargement des clients
   useEffect(() => {
@@ -943,49 +859,23 @@ const Fact = () => {
       throw new Error("Company ID not available");
     }
 
-    try {
-      const invoiceData = {
-        numero: data.facture.Numéro[0],
-        date: data.facture.Date[0],
-        dateEcheance: data.facture.DateEcheance?.[0] || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        type: data.facture.Type[0],
-        clientId: clients.find(c => c.nom === data.client.Nom[0])?.id || null,
-        clientNom: data.client.Nom[0],
-        clientAdresse: data.client.Adresse[0],
-        items: data.items.Designation.map((_, index) => ({
-          designation: data.items.Designation[index],
-          quantite: data.items.Quantite[index],
-          prixUnitaire: data.items["Prix Unitaire"][index],
-          tva: data.items.TVA[index],
-          montantHT: data.items["Montant HT"]?.[index] || "0,00",
-          montantTVA: data.items["Montant TVA"]?.[index] || "0,00",
-          prixTotal: data.items["Prix Total"][index]
-        })),
-        totalHT: data.totals["Total HT"][0],
-        totalTVA: data.totals["Total TVA"][0],
-        totalTTC: data.totals["Total TTC"][0],
-        createdAt: new Date().toISOString(),
-        statut: "en attente",
-        userId: currentUser.uid,
-        companyId: currentUser.companyId
-      };
+    const invoiceData = invoiceService.prepareInvoiceData(data);
 
-      let docId;
-      if (location.state && location.state.facture && location.state.facture.id) {
-        const factureRef = doc(db, `companies/${currentUser.companyId}/factures`, location.state.facture.id);
-        await updateDoc(factureRef, invoiceData);
-        docId = location.state.facture.id;
-      } else {
-        const facturesRef = collection(db, `companies/${currentUser.companyId}/factures`);
-        const docRef = await addDoc(facturesRef, invoiceData);
-        docId = docRef.id;
-      }
-
-      return docId;
-    } catch (error) {
-      throw error;
+    if (location.state && location.state.facture && location.state.facture.id) {
+      return invoiceService.updateInvoice(
+        currentUser.companyId,
+        location.state.facture.id,
+        invoiceData
+      );
+    } else {
+      return invoiceService.addInvoice(
+        currentUser.companyId,
+        currentUser.uid,
+        invoiceData
+      );
     }
   };
+
   const handleSave = async () => {
     if (isSaved) {
       alert("Cette facture est déjà enregistrée. Créez une nouvelle facture si nécessaire.");
@@ -1014,7 +904,12 @@ const Fact = () => {
   const handleDateChange = async (e) => {
     const newDate = e.target.value;
     try {
-      const newNumber = await generateInvoiceNumber(new Date(newDate));
+      const newNumber = await invoiceService.generateInvoiceNumber(
+        currentUser.companyId,
+        new Date(newDate),
+        data.facture.Type[0]
+      );
+
       setData({
         ...data,
         facture: {
@@ -1098,7 +993,9 @@ const Fact = () => {
         showPreview={showPreview}
         setShowPreview={setShowPreview}
         handleDateChange={handleDateChange}
-        generateInvoiceNumber={generateInvoiceNumber}
+        generateInvoiceNumber={(date, type) =>
+          invoiceService.generateInvoiceNumber(currentUser.companyId, date, type)
+        }
       />
     </div>
   );

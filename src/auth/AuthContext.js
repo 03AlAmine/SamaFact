@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, writeBatch,  query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, writeBatch, query, where, getDocs } from 'firebase/firestore';
 // Constants
 const AuthContext = createContext();
 const ROLES = {
@@ -106,25 +106,24 @@ export function AuthProvider({ children }) {
 
 
   // Auth functions
-async function signup(email, password, companyName, userName, username) {
-  try {
-    if (!companyName || !userName || !username) {
-      throw new Error("Company name, user name and username are required");
-    }
+  async function signup(email, password, companyName, userName, username) {
+    try {
+      if (!companyName || !userName || !username) {
+        throw new Error("Company name, user name and username are required");
+      }
 
-    // Vérifier si le username existe déjà
-    const usernameCheck = await getDocs(
-      query(collection(db, 'users'), where('username', '==', username)
-    )
-  );
-    
-    if (!usernameCheck.empty) {
-      throw new Error("Ce nom d'utilisateur est déjà pris");
-    }
+      // Vérifier si le username existe déjà
+      const usernameCheck = await getDocs(
+        query(collection(db, 'pseudos'), where('__name__', '==', username))
+      );
 
-    // 1. Create auth user
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const userId = userCredential.user.uid;
+      if (!usernameCheck.empty) {
+        throw new Error("Ce nom d'utilisateur est déjà pris");
+      }
+
+      // 1. Create auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
 
       // 2. Create company
       const companyRef = doc(collection(db, 'companies'));
@@ -141,26 +140,14 @@ async function signup(email, password, companyName, userName, username) {
         status: 'active'
       });
 
-      // User profile in company
+      // Profile in company
       const profileRef = doc(db, `companies/${companyId}/profiles`, userId);
       batch.set(profileRef, {
         firstName: userName.split(' ')[0] || '',
         lastName: userName.split(' ').slice(1).join(' ') || '',
         email,
         companyName,
-        createdAt: new Date(),
-        companyLogo: '',
-        rib: '',
-        companyStatus: '',
-        address: '',
-        phone: '',
-        website: '',
-        rcNumber: '',
-        ninea: '',
-        invoiceColor: '#3a86ff',
-        invoiceFont: 'Arial',
-        invoiceTemplate: 'classic',
-        pdfQuality: 'high'
+        createdAt: new Date()
       });
 
       // Main user document
@@ -169,66 +156,71 @@ async function signup(email, password, companyName, userName, username) {
         email,
         name: userName,
         companyId,
-              username, // Ajout du nom d'utilisateur
-
+        username,
         role: 'admin',
         createdAt: new Date(),
         lastLogin: new Date()
       });
 
+      // 🔥 Nouvelle collection "pseudos"
+      const usernameRef = doc(db, 'pseudos', username);
+      batch.set(usernameRef, {
+        email,
+        createdAt: new Date()
+      });
+
       await batch.commit();
       return userCredential;
+
     } catch (error) {
       console.error("Signup error:", error);
       throw new Error(error.message || "Failed to create account");
     }
   }
 
-async function login(identifier, password) {
-  try {
-    // Vérifier si l'identifiant est un email ou un username
-    let email = identifier;
-    
-    // Si ce n'est pas un email (ne contient pas @), chercher le username dans Firestore
-    if (!identifier.includes('@')) {
-      const usersRef = collection(db, 'users');
-      const querySnapshot = await getDocs(
-        query(usersRef, where('username', '==', identifier))
-      );
-      
-      if (querySnapshot.empty) {
-        throw new Error("Nom d'utilisateur non trouvé");
+  async function login(identifier, password) {
+    try {
+      // Vérifier si l'identifiant est un email ou un username
+      let email = identifier;
+
+      // Si ce n'est pas un email (ne contient pas @), chercher le username dans Firestore
+      if (!identifier.includes('@')) {
+        const pseudoRef = doc(db, 'pseudos', identifier);
+        const pseudoSnap = await getDoc(pseudoRef);
+
+        if (!pseudoSnap.exists()) {
+          throw new Error("Nom d'utilisateur non trouvé");
+        }
+
+        email = pseudoSnap.data().email;
+
       }
-      
-      // Prend le premier utilisateur trouvé (les usernames doivent être uniques)
-      email = querySnapshot.docs[0].data().email;
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Get additional user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        throw new Error("User document not found");
+      }
+
+      const userData = userDoc.data();
+
+      // Update last login time
+      await setDoc(doc(db, 'users', user.uid), {
+        lastLogin: new Date()
+      }, { merge: true });
+
+      return {
+        ...user,
+        role: userData.role,
+        companyId: userData.companyId
+      };
+    } catch (error) {
+      throw error;
     }
-
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // Get additional user data from Firestore
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (!userDoc.exists()) {
-      throw new Error("User document not found");
-    }
-
-    const userData = userDoc.data();
-
-    // Update last login time
-    await setDoc(doc(db, 'users', user.uid), {
-      lastLogin: new Date()
-    }, { merge: true });
-
-    return {
-      ...user,
-      role: userData.role,
-      companyId: userData.companyId
-    };
-  } catch (error) {
-    throw error;
   }
-}
 
   function logout() {
     return signOut(auth);

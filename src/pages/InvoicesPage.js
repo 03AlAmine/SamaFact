@@ -4,6 +4,9 @@ import { exportToExcel, exportToPDF } from "../components/exportUtils";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import ModernDateRangePicker from "../components/ModernDateRangePicker";
 import InvoicePDF from "../bill/InvoicePDF";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "../auth/AuthContext"; // ou ton propre contexte auth
 
 const InvoicesPage = ({
     activeTab_0,
@@ -16,9 +19,14 @@ const InvoicesPage = ({
     navigate,
     handleDeleteFacture,
     selectedClient,
-    currentUser 
-
+    companyId
 }) => {
+    const { currentUser } = useAuth(); // récupération de l'utilisateur connecté
+
+    const [factures, setFactures] = useState([]);
+    const [devis, setDevis] = useState([]);
+    const [avoirs, setAvoirs] = useState([]);
+
     const [dateRange, setDateRange] = useState({
         from: null,
         to: null
@@ -45,14 +53,56 @@ const InvoicesPage = ({
         });
     }, [dateRange]);
 
+useEffect(() => {
+    if (!currentUser || !companyId) return;
+
+    const facturesRef = collection(db, `companies/${companyId}/factures`);
+
+    // Pour chaque type, construire la requête en fonction du rôle
+    const buildQuery = (type) => {
+        if (currentUser.role === 'admin') {
+            // Admin : pas de filtre sur userId, mais filtrage sur le type uniquement
+            return query(facturesRef, where("type", "==", type));
+        } else {
+            // Autres utilisateurs : filtrer sur userId et type
+            return query(
+                facturesRef,
+                where("userId", "==", currentUser.uid),
+                where("type", "==", type)
+            );
+        }
+    };
+
+    const qFactures = buildQuery("facture");
+    const qDevis = buildQuery("devis");
+    const qAvoirs = buildQuery("avoir");
+
+    const unsubFactures = onSnapshot(qFactures, (snapshot) => {
+        setFactures(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    const unsubDevis = onSnapshot(qDevis, (snapshot) => {
+        setDevis(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    const unsubAvoirs = onSnapshot(qAvoirs, (snapshot) => {
+        setAvoirs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+        unsubFactures();
+        unsubDevis();
+        unsubAvoirs();
+    };
+}, [currentUser, companyId]);
+
+
     // Mettre à jour les éléments filtrés quand la date ou l'onglet change
     useEffect(() => {
         setFilteredItems({
-            factures: filterItemsByDate(getFacturesToDisplay()),
-            devis: filterItemsByDate(getDevisToDisplay()),
-            avoirs: filterItemsByDate(getAvoirsToDisplay())
+            factures: filterItemsByDate(factures),
+            devis: filterItemsByDate(devis),
+            avoirs: filterItemsByDate(avoirs)
         });
-    }, [dateRange, activeTab_0, getFacturesToDisplay, getDevisToDisplay, getAvoirsToDisplay, filterItemsByDate]);
+    }, [dateRange, activeTab_0, factures, devis, avoirs, filterItemsByDate]);
 
     const handleExport = (type) => {
         let data = [];
@@ -273,7 +323,6 @@ const InvoicesPage = ({
                     onView={handleViewDocument}
                     onDownload={handleDownload}
                     onDuplicate={handleDuplicateDocument}
-                    currentUser={currentUser}
 
                 />
             )}
@@ -290,7 +339,6 @@ const InvoicesPage = ({
                     onView={handleViewDocument}
                     onDownload={handleDownload}
                     onDuplicate={handleDuplicateDocument}
-                    currentUser={currentUser}
 
                 />
             )}
@@ -307,7 +355,6 @@ const InvoicesPage = ({
                     onView={handleViewDocument}
                     onDownload={handleDownload}
                     onDuplicate={handleDuplicateDocument}
-                    currentUser={currentUser}
 
                 />
             )}

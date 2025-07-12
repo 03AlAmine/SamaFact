@@ -17,7 +17,9 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, clie
     };
 
     return (
+        
         <>
+        
             <div className="stats-grid">
                 <div className="stat-card">
                     <div className="stat-icon clients">

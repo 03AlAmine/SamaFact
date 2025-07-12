@@ -100,58 +100,63 @@ const Mentafact = () => {
         const setupDataSubscriptions = async (companyId) => {
             if (!companyId) return;
 
-            // Unsubscribe functions
             const unsubscribers = [];
 
-            // Clients subscription
             const clientsUnsub = clientService.getClients(companyId, (clientsData) => {
                 setClients(clientsData);
-                // Mettre à jour les stats quand les clients changent
                 setStats(prev => ({
                     ...prev,
                     totalClients: clientsData.length
                 }));
             });
-            unsubscribers.push(clientsUnsub);
+            if (typeof clientsUnsub === "function") unsubscribers.push(clientsUnsub);
 
-            // Factures subscription
             const invoicesUnsub = invoiceService.getInvoices(companyId, "facture", (invoicesData) => {
-                setAllFactures(invoicesData);
-                // Mettre à jour les stats quand les factures changent
-                const now = new Date();
+                let filteredFactures = invoicesData;
+                if (currentUser?.role === "charge_compte") {
+                    filteredFactures = invoicesData.filter(f => f.userId === currentUser.uid);
+                }
+                setAllFactures(filteredFactures);
                 setStats(prev => ({
                     ...prev,
-                    totalFactures: invoicesData.length,
-                    revenusMensuels: invoicesData
-                        .filter(f => f?.date && new Date(f.date).getMonth() === now.getMonth())
+                    totalFactures: filteredFactures.length,
+                    revenusMensuels: filteredFactures
+                        .filter(f => f?.date && new Date(f.date).getMonth() === new Date().getMonth())
                         .reduce((sum, f) => sum + (parseFloat(f?.totalTTC) || 0), 0),
-                    facturesImpayees: invoicesData.filter(f => f?.statut === "en attente").length
+                    facturesImpayees: filteredFactures.filter(f => f.statut === "en attente").length
                 }));
             });
-            unsubscribers.push(invoicesUnsub);
+            if (typeof invoicesUnsub === "function") unsubscribers.push(invoicesUnsub);
 
             // Devis
             const devisUnsub = invoiceService.getInvoices(companyId, "devis", (devisData) => {
-                setAllDevis(devisData);
+                let filteredDevis = devisData;
+                if (currentUser?.role === "charge_compte") {
+                    filteredDevis = devisData.filter(d => d.userId === currentUser.uid);
+                }
+                setAllDevis(filteredDevis);
                 setStats(prev => ({
                     ...prev,
-                    totalDevis: devisData.length
+                    totalDevis: filteredDevis.length
                 }));
             });
-            unsubscribers.push(devisUnsub);
+            if (typeof devisUnsub === "function") unsubscribers.push(devisUnsub);
 
             // Avoirs
             const avoirsUnsub = invoiceService.getInvoices(companyId, "avoir", (avoirsData) => {
-                setAllAvoirs(avoirsData);
+                let filteredAvoirs = avoirsData;
+                if (currentUser?.role === "charge_compte") {
+                    filteredAvoirs = avoirsData.filter(a => a.userId === currentUser.uid);
+                }
+                setAllAvoirs(filteredAvoirs);
                 setStats(prev => ({
                     ...prev,
-                    totalAvoirs: avoirsData.length
+                    totalAvoirs: filteredAvoirs.length
                 }));
             });
-            unsubscribers.push(avoirsUnsub);
+            if (typeof avoirsUnsub === "function") unsubscribers.push(avoirsUnsub);
 
-
-            // Equipes subscription
+            // Equipes
             const equipesUnsub = teamService.getTeams(companyId, (equipesData) => {
                 setEquipes(equipesData);
                 setStats(prev => ({
@@ -159,9 +164,13 @@ const Mentafact = () => {
                     totalEquipes: equipesData.length
                 }));
             });
-            unsubscribers.push(equipesUnsub);
+            if (typeof equipesUnsub === "function") unsubscribers.push(equipesUnsub);
 
+            return () => {
+                unsubscribers.forEach(unsub => unsub());
+            };
         };
+
 
         const loadData = async () => {
             setIsLoading(true);
@@ -498,6 +507,8 @@ const Mentafact = () => {
                     allAvoirs={allAvoirs}
                     navigate={navigate}
                     clients={clients}
+                    currentUser={currentUser} // 👈 Ajoute ça
+
                 />;
             case "clients":
                 return <ClientsPage
@@ -536,7 +547,7 @@ const Mentafact = () => {
                     navigate={navigate}
                     handleDeleteFacture={handleDeleteFacture}
                     selectedClient={selectedClient}
-                    currentUser={currentUser}
+                    companyId={companyId}
 
                 />;
             case "stats":
