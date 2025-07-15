@@ -55,28 +55,27 @@
   font-family: "Poppins", sans-serif;
 }
 .auth-logo {
-    width: 170px;
-    margin-bottom: 10px;
-    margin-top: -100px;
+  width: 170px;
+  margin-bottom: 10px;
+  margin-top: -100px;
 }
 .auth-welcome-title {
-    font-size: 2rem;
-    font-weight: 700;
-    text-align: center;
-    color: #fff;
-    margin-bottom: 20px;
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 20px;
 }
 
 .h1-span {
-    color: #e1af44; /* turquoise ou couleur primaire vive */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(90deg, #e1af44,#bbc546 );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 800;
+  color: #e1af44; /* turquoise ou couleur primaire vive */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(90deg, #e1af44, #bbc546);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
 }
-
 
 .auth-container h1 {
   font-size: 2.25rem;
@@ -441,4 +440,27 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.auth-forgot {
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-form-forgot {
+  display: flex;
+  width: 30%;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  text-align: center;
+  padding: var(--space-xxl);
+  transition: all var(--transition-slow) 0.6s;
+}
+.auth-logo-forgot {
+  width: 170px;
+  margin-bottom: 10px;
 }

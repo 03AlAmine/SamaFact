@@ -10,6 +10,7 @@ import Home from './Mentafact';
 import NotFound from './components/NotFound';
 import Admin from './samafact/SamaFact';
 import AccessDenied from './components/AccessDenied';
+import ForgotPassword from './auth/ForgotPassword';
 
 function App() {
   return (
@@ -24,12 +25,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register_admin" element={<Register />} />
           <Route path="/access-denied" element={<AccessDenied />} />
-          
+
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="/bill" element={<PrivateRoute><Facture /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/samafact" element={<PrivateRoute allowedRoles={['superadmin']}><Admin /></PrivateRoute>} />
-          
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>

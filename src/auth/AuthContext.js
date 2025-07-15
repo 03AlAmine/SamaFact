@@ -329,21 +329,25 @@ export function AuthProvider({ children }) {
       currentUser.role === 'super-admin' // Alternative
     );
   }
+function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email);
+}
 
   // Context value
-  const value = {
-    currentUser,
-    signup,
-    login,
-    logout,
-    loading,
-    createSubUser,
-    updateUserRole,
-    checkPermission,
-    ROLES,
-    isSuperAdmin, // Nouvelle fonction exportée
+const value = {
+  currentUser,
+  signup,
+  login,
+  logout,
+  loading,
+  createSubUser,
+  updateUserRole,
+  checkPermission,
+  ROLES,
+  isSuperAdmin,
+  resetPassword // ✅ Ajout ici
+};
 
-  };
 
   return (
     <AuthContext.Provider value={value}>
