@@ -127,7 +127,7 @@ export const MonthlyAmountSliderCard = ({ allFactures, allDevis, allAvoirs, clas
                 )}
                 {showTrend && (
                     <>
-                        <p>{items[currentIndex].label} annuels enregistrés</p>
+                        <p>{items[currentIndex].label} annuels </p>
                         <div className="stat-trend up">+25% ce mois-ci</div>
                     </>
                 )}
