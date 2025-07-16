@@ -47,7 +47,12 @@ export const invoiceService = {
 
     try {
       const facturesRef = collection(db, `companies/${companyId}/factures_resume`);
-      const q = query(facturesRef, orderBy("numero", "desc"), limit(10));
+      const q = query(
+        facturesRef,
+        where("type", "==", type),
+        orderBy("numero", "desc"),
+        limit(10)
+      );
       const snapshot = await getDocs(q);
 
       let maxNumber = 0;

@@ -10,6 +10,7 @@ import InvoicePDF from './InvoicePDF';
 import DynamicPDFViewer from '../components/DynamicPDFViewer';
 import empty from '../assets/empty_article.png';
 import { invoiceService } from '../services/invoiceService';
+import { FaArrowLeft } from "react-icons/fa";
 
 
 
@@ -243,6 +244,13 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
 
   return (
     <div className="dashboard-layoute">
+      <button
+        className="floating-back-button"
+        onClick={() => window.history.back()}
+      >
+        <FaArrowLeft className="button-icon" />
+        <span className="button-text">Quitter</span>
+      </button>
       <Sidebar
         sidebarOpen={true}
         activeTab="factures"
