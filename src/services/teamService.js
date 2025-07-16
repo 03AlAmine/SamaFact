@@ -255,5 +255,11 @@ export const teamService = {
       console.error("Erreur réinitialisation mot de passe:", error);
       throw error;
     }
-  }
+  },
+
+  deleteUser: async (companyId, userId) => {
+    await deleteDoc(doc(db, 'users', userId));
+    await deleteDoc(doc(db, 'companies', companyId, 'profiles', userId));
+  },
+
 };

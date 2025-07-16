@@ -20,6 +20,7 @@ import { ROLES } from '../auth/AuthContext';
 import { teamService } from '../services/teamService';
 import "../css/TeamPage.css";
 import { useAuth } from '../auth/AuthContext';
+import { userService } from '../services/userService';
 
 const TeamsPage = ({ checkPermission }) => {
     const { currentUser } = useAuth();
@@ -79,7 +80,7 @@ const TeamsPage = ({ checkPermission }) => {
             if (checkPermission('manageUsers')) {
                 try {
                     setLoadingUsers(true);
-                    const users = await teamService.getCompanyUsers(currentUser.companyId);
+                    const users = await userService.getCompanyUsers(currentUser.companyId);
                     setUsers(users);
                 } catch (error) {
                     console.error("Failed to load users:", error);
@@ -198,7 +199,6 @@ const TeamsPage = ({ checkPermission }) => {
 
     // Gestion des utilisateurs
     const handleCreateSubUser = async () => {
-        // Vérification initiale de currentUser
         if (!currentUser) {
             setSubUserError({
                 title: "Erreur",
@@ -208,12 +208,11 @@ const TeamsPage = ({ checkPermission }) => {
             return;
         }
 
-
         try {
             setIsSubmitting(true);
             setSubUserError(null);
 
-            const result = await teamService.createUserWithIsolatedAuth(
+            const result = await userService.createUserWithIsolatedAuth(
                 {
                     email: subUserForm.email,
                     password: subUserPassword,
@@ -225,20 +224,16 @@ const TeamsPage = ({ checkPermission }) => {
                 currentUser.uid
             );
 
-            console.log('Résultat de création:', result);
-
             if (result.success) {
                 setSubUserSuccess({
                     title: "Succès",
-                    message: `Utilisateur créé `,
+                    message: `Utilisateur créé`,
                 });
 
-                // Réinitialisation du formulaire
                 setSubUserForm({ email: '', name: '', username: '', role: ROLES.CHARGE_COMPTE });
-                setSubUserPassword(generateRandomPassword());
+                setSubUserPassword(userService.generateRandomPassword());
 
-                // Mise à jour de la liste
-                const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+                const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
                 setUsers(updatedUsers);
             }
         } catch (error) {
@@ -270,7 +265,7 @@ const TeamsPage = ({ checkPermission }) => {
     const toggleUserStatus = async (userId, currentStatus) => {
         try {
             await teamService.toggleUserStatus(currentUser.companyId, userId, currentStatus);
-            const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+            const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
             setUsers(updatedUsers);
             setSubUserSuccess({
                 title: "Succès",
@@ -328,7 +323,7 @@ const TeamsPage = ({ checkPermission }) => {
                 updatedAt: new Date()
             });
 
-            const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+            const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
             setUsers(updatedUsers);
             setEditingUser(null);
             setSubUserSuccess({
@@ -346,14 +341,18 @@ const TeamsPage = ({ checkPermission }) => {
     };
 
     const handleDeleteUser = async (userId) => {
-        if (window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+        if (window.confirm("Êtes-vous sûr de vouloir **supprimer définitivement** cet utilisateur ?")) {
             try {
-                await teamService.toggleUserStatus(currentUser.companyId, userId, false);
-                const updatedUsers = await teamService.getCompanyUsers(currentUser.companyId);
+                // Supprime l'utilisateur dans Firestore
+                await teamService.deleteUser(currentUser.companyId, userId);
+
+                // Recharge la liste
+                const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
                 setUsers(updatedUsers);
+
                 setSubUserSuccess({
                     title: "Succès",
-                    message: "Utilisateur désactivé avec succès"
+                    message: "Utilisateur supprimé avec succès"
                 });
             } catch (error) {
                 setSubUserError({
@@ -363,6 +362,7 @@ const TeamsPage = ({ checkPermission }) => {
             }
         }
     };
+
 
     const handleResetPassword = async (user) => {
         setUserToReset(user);

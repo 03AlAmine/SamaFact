@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaLock, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 
-export const CompanyTable = ({ companies, users, onDelete, onToggleStatus, onEdit, onPasswordReset }) => {
+export const CompanyTable = ({ companies, users, onDelete, onToggleStatus, onEdit, onPasswordReset, getRoleLabel }) => {
     const [expandedCompany, setExpandedCompany] = useState(null);
 
     const toggleCompanyExpansion = (companyId) => {
@@ -12,6 +12,8 @@ export const CompanyTable = ({ companies, users, onDelete, onToggleStatus, onEdi
     const getCompanyUsers = (companyId) => {
         return (users || []).filter(user => user.companyId === companyId);
     };
+
+
 
     return (
         <div className="data-table">
@@ -108,8 +110,9 @@ export const CompanyTable = ({ companies, users, onDelete, onToggleStatus, onEdi
                                                         <small>{user.email}</small>
                                                     </div>
                                                     <span className={`user-role ${user.role}`}>
-                                                        {user.role === 'admin' ? 'Administrateur' : 'superadmin' ? 'SuperAdmin' : 'Utilisateur'}
+                                                        {getRoleLabel(user.role)}
                                                     </span>
+
                                                 </div>
                                             ))}
                                         </div>
@@ -152,7 +155,7 @@ CompanyTable.propTypes = {
     onPasswordReset: PropTypes.func.isRequired,
 };
 
-export const UserTable = ({ users, companies, onDelete, onEdit, onPasswordReset }) => {
+export const UserTable = ({ users, companies, onDelete, onEdit, onPasswordReset, getRoleLabel }) => {
     const getCompanyName = (companyId) => {
         const company = companies.find(c => c.id === companyId);
         return company ? company.name : 'Inconnue';
@@ -186,8 +189,9 @@ export const UserTable = ({ users, companies, onDelete, onEdit, onPasswordReset 
 
                         <div className="table-cell">
                             <span className={`user-role ${user.role}`}>
-                                {user.role === 'admin' ? 'Administrateur' : 'superadmin' ? 'SuperAdmin' : 'Utilisateur'}
+                                {getRoleLabel(user.role)}
                             </span>
+
                         </div>
 
                         <div className="table-cell">

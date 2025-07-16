@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { ROLES, getPermissionsForRole } from '../auth/permissions';
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export const CompanyModal = ({
     visible,
@@ -148,17 +149,28 @@ export const UserModal = ({
     if (!visible) return null;
 
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div
+            className="modal-overlay"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
             <div className="modal-content">
                 <div className="modal-header">
-                    <h2>{mode === 'edit' ? 'Modifier' : 'Ajouter'} un utilisateur</h2>
-                    <button className="modal-close" onClick={onClose} aria-label="Fermer">&times;</button>
+                    <h2>{mode === "edit" ? "Modifier" : "Ajouter"} un utilisateur</h2>
+                    <button
+                        className="modal-close"
+                        onClick={onClose}
+                        aria-label="Fermer"
+                    >
+                        &times;
+                    </button>
                 </div>
                 <div className="modal-body">
-                    <form onSubmit={(e) => {
-                        e.preventDefault();
-                        onSubmit(user); // Passer l'objet user complet
-                    }}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            onSubmit(user); // Passer l'objet user complet
+                        }}
+                    >
                         <div className="form-group">
                             <label htmlFor="user-name">Nom complet</label>
                             <input
@@ -166,7 +178,7 @@ export const UserModal = ({
                                 type="text"
                                 className="form-control"
                                 value={user.name}
-                                onChange={(e) => onChange('name', e.target.value)}
+                                onChange={(e) => onChange("name", e.target.value)}
                                 required
                                 autoFocus
                             />
@@ -178,7 +190,7 @@ export const UserModal = ({
                                 type="text"
                                 className="form-control"
                                 value={user.username}
-                                onChange={(e) => onChange('username', e.target.value)}
+                                onChange={(e) => onChange("username", e.target.value)}
                                 required
                             />
                         </div>
@@ -190,12 +202,12 @@ export const UserModal = ({
                                 type="email"
                                 className="form-control"
                                 value={user.email}
-                                onChange={(e) => onChange('email', e.target.value)}
+                                onChange={(e) => onChange("email", e.target.value)}
                                 required
                             />
                         </div>
 
-                        {mode === 'add' && (
+                        {mode === "add" && (
                             <div className="form-group">
                                 <label htmlFor="user-password">Mot de passe</label>
                                 <div className="password-input-container">
@@ -203,17 +215,30 @@ export const UserModal = ({
                                         id="user-password"
                                         type={showPassword ? "text" : "password"}
                                         className="form-control"
-                                        value={user.password || ""} // Gestion du undefined
-                                        onChange={(e) => onChange('password', e.target.value)}
+                                        value={user.password || ""}
+                                        onChange={(e) => onChange("password", e.target.value)}
                                         required
                                         minLength="6"
+                                        style={{ paddingRight: "40px" }} // Pour ne pas que l'œil cache le texte
                                     />
+
                                     <button
                                         type="button"
-                                        className="password-toggle"
                                         onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={
+                                            showPassword
+                                                ? "Masquer le mot de passe"
+                                                : "Afficher le mot de passe"
+                                        }
+                                        style={{
+                                            position: "absolute",
+                                            right: "10px",
+                                            background: "transparent",
+                                            border: "none",
+                                            cursor: "pointer",
+                                        }}
                                     >
-                                        {showPassword ? "Masquer" : "Afficher"}
+                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
                                     </button>
                                 </div>
                                 <PasswordStrengthIndicator password={user.password} />
@@ -227,14 +252,14 @@ export const UserModal = ({
                                     id="user-company"
                                     className="form-control"
                                     value={user.companyId}
-                                    onChange={(e) => onChange('companyId', e.target.value)}
+                                    onChange={(e) => onChange("companyId", e.target.value)}
                                     required
                                     disabled={availableCompanies.length === 1}
                                 >
                                     {availableCompanies.length > 1 && (
                                         <option value="">Sélectionner une entreprise</option>
                                     )}
-                                    {availableCompanies.map(company => (
+                                    {availableCompanies.map((company) => (
                                         <option key={company.id} value={company.id}>
                                             {company.name}
                                         </option>
@@ -254,13 +279,15 @@ export const UserModal = ({
                                 id="user-role"
                                 className="form-control"
                                 value={user.role}
-                                onChange={(e) => onChange('role', e.target.value)}
+                                onChange={(e) => onChange("role", e.target.value)}
                             >
                                 <option value="admin">Administrateur</option>
                                 <option value="comptable">Comptable</option>
                                 <option value="charge_compte">Chargé de compte</option>
                                 <option value="lecteur">Lecteur</option>
-                                {isSuperAdmin && <option value="superadmin">Super Admin</option>}
+                                {isSuperAdmin && (
+                                    <option value="superadmin">Super Admin</option>
+                                )}
                             </select>
                         </div>
                         <div className="form-actions">
@@ -279,8 +306,10 @@ export const UserModal = ({
                             >
                                 {loading ? (
                                     <span className="spinner-border spinner-border-sm" />
+                                ) : mode === "edit" ? (
+                                    "Mettre à jour"
                                 ) : (
-                                    mode === 'edit' ? 'Mettre à jour' : 'Création en cours...'
+                                    "Création..."
                                 )}
                             </button>
                         </div>
@@ -352,11 +381,21 @@ export const PasswordModal = ({
                                 />
                                 <button
                                     type="button"
-                                    className="password-toggle"
                                     onClick={() => setShowPassword(!showPassword)}
+                                    aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                                    style={{
+                                        position: "absolute",
+                                        right: "10px",
+                                        top: "55%",
+                                        transform: "translateY(-50%)",
+                                        background: "transparent",
+                                        border: "none",
+                                        cursor: "pointer"
+                                    }}
                                 >
-                                    {showPassword ? "Masquer" : "Afficher"}
+                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
                                 </button>
+
                             </div>
                             <PasswordStrengthIndicator password={password} />
                         </div>

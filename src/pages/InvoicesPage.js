@@ -11,9 +11,6 @@ import { useAuth } from "../auth/AuthContext"; // ou ton propre contexte auth
 const InvoicesPage = ({
     activeTab_0,
     setActiveTab_0,
-    getFacturesToDisplay,
-    getDevisToDisplay,
-    getAvoirsToDisplay,
     searchTerm,
     setSearchTerm,
     navigate,
@@ -53,46 +50,46 @@ const InvoicesPage = ({
         });
     }, [dateRange]);
 
-useEffect(() => {
-    if (!currentUser || !companyId) return;
+    useEffect(() => {
+        if (!currentUser || !companyId) return;
 
-    const facturesRef = collection(db, `companies/${companyId}/factures`);
+        const facturesRef = collection(db, `companies/${companyId}/factures`);
 
-    // Pour chaque type, construire la requête en fonction du rôle
-    const buildQuery = (type) => {
-        if (currentUser.role === 'admin') {
-            // Admin : pas de filtre sur userId, mais filtrage sur le type uniquement
-            return query(facturesRef, where("type", "==", type));
-        } else {
-            // Autres utilisateurs : filtrer sur userId et type
-            return query(
-                facturesRef,
-                where("userId", "==", currentUser.uid),
-                where("type", "==", type)
-            );
-        }
-    };
+        // Pour chaque type, construire la requête en fonction du rôle
+        const buildQuery = (type) => {
+            if (currentUser.role === 'admin') {
+                // Admin : pas de filtre sur userId, mais filtrage sur le type uniquement
+                return query(facturesRef, where("type", "==", type));
+            } else {
+                // Autres utilisateurs : filtrer sur userId et type
+                return query(
+                    facturesRef,
+                    where("userId", "==", currentUser.uid),
+                    where("type", "==", type)
+                );
+            }
+        };
 
-    const qFactures = buildQuery("facture");
-    const qDevis = buildQuery("devis");
-    const qAvoirs = buildQuery("avoir");
+        const qFactures = buildQuery("facture");
+        const qDevis = buildQuery("devis");
+        const qAvoirs = buildQuery("avoir");
 
-    const unsubFactures = onSnapshot(qFactures, (snapshot) => {
-        setFactures(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-    const unsubDevis = onSnapshot(qDevis, (snapshot) => {
-        setDevis(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-    const unsubAvoirs = onSnapshot(qAvoirs, (snapshot) => {
-        setAvoirs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+        const unsubFactures = onSnapshot(qFactures, (snapshot) => {
+            setFactures(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        const unsubDevis = onSnapshot(qDevis, (snapshot) => {
+            setDevis(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        const unsubAvoirs = onSnapshot(qAvoirs, (snapshot) => {
+            setAvoirs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
 
-    return () => {
-        unsubFactures();
-        unsubDevis();
-        unsubAvoirs();
-    };
-}, [currentUser, companyId]);
+        return () => {
+            unsubFactures();
+            unsubDevis();
+            unsubAvoirs();
+        };
+    }, [currentUser, companyId]);
 
 
     // Mettre à jour les éléments filtrés quand la date ou l'onglet change

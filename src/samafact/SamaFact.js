@@ -1,22 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import {
-  collection, query, getDocs, deleteDoc, doc, updateDoc, addDoc, writeBatch
+  collection, query, getDocs, deleteDoc, doc, updateDoc, addDoc
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
-import { deleteApp, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { db, auth, firebaseConfig } from '../firebase';
+import { db } from '../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { BarChart, PieChart } from './Charts';
 import { PasswordModal, CompanyModal, UserModal } from './Modals';
 import { FaBuilding, FaUsers, FaBell, FaSignOutAlt, FaSearch, FaPlus, FaChartLine } from 'react-icons/fa';
-import { FiSettings, FiUsers, FiPieChart, FiBarChart2 } from 'react-icons/fi';
+import { FiSettings, FiUsers, FiPieChart, FiBarChart2, FiHome } from 'react-icons/fi';
 
 import { CompanyTable, UserTable } from './Tables';
 import './SamaFact.css';
 import { useNavigate } from 'react-router-dom';
-import { getPermissionsForRole } from '../auth/permissions';
 import { message } from 'antd';
+import { userService } from '../services/userService';
 
 
 const SamaFact = () => {
@@ -231,78 +228,38 @@ const SamaFact = () => {
 
   const handleCreateUser = async (userData) => {
     try {
-      // 1. Vérifier l'email
-      const methods = await fetchSignInMethodsForEmail(auth, userData.email);
-      if (methods.length > 0) {
-        throw new Error("Email déjà utilisé");
-      }
-
-      // 2. Créer une instance auth séparée
-      const secondaryApp = initializeApp(firebaseConfig, "Secondary");
-      const secondaryAuth = getAuth(secondaryApp);
-
-      // 3. Créer l'utilisateur
-      const userCredential = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        userData.email,
-        userData.password
+      // Utilisation du service
+      const result = await userService.createUserWithIsolatedAuth(
+        {
+          email: userData.email,
+          password: userData.password,
+          name: userData.name,
+          username: userData.username,
+          role: userData.role,
+          companyId: userData.companyId,
+        },
+        currentUser.uid
       );
 
-      // 4. Utiliser une transaction batch pour garantir l'intégrité des données
-      const batch = writeBatch(db);
+      if (result.success) {
+        // Fermer le modal et actualiser
+        setUi(prev => ({
+          ...prev,
+          showUserModal: false,
+          userForm: {
+            name: '',
+            username: '',
+            email: '',
+            password: '',
+            role: 'user',
+            companyId: '',
+            permissions: {}
+          }
+        }));
 
-      // Document principal dans 'users'
-      const userRef = doc(db, "users", userCredential.user.uid);
-      batch.set(userRef, {
-        name: userData.name,
-        username: userData.username,
-        email: userData.email,
-        role: userData.role,
-        companyId: userData.companyId,
-        isSuperAdmin: userData.role === 'superadmin',
-        createdAt: new Date(),
-        permissions: getPermissionsForRole(userData.role)
-      });
-
-      // Document profil dans la sous-collection company
-      const profileRef = doc(db, `companies/${userData.companyId}/profiles`, userCredential.user.uid);
-      batch.set(profileRef, {
-        firstName: userData.name.split(" ")[0] || "",
-        lastName: userData.name.split(" ").slice(1).join(" ") || "",
-        username: userData.username,
-        email: userData.email,
-        role: userData.role,
-        createdAt: new Date(),
-        createdBy: auth.currentUser.uid, // ID de l'admin qui a créé le compte
-        permissions: getPermissionsForRole(userData.role),
-        status: "active",
-      });
-
-      // 5. Exécuter la transaction
-      await batch.commit();
-
-      // 6. Nettoyer
-      await secondaryAuth.signOut();
-      deleteApp(secondaryApp);
-
-      // 7. Fermer le modal et actualiser
-      setUi(prev => ({
-        ...prev,
-        showUserModal: false,
-        userForm: {
-          name: '',
-          username: '',
-          email: '',
-          password: '',
-          role: 'user',
-          companyId: '',
-          permissions: {}
-        }
-      }));
-
-      refreshData();
-      message.success('Utilisateur et profil créés avec succès !');
-
+        refreshData();
+        message.success('Utilisateur créé avec succès !');
+      }
     } catch (error) {
       console.error("Erreur création:", error);
       message.error(error.message || "Erreur lors de la création");
@@ -405,6 +362,29 @@ const SamaFact = () => {
     return matchesSearch && matchesRole;
   });
 
+
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case 'all':
+        return 'Tous les rôles';
+      case 'superadmin':
+        return 'SuperAdmin';
+      case 'admin':
+        return 'Administrateurs';
+      case 'charge_compte':
+        return 'Chargé de compte';
+      case 'comptable':
+        return 'Comptable';
+      case 'lecteur':
+        return 'Lecteur';
+      case 'user':
+        return 'Utilisateur';
+      default:
+        return role;
+    }
+  };
+
+
   if (!isSuperAdmin()) {
     return navigate('/access-denied');
   }
@@ -419,16 +399,27 @@ const SamaFact = () => {
 
         <nav className="sidebar-nav">
           <button
-            className={`nav-item ${ui.activeTab === 'companies' ? 'active' : ''}`}
-            onClick={() => setUi(prev => ({ ...prev, activeTab: 'companies' }))}
+            className={`nav-item ${ui.activeTab === "users" ? "active" : ""}`}
+            onClick={() => navigate("/")}
+          >
+            <FiHome className="nav-icon" />
+            <span>SamaF@ct</span>
+          </button>
+
+          <button
+            className={`nav-item ${ui.activeTab === "companies" ? "active" : ""
+              }`}
+            onClick={() =>
+              setUi((prev) => ({ ...prev, activeTab: "companies" }))
+            }
           >
             <FaBuilding className="nav-icon" />
             <span>Entreprises</span>
           </button>
 
           <button
-            className={`nav-item ${ui.activeTab === 'users' ? 'active' : ''}`}
-            onClick={() => setUi(prev => ({ ...prev, activeTab: 'users' }))}
+            className={`nav-item ${ui.activeTab === "users" ? "active" : ""}`}
+            onClick={() => setUi((prev) => ({ ...prev, activeTab: "users" }))}
           >
             <FiUsers className="nav-icon" />
             <span>Utilisateurs</span>
@@ -447,9 +438,9 @@ const SamaFact = () => {
 
         <div className="sidebar-footer">
           <div className="user-profile">
-            <div className="avatar">{currentUser?.name?.charAt(0) || 'A'}</div>
+            <div className="avatar">{currentUser?.name?.charAt(0) || "A"}</div>
             <div className="user-info">
-              <span className="username">{currentUser?.name || 'Admin'}</span>
+              <span className="username">{currentUser?.name || "Admin"}</span>
               <span className="role">Super Admin</span>
             </div>
           </div>
@@ -465,7 +456,7 @@ const SamaFact = () => {
         <header className="dashboard-topbar">
           <div className="topbar-title">
             <h2>
-              {ui.activeTab === 'companies' ? (
+              {ui.activeTab === "companies" ? (
                 <>
                   <FaBuilding /> Gestion des Entreprises
                 </>
@@ -475,7 +466,10 @@ const SamaFact = () => {
                 </>
               )}
             </h2>
-            <p className="breadcrumb">Dashboard / {ui.activeTab === 'companies' ? 'Entreprises' : 'Utilisateurs'}</p>
+            <p className="breadcrumb">
+              Dashboard /{" "}
+              {ui.activeTab === "companies" ? "Entreprises" : "Utilisateurs"}
+            </p>
           </div>
 
           <div className="topbar-actions">
@@ -483,18 +477,30 @@ const SamaFact = () => {
               <FaSearch className="search-icon" />
               <input
                 type="text"
-                placeholder={`Rechercher ${ui.activeTab === 'companies' ? 'une entreprise...' : 'un utilisateur...'}`}
+                placeholder={`Rechercher ${ui.activeTab === "companies"
+                  ? "une entreprise..."
+                  : "un utilisateur..."
+                  }`}
                 value={ui.searchTerm}
-                onChange={(e) => setUi(prev => ({ ...prev, searchTerm: e.target.value }))}
+                onChange={(e) =>
+                  setUi((prev) => ({ ...prev, searchTerm: e.target.value }))
+                }
               />
             </div>
 
             <button
               className="primary-btn"
-              onClick={() => openModal(ui.activeTab === 'companies' ? 'Company' : 'User')}
+              onClick={() =>
+                openModal(ui.activeTab === "companies" ? "Company" : "User")
+              }
             >
               <FaPlus />
-              <span>Ajouter {ui.activeTab === 'companies' ? 'une entreprise' : 'un utilisateur'}</span>
+              <span>
+                Ajouter{" "}
+                {ui.activeTab === "companies"
+                  ? "une entreprise"
+                  : "un utilisateur"}
+              </span>
             </button>
           </div>
         </header>
@@ -509,7 +515,9 @@ const SamaFact = () => {
               <h3>Entreprises</h3>
               <div className="stat-numbers">
                 <span className="main-value">{data.stats.totalCompanies}</span>
-                <span className="secondary-value">{data.stats.activeCompanies} actives</span>
+                <span className="secondary-value">
+                  {data.stats.activeCompanies} actives
+                </span>
               </div>
               <div className="stat-trend positive">
                 <FaChartLine /> +{data.stats.monthlyGrowth} ce mois
@@ -525,7 +533,9 @@ const SamaFact = () => {
               <h3>Utilisateurs</h3>
               <div className="stat-numbers">
                 <span className="main-value">{data.stats.totalUsers}</span>
-                <span className="secondary-value">{data.stats.adminsCount} admins</span>
+                <span className="secondary-value">
+                  {data.stats.adminsCount} admins
+                </span>
               </div>
             </div>
           </div>
@@ -540,9 +550,7 @@ const SamaFact = () => {
                 <span className="main-value">30</span>
                 <span className="secondary-value">jours</span>
               </div>
-              <div className="stat-trend">
-                5 nouvelles entreprises
-              </div>
+              <div className="stat-trend">5 nouvelles entreprises</div>
             </div>
           </div>
         </section>
@@ -581,27 +589,29 @@ const SamaFact = () => {
         <section className="data-section">
           <div className="section-header">
             <h3>
-              {ui.activeTab === 'companies' ? 'Liste des entreprises' : 'Liste des utilisateurs'}
+              {ui.activeTab === "companies"
+                ? "Liste des entreprises"
+                : "Liste des utilisateurs"}
             </h3>
 
             <div className="section-filters">
-              {ui.activeTab === 'companies' ? (
+              {ui.activeTab === "companies" ? (
                 <select
                   value={ui.filters.status}
                   onChange={(e) =>
-                    setUi(prev => ({
+                    setUi((prev) => ({
                       ...prev,
                       filters: { ...prev.filters, status: e.target.value },
                     }))
                   }
                 >
-                  {['all', 'active', 'suspended'].map((status) => (
+                  {["all", "active", "suspended"].map((status) => (
                     <option key={status} value={status}>
-                      {status === 'all'
-                        ? 'Tous les statuts'
-                        : status === 'active'
-                          ? 'Actives'
-                          : 'Suspendues'}
+                      {status === "all"
+                        ? "Tous les statuts"
+                        : status === "active"
+                          ? "Actives"
+                          : "Suspendues"}
                     </option>
                   ))}
                 </select>
@@ -609,21 +619,23 @@ const SamaFact = () => {
                 <select
                   value={ui.filters.role}
                   onChange={(e) =>
-                    setUi(prev => ({
+                    setUi((prev) => ({
                       ...prev,
                       filters: { ...prev.filters, role: e.target.value },
                     }))
                   }
                 >
-                  {['all', 'admin', 'user'].map((role) => (
+                  {[
+                    "all",
+                    "superadmin",
+                    "admin",
+                    "charge_compte",
+                    "comptable",
+                    "lecteur",
+                    "user",
+                  ].map((role) => (
                     <option key={role} value={role}>
-                      {role === 'all'
-                        ? 'Tous les rôles'
-                        : role === 'admin'
-                          ? 'Administrateurs'
-                          : 'superadmin'
-                            ? 'SuperAdmin'
-                            : 'Utilisateurs'}
+                      {getRoleLabel(role)}
                     </option>
                   ))}
                 </select>
@@ -632,26 +644,26 @@ const SamaFact = () => {
               <select
                 value={ui.filters.dateRange}
                 onChange={(e) =>
-                  setUi(prev => ({
+                  setUi((prev) => ({
                     ...prev,
                     filters: { ...prev.filters, dateRange: e.target.value },
                   }))
                 }
               >
-                {['all', 'month', 'year'].map((range) => (
+                {["all", "month", "year"].map((range) => (
                   <option key={range} value={range}>
-                    {range === 'all'
-                      ? 'Toutes les dates'
-                      : range === 'month'
-                        ? 'Ce mois-ci'
-                        : 'Cette année'}
+                    {range === "all"
+                      ? "Toutes les dates"
+                      : range === "month"
+                        ? "Ce mois-ci"
+                        : "Cette année"}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {ui.activeTab === 'companies' ? (
+          {ui.activeTab === "companies" ? (
             <CompanyTable
               companies={filteredCompanies}
               users={data.users || []}
@@ -659,14 +671,16 @@ const SamaFact = () => {
               onToggleStatus={handleToggleStatus}
               onEdit={openModal}
               onPasswordReset={openPasswordModal}
+              getRoleLabel={getRoleLabel}
             />
           ) : (
             <UserTable
               users={filteredUsers}
               companies={data.companies}
               onDelete={handleDelete}
-              onEdit={(user) => openModal('User', user)}
+              onEdit={(user) => openModal("User", user)}
               onPasswordReset={openPasswordModal}
+              getRoleLabel={getRoleLabel}
             />
           )}
         </section>
@@ -675,11 +689,11 @@ const SamaFact = () => {
       {/* Modals (restent identiques) */}
       <CompanyModal
         visible={ui.showCompanyModal}
-        onClose={() => setUi(prev => ({ ...prev, showCompanyModal: false }))}
+        onClose={() => setUi((prev) => ({ ...prev, showCompanyModal: false }))}
         onSubmit={handleAddCompany}
         company={forms.companyForm}
         onChange={(field, value) =>
-          setForms(prev => ({
+          setForms((prev) => ({
             ...prev,
             companyForm: { ...prev.companyForm, [field]: value },
           }))
@@ -689,12 +703,12 @@ const SamaFact = () => {
 
       <UserModal
         visible={ui.showUserModal}
-        onClose={() => setUi(prev => ({ ...prev, showUserModal: false }))}
+        onClose={() => setUi((prev) => ({ ...prev, showUserModal: false }))}
         onSubmit={handleCreateUser}
         user={forms.userForm}
         companies={data.companies}
         onChange={(field, value) =>
-          setForms(prev => ({
+          setForms((prev) => ({
             ...prev,
             userForm: { ...prev.userForm, [field]: value },
           }))
@@ -706,12 +720,12 @@ const SamaFact = () => {
 
       <PasswordModal
         visible={ui.showPasswordModal}
-        onClose={() => setUi(prev => ({ ...prev, showPasswordModal: false }))}
+        onClose={() => setUi((prev) => ({ ...prev, showPasswordModal: false }))}
         onSubmit={handleUpdatePassword}
         password={forms.passwordForm.newPassword}
         confirmPassword={forms.passwordForm.confirmPassword}
         onChange={(field, value) =>
-          setForms(prev => ({
+          setForms((prev) => ({
             ...prev,
             passwordForm: { ...prev.passwordForm, [field]: value },
           }))
