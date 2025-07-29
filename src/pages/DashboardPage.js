@@ -107,7 +107,11 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, clie
                                 </div>
                                 <div className="invoice-client">{item.clientNom}</div>
                                 <div className="invoice-details">
-                                    <span className="invoice-amount">{item.totalTTC} FCFA</span>
+                                    <span className="invoice-amount">{
+                                        item.totalTTC
+                                            ? Number(item.totalTTC.replace(/\s/g, '').replace(',', '.')).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                                            : '0'
+                                    } FCFA</span>
                                     <span className="invoice-date">
                                         {item.date ? new Date(item.date).toLocaleDateString('fr-FR') : 'Date invalide'}
                                     </span>

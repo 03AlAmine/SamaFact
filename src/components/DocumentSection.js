@@ -189,8 +189,14 @@ const DocumentSection = ({
                                 </div>
                                 <div className="detail-item">
                                     <FaMoneyBillWave className="detail-icon" />
-                                    <span>{f.totalTTC ? f.totalTTC.toLocaleString() : '0'} FCFA</span>
+                                    <span>{
+                                        f.totalTTC
+                                            ? Number(f.totalTTC.replace(/\s/g, '').replace(',', '.')).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                                            : '0'
+                                    } FCFA</span>
                                 </div>
+
+
                                 <div className="detail-item">
                                     <FaUser className="detail-icon" />
                                     <UserNameLookup userId={f.userId} />
@@ -295,7 +301,11 @@ const DocumentSection = ({
                                     </td>
                                     <td>{f.clientNom || "Sans client"}</td>
                                     <td>{f.date}</td>
-                                    <td className="amount-cell">{f.totalTTC.toLocaleString()} FCFA</td>
+                                    <td className="amount-cell">
+                                        {f.totalTTC
+                                            ? Number(f.totalTTC.replace(/\s/g, '').replace(',', '.')).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                                            : '0'} FCFA
+                                    </td>
                                     <td className="actions-cell">
                                         <div className="actions-container">
                                             <button

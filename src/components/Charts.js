@@ -141,6 +141,8 @@ export const ClientChart = ({ clients }) => {
 
   const options = {
     responsive: true,
+      maintainAspectRatio: false, // <== important pour respecter la taille du conteneur
+
     plugins: {
       legend: { position: 'right' },
     },
