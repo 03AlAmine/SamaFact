@@ -311,10 +311,11 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                   borderLeft: '4px solid var(--primary-color)'
                 }}>
                   <p><strong>Nom:</strong> {data.client.Nom[0]}</p>
-                  <p><strong>Adresse:</strong> {data.client.Adresse[0]}</p>
-                  <p><strong>Ville:</strong> {data.client.Ville[0]}</p>
+                  <p><strong>Adresse:</strong> {data.client.Adresse?.[0] || 'N/A'}</p>
+                  <p><strong>Ville:</strong> {data.client.Ville?.[0] || 'N/A'}</p>
                 </div>
               )}
+
 
               <div style={{
                 display: 'grid',
