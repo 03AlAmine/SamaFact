@@ -31,8 +31,8 @@ const DocumentSection = ({
     selectedClient,
     type,
     onDuplicate,
-    onView,
-    onDownload
+    onDownload,
+    onPreview
 }) => {
     const [sortBy, setSortBy] = useState('numero');
     const [sortOrder, setSortOrder] = useState('asc');
@@ -170,7 +170,7 @@ const DocumentSection = ({
                             className="document-card"
                             onMouseEnter={() => setHoveredItem(f.id)}
                             onMouseLeave={() => setHoveredItem(null)}
-                            onClick={() => onView(f)}
+                            onClick={() => onPreview(f)}
                         >
                             <div className="card-header" style={{ borderTop: `4px solid ${getTypeColor()}` }}>
                                 <div className="document-icon">
@@ -200,8 +200,8 @@ const DocumentSection = ({
                             <div className={`card-actions ${hoveredItem === f.id ? 'visible' : ''}`}>
                                 <button
                                     className="action-btn view"
-                                    onClick={(e) => { e.stopPropagation(); onView(f); }}
-                                    title="Voir"
+                                    onClick={(e) => { e.stopPropagation(); onPreview(f); }}
+                                    title="Aperçu"
                                 >
                                     <FaEye />
                                 </button>
@@ -286,7 +286,7 @@ const DocumentSection = ({
                         </thead>
                         <tbody>
                             {filteredItems.map((f) => (
-                                <tr key={f.id} onClick={() => onView(f)}>
+                                <tr key={f.id} onClick={() => onPreview(f)}>
                                     <td>
                                         <div className="cell-content">
                                             <FaFileInvoiceDollar className="cell-icon" style={{ color: getTypeColor() }} />
@@ -300,8 +300,8 @@ const DocumentSection = ({
                                         <div className="actions-container">
                                             <button
                                                 className="action-btn view"
-                                                onClick={(e) => { e.stopPropagation(); onView(f); }}
-                                                title="Voir"
+                                                onClick={(e) => { e.stopPropagation(); onPreview(f); }}
+                                                title="Aperçu"
                                             >
                                                 <FaEye />
                                             </button>
