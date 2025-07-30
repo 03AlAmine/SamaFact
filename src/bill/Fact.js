@@ -10,12 +10,12 @@ import InvoicePDF from './InvoicePDF';
 import DynamicPDFViewer from '../components/DynamicPDFViewer';
 import empty from '../assets/empty_article.png';
 import { invoiceService } from '../services/invoiceService';
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaArrowDown, FaArrowUp } from "react-icons/fa";
 
 
 
 // Composant InvoiceForm (inchangé)
-const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
+const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "1",
@@ -240,7 +240,28 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
     }
   };
 
+  const moveItemUp = (index) => {
+    if (index > 0) reorderItems(index, index - 1);
+  };
 
+  const moveItemDown = (index) => {
+    if (index < data.items.Designation.length - 1) reorderItems(index, index + 1);
+  };
+
+  const reorderItems = (startIndex, endIndex) => {
+    const updatedItems = { ...data.items };
+    Object.keys(updatedItems).forEach(key => {
+      if (Array.isArray(updatedItems[key])) {
+        const [removed] = updatedItems[key].splice(startIndex, 1);
+        updatedItems[key].splice(endIndex, 0, removed);
+      }
+    });
+
+    setData({
+      ...data,
+      items: updatedItems
+    });
+  };
 
   return (
     <div className="dashboard-layoute">
@@ -637,10 +658,9 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                       <td>{formatNumberWithSpaces(data.items.Quantite[index])}</td>
                       <td>{formatNumberWithSpaces(data.items["Prix Unitaire"][index])} FCFA</td>
                       <td>{data.items.TVA[index]}</td>
-                      <td>{formatNumberWithSpaces(data.items["Montant HT"]?.[index] || "0")} FCFA</td>
-                      <td>{formatNumberWithSpaces(data.items["Montant TVA"]?.[index] || "0")} FCFA</td>
+                      <td>{formatNumberWithSpaces(data.items["Montant HT"][index])} FCFA</td>
+                      <td>{formatNumberWithSpaces(data.items["Montant TVA"][index])} FCFA</td>
                       <td>{formatNumberWithSpaces(data.items["Prix Total"][index])} FCFA</td>
-
                       <td>
                         <div className="action-buttons">
                           <button
@@ -650,6 +670,7 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                           >
                             <i className="fas fa-edit"></i> Modifier
                           </button>
+
                           <button
                             className="button info-button"
                             onClick={() => openDuplicateModal(index)}
@@ -657,33 +678,38 @@ const InvoiceForm = ({ data, setData, clients, saveInvoiceToFirestore, handleSav
                           >
                             <i className="fas fa-copy"></i> Dupliquer
                           </button>
+
                           <button
                             className="button danger-button"
                             onClick={() => removeItem(index)}
+                            style={{ marginRight: '0.5rem' }}
                           >
                             <i className="fas fa-trash"></i> Supprimer
                           </button>
+
+                          {/* Boutons de déplacement */}
+                          <div className="move-buttons-group">
+                            <button
+                              className="move-button move-up"
+                              onClick={() => moveItemUp(index)}
+                              disabled={index === 0}
+                              aria-label="Déplacer vers le haut"
+                            >
+                              <FaArrowUp />
+                            </button>
+                            <button
+                              className="move-button move-down"
+                              onClick={() => moveItemDown(index)}
+                              disabled={index === data.items.Designation.length - 1}
+                              aria-label="Déplacer vers le bas"
+                            >
+                              <FaArrowDown />
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-
-              <table className="totals-table">
-                <tbody>
-                  <tr>
-                    <td>Total HT:</td>
-                    <td>{formatNumberWithSpaces(data.totals?.["Total HT"]?.[0] || "0")} FCFA</td>
-                  </tr>
-                  <tr>
-                    <td>Total TVA:</td>
-                    <td>{formatNumberWithSpaces(data.totals?.["Total TVA"]?.[0] || "0")} FCFA</td>
-                  </tr>
-                  <tr>
-                    <td>Total TTC:</td>
-                    <td>{formatNumberWithSpaces(data.totals?.["Total TTC"]?.[0] || "0")} FCFA</td>
-                  </tr>
                 </tbody>
               </table>
             </div>
