@@ -77,14 +77,16 @@ export const invoiceService = {
     return {
       numero: formData.facture.Numéro[0],
       date: formData.facture.Date[0],
-      dateEcheance:
-        formData.facture.DateEcheance?.[0] ||
+      dateEcheance: formData.facture.DateEcheance?.[0] ||
         new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       type: formData.facture.Type[0],
       clientNom: formData.client.Nom[0],
       clientAdresse: formData.client.Adresse[0],
+      clientVille: formData.client.Ville?.[0] || "", // Ajout de la ville
       clientId: formData.clientId || null,
       ribs: formData.ribs || ["CBAO"],
+      objet: formData.objet || "", // Ajout de l'objet ici
+      showSignature: formData.showSignature !== false, // Ajout de l'option signature
       items: formData.items.Designation.map((_, index) => ({
         designation: formData.items.Designation[index],
         quantite: formData.items.Quantite[index],
@@ -133,7 +135,8 @@ export const invoiceService = {
       },
       client: {
         Nom: [facture.clientNom || ""],
-        Adresse: [facture.clientAdresse || ""]
+        Adresse: [facture.clientAdresse || ""],
+        Ville: [facture.clientVille || ""] // Ajouté si nécessaire
       },
       items,
       totals: {
@@ -141,7 +144,9 @@ export const invoiceService = {
         "Total TVA": [facture.totalTVA || "0,00"],
         "Total TTC": [facture.totalTTC || "0,00"]
       },
-      ribs: facture.ribs || ["CBAO"]
+      ribs: facture.ribs || ["CBAO"], // Assurez-vous que c'est stocké dans Firestore
+      objet: facture.objet || "", // Ajouté
+      showSignature: facture.showSignature !== false // Valeur par défaut true
     };
   },
 

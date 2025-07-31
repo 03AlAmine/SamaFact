@@ -222,7 +222,16 @@ const DocumentSection = ({
                                     className="action-btn edit"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type } });
+                                        navigate("/bill", {
+                                            state: {
+                                                facture: f,
+                                                client: selectedClient,
+                                                type: f.type,
+                                                objet: f.objet, // Ajouté
+                                                ribs: f.ribs, // Ajouté
+                                                showSignature: f.showSignature // Ajouté
+                                            }
+                                        });
                                     }}
                                     title="Modifier"
                                 >
@@ -326,7 +335,16 @@ const DocumentSection = ({
                                                 className="action-btn edit"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type } });
+                                                    navigate("/bill", {
+                                                        state: {
+                                                            facture: f,
+                                                            client: selectedClient,
+                                                            type: f.type,
+                                                            objet: f.objet, // Ajouté
+                                                            ribs: f.ribs, // Ajouté
+                                                            showSignature: f.showSignature // Ajouté
+                                                        }
+                                                    });
                                                 }}
                                                 title="Modifier"
                                             >

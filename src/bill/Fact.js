@@ -26,10 +26,9 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
   const [editingIndex, setEditingIndex] = useState(null);
   const [showClientInfo, setShowClientInfo] = useState(true);
   const { currentUser } = useAuth();
-  const [selectedRibs, setSelectedRibs] = useState([]);
-  const [objet, setObjet] = useState(""); // Ajoutez cette ligne
-  const [showSignature, setShowSignature] = useState(true);
-
+  const [selectedRibs, setSelectedRibs] = useState(data.ribs || []);
+  const [objet, setObjet] = useState(data.objet || "");
+  const [showSignature, setShowSignature] = useState(data.showSignature !== false);
   const handleClientChange = (e) => {
     const clientId = e.target.value;
     setSelectedClientId(clientId);
@@ -731,7 +730,13 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
 
             <button
               className="button success-button"
-              onClick={handleSave}
+              onClick={() => handleSave({
+                ...data,
+                clientId: selectedClientId,
+                ribs: selectedRibs,
+                objet: objet,
+                showSignature: showSignature
+              })}
               disabled={isSaving}
             >
               {isSaving ? (
@@ -821,7 +826,10 @@ const Fact = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const location = useLocation();
-
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedRibs, setSelectedRibs] = useState([]);
+  const [objet, setObjet] = useState("");
+  const [showSignature, setShowSignature] = useState(true);
   // Initialisation des données
   const [data, setData] = useState({
     facture: {
@@ -856,7 +864,12 @@ const Fact = () => {
       const documentType = location.state?.type || "facture";
 
       if (location.state && location.state.facture) {
-        setData(invoiceService.transformFactureData(location.state.facture));
+        const transformedData = invoiceService.transformFactureData(location.state.facture);
+        setData(transformedData);
+        setSelectedClientId(location.state.facture.clientId || "");
+        setSelectedRibs(location.state.facture.ribs || []);
+        setObjet(location.state.facture.objet || "");
+        setShowSignature(location.state.facture.showSignature !== false);
         setLoadingData(false);
         return;
       }
@@ -864,9 +877,10 @@ const Fact = () => {
       const initialClient = location.state?.client
         ? {
           Nom: [location.state.client.nom || ""],
-          Adresse: [location.state.client.adresse || ""]
+          Adresse: [location.state.client.adresse || ""],
+          Ville: [location.state.client.ville || ""] // Ajout de la ville
         }
-        : { Nom: [], Adresse: [] };
+        : { Nom: [], Adresse: [], Ville: [] };
 
       try {
         const invoiceNumber = await invoiceService.generateInvoiceNumber(
@@ -931,12 +945,12 @@ const Fact = () => {
   }, [currentUser]);
 
   // Sauvegarde de la facture
-  const saveInvoiceToFirestore = async () => {
+  const saveInvoiceToFirestore = async (completeData) => {
     if (!currentUser?.companyId) {
       throw new Error("Company ID not available");
     }
 
-    const invoiceData = invoiceService.prepareInvoiceData(data);
+    const invoiceData = invoiceService.prepareInvoiceData(completeData);
 
     if (location.state && location.state.facture && location.state.facture.id) {
       return invoiceService.updateInvoice(
@@ -953,22 +967,22 @@ const Fact = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (completeData) => {
     if (isSaved) {
       alert("Cette facture est déjà enregistrée. Créez une nouvelle facture si nécessaire.");
       return;
     }
 
-    if (!data.client.Nom[0] || data.items.Designation.length === 0) {
+    if (!completeData.client.Nom[0] || completeData.items.Designation.length === 0) {
       alert("Veuillez sélectionner un client et ajouter au moins un article");
       return;
     }
 
     try {
       setIsSaving(true);
-      await saveInvoiceToFirestore();
+      await saveInvoiceToFirestore(completeData);
       setIsSaved(true);
-      alert(`${data.facture.Type[0] === "avoir" ? "Avoir" : data.facture.Type?.[0] === "devis" ? "Devis" : "Facture"} ${location.state && location.state.facture ? 'modifié(e)' : 'enregistré(e)'} avec succès !`);
+      alert(`${completeData.facture.Type[0] === "avoir" ? "Avoir" : completeData.facture.Type?.[0] === "devis" ? "Devis" : "Facture"} ${location.state && location.state.facture ? 'modifié(e)' : 'enregistré(e)'} avec succès !`);
     } catch (error) {
       console.error("Erreur d'enregistrement :", error);
       alert("Erreur lors de l'enregistrement");
@@ -1063,7 +1077,6 @@ const Fact = () => {
         data={data}
         setData={setData}
         clients={clients}
-        saveInvoiceToFirestore={saveInvoiceToFirestore}
         handleSave={handleSave}
         isSaving={isSaving}
         isSaved={isSaved}
@@ -1073,6 +1086,15 @@ const Fact = () => {
         generateInvoiceNumber={(date, type) =>
           invoiceService.generateInvoiceNumber(currentUser.companyId, date, type)
         }
+        // Ajoutez ces nouvelles props :
+        selectedClientId={selectedClientId}
+        setSelectedClientId={setSelectedClientId}
+        selectedRibs={selectedRibs}
+        setSelectedRibs={setSelectedRibs}
+        objet={objet}
+        setObjet={setObjet}
+        showSignature={showSignature}
+        setShowSignature={setShowSignature}
       />
     </div>
   );

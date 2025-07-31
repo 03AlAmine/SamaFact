@@ -165,23 +165,25 @@ const InvoicesPage = ({
         const newDueDate = dueDate.toISOString().split('T')[0];
 
         // Créer une copie du document avec les nouvelles dates
-        const duplicatedDocument = {
-            ...document,
-            date: newDate,
-            dateEcheance: newDueDate,
-            // Le numéro sera généré automatiquement dans le composant Fact
-            numero: 'AUTO' // Ceci sera remplacé par le vrai numéro généré
-        };
+
 
         navigate("/bill", {
             state: {
-                facture: duplicatedDocument,
+                facture: {
+                    ...document,
+                    date: newDate,
+                    dateEcheance: newDueDate,
+                    numero: 'AUTO',
+                    objet: document.objet, // Ajouté
+                    ribs: document.ribs, // Ajouté
+                    showSignature: document.showSignature // Ajouté
+                },
                 isDuplicate: true,
-                type: document.type, // <--- AJOUTÉ ICI
-
+                type: document.type,
                 client: {
                     nom: document.clientNom,
-                    adresse: document.clientAdresse
+                    adresse: document.clientAdresse,
+                    ville: document.clientVille // Ajouté si nécessaire
                 }
             }
         });
