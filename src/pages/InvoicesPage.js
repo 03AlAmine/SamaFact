@@ -7,6 +7,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../auth/AuthContext"; // ou ton propre contexte auth
 import { downloadPdf, previewPdf } from '../services/pdfService';
+import { invoiceService } from '../services/invoiceService';
 
 const InvoicesPage = ({
     activeTab_0,
@@ -16,7 +17,7 @@ const InvoicesPage = ({
     navigate,
     handleDeleteFacture,
     selectedClient,
-    companyId
+    companyId,
 }) => {
     const { currentUser } = useAuth(); // récupération de l'utilisateur connecté
 
@@ -153,8 +154,17 @@ const InvoicesPage = ({
     };
 
 
+    // eslint-disable-next-line no-unused-vars
+    const [data, setData] = useState({
+        facture: {
+            // mets ici la structure initiale de ta facture
+            Type: [],
+            Numéro: [],
+            Date: []
+        }
+    });
 
-    const handleDuplicateDocument = (document) => {
+    const handleDuplicateDocument = async (document, newType = "facture") => {
         // Créer une nouvelle date pour la facture dupliquée
         const today = new Date();
         const newDate = today.toISOString().split('T')[0];
@@ -164,30 +174,53 @@ const InvoicesPage = ({
         dueDate.setDate(dueDate.getDate() + 7);
         const newDueDate = dueDate.toISOString().split('T')[0];
 
-        // Créer une copie du document avec les nouvelles dates
+        let newNumber = `Test`; // Valeur temporaire par défaut
 
+        try {
+            newNumber = await invoiceService.generateInvoiceNumber(companyId, new Date(), newType);
+            setData(prev => ({
+                ...prev,
+                facture: {
+                    ...prev.facture,
+                    Type: [newType],
+                    Numéro: [newNumber]
+                }
+            }));
+        } catch (error) {
+            console.error("Erreur génération numéro:", error);
+            setData(prev => ({
+                ...prev,
+                facture: {
+                    ...prev.facture,
+                    Type: [newType]
+                }
+            }));
+        }
 
         navigate("/bill", {
             state: {
                 facture: {
                     ...document,
+                    id: undefined,  // NE PAS transmettre l'ID original
                     date: newDate,
                     dateEcheance: newDueDate,
-                    numero: 'AUTO',
-                    objet: document.objet, // Ajouté
-                    ribs: document.ribs, // Ajouté
-                    showSignature: document.showSignature // Ajouté
+                    numero: newNumber,
+                    objet: document.objet || "",
+                    ribs: document.ribs || [],
+                    showSignature: document.showSignature !== false
                 },
                 isDuplicate: true,
-                type: document.type,
+                type: newType,
                 client: {
-                    nom: document.clientNom,
-                    adresse: document.clientAdresse,
-                    ville: document.clientVille // Ajouté si nécessaire
+                    nom: document.clientNom || "",
+                    adresse: document.clientAdresse || "",
+                    ville: document.clientVille || ""
                 }
             }
         });
+
     };
+
 
     return (
         <>
@@ -263,7 +296,7 @@ const InvoicesPage = ({
                     type="facture"
                     onPreview={handlePreview}
                     onDownload={handleDownload}
-                    onDuplicate={handleDuplicateDocument}
+                    onDuplicate={(doc) => handleDuplicateDocument(doc, "facture")}
 
                 />
             )}
@@ -279,7 +312,7 @@ const InvoicesPage = ({
                     type="devis"
                     onPreview={handlePreview}
                     onDownload={handleDownload}
-                    onDuplicate={handleDuplicateDocument}
+                    onDuplicate={(doc) => handleDuplicateDocument(doc, "devis")}
 
                 />
             )}
@@ -295,7 +328,7 @@ const InvoicesPage = ({
                     type="avoir"
                     onPreview={handlePreview}
                     onDownload={handleDownload}
-                    onDuplicate={handleDuplicateDocument}
+                    onDuplicate={(doc) => handleDuplicateDocument(doc, "avoir")}
 
                 />
             )}

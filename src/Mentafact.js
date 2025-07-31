@@ -364,10 +364,16 @@ const Mentafact = () => {
 
     const handleDeleteFacture = async (docId, type) => {
         if (window.confirm(`Êtes-vous sûr de vouloir supprimer ce ${type} ?`)) {
-
             try {
+                // Supprimer la facture complète
                 await deleteDoc(doc(db, `companies/${currentUser.companyId}/factures`, docId));
+
+                // Supprimer le résumé aussi
+                await deleteDoc(doc(db, `companies/${currentUser.companyId}/factures_resume`, docId));
+
+                // Mettre à jour l’état local
                 setAllFactures(prev => prev.filter(doc => doc.id !== docId));
+
                 alert(`${type} supprimé avec succès`);
                 return true;
             } catch (error) {
@@ -375,9 +381,9 @@ const Mentafact = () => {
                 alert("Échec de la suppression");
                 return false;
             }
-        };
-
+        }
     };
+
 
     const handleCreateInvoice = () => {
         if (!selectedClient) {

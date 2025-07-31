@@ -15,7 +15,7 @@ import { FaArrowLeft, FaArrowDown, FaArrowUp } from "react-icons/fa";
 
 
 // Composant InvoiceForm (inchangé)
-const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber }) => {
+const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, showPreview, setShowPreview, generateInvoiceNumber, location }) => {
   const [currentItem, setCurrentItem] = useState({
     Designation: "",
     Quantite: "1",
@@ -730,21 +730,29 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
 
             <button
               className="button success-button"
-              onClick={() => handleSave({
-                ...data,
-                clientId: selectedClientId,
-                ribs: selectedRibs,
-                objet: objet,
-                showSignature: showSignature
-              })}
+              onClick={() => handleSave(
+                {
+                  ...data,
+                  clientId: selectedClientId,
+                  ribs: selectedRibs,
+                  objet: objet,
+                  showSignature: showSignature
+                },
+                location && location.state && location.state.facture && location.state.facture.id ? true : false
+              )}
               disabled={isSaving}
             >
               {isSaving ? (
-                <><i className="fas fa-spinner fa-spin"></i> Enregistrement...</>
+                <>
+                  <i className="fas fa-spinner fa-spin"></i> Enregistrement...
+                </>
               ) : (
-                <><i className="fas fa-save"></i> Enregistrer</>
+                <>
+                  <i className="fas fa-save"></i> Enregistrer
+                </>
               )}
             </button>
+
 
             {/* Bouton TÉLÉCHARGER */}
             {isSaved ? (
@@ -966,9 +974,8 @@ const Fact = () => {
       );
     }
   };
-
-  const handleSave = async (completeData) => {
-    if (isSaved) {
+  const handleSave = async (completeData, isUpdate = false) => {
+    if (isSaved && !isUpdate) {
       alert("Cette facture est déjà enregistrée. Créez une nouvelle facture si nécessaire.");
       return;
     }
@@ -980,9 +987,13 @@ const Fact = () => {
 
     try {
       setIsSaving(true);
-      await saveInvoiceToFirestore(completeData);
+      await saveInvoiceToFirestore(completeData, isUpdate);
       setIsSaved(true);
-      alert(`${completeData.facture.Type[0] === "avoir" ? "Avoir" : completeData.facture.Type?.[0] === "devis" ? "Devis" : "Facture"} ${location.state && location.state.facture ? 'modifié(e)' : 'enregistré(e)'} avec succès !`);
+
+      alert(
+        `${completeData.facture.Type[0] === "avoir" ? "Avoir" : completeData.facture.Type?.[0] === "devis" ? "Devis" : "Facture"} ` +
+        `${isUpdate ? 'modifié(e)' : 'enregistré(e)'} avec succès !`
+      );
     } catch (error) {
       console.error("Erreur d'enregistrement :", error);
       alert("Erreur lors de l'enregistrement");
@@ -990,6 +1001,7 @@ const Fact = () => {
       setIsSaving(false);
     }
   };
+
 
   // Gestion du changement de date
   const handleDateChange = async (e) => {
@@ -1095,6 +1107,7 @@ const Fact = () => {
         setObjet={setObjet}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
+        location={location}
       />
     </div>
   );
