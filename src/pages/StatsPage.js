@@ -2,7 +2,7 @@ import React from "react";
 import { FaUsers, FaBell } from "react-icons/fa";
 import { FaChartBar } from "react-icons/fa";
 import { InvoiceChart, ClientChart, StatusChart, MonthlyComparisonChart } from "../components/Charts";
-import { DocumentSliderCard, MonthlyAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
+import { DocumentSliderCard, TotalAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
 
 const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients }) => {
 
@@ -27,16 +27,15 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients }) => {
                 <DocumentSliderCard stats={stats} className="large" showTrend={true} showName={false}
 
                 />
-                <MonthlyAmountSliderCard
-                    stats={stats}
+                <TotalAmountSliderCard
                     allFactures={allFactures}
                     allDevis={allDevis}
                     allAvoirs={allAvoirs}
                     className="large"
                     showTrend={true}
                     showName={false}
-
                 />
+
                 <div className="stat-card large">
                     <div className="stat-icon pending">
                         <FaBell />

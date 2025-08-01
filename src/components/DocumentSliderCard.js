@@ -150,3 +150,77 @@ export const MonthlyAmountSliderCard = ({ allFactures, allDevis, allAvoirs, clas
         </div>
     );
 };
+export const TotalAmountSliderCard = ({ allFactures, allDevis, allAvoirs, className = "", showTrend = false, showName = true }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    const getTotal = (docs) =>
+        (docs || []).reduce((sum, doc) => {
+            return sum + (parseFloat(doc.totalTTC) || 0);
+        }, 0);
+
+    const items = [
+        {
+            label: "Total factures",
+            value: `${getTotal(allFactures).toLocaleString()} FCFA`,
+            color: "#28a745",
+            icon: <FaChartLine />
+        },
+        {
+            label: "Total devis",
+            value: `${getTotal(allDevis).toLocaleString()} FCFA`,
+            color: "#ff4d6d",
+            icon: <FaChartLine />
+        },
+        {
+            label: "Total avoirs",
+            value: `${getTotal(allAvoirs).toLocaleString()} FCFA`,
+            color: "#007bff",
+            icon: <FaChartLine />
+        }
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % items.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [items.length]);
+
+    const nextSlide = () =>
+        setCurrentIndex((currentIndex + 1) % items.length);
+
+    return (
+        <div className={`stat-card ${className}`}>
+            <div
+                className="stat-icon revenue"
+                style={{ background: items[currentIndex].color }}
+            >
+                {items[currentIndex].icon}
+            </div>
+            <div className="stat-info">
+                <h3>{items[currentIndex].value}</h3>
+                {showName && <p>{items[currentIndex].label}</p>}
+                {showTrend && (
+                    <>
+                        <p>{items[currentIndex].label} annuels</p>
+                        <div className="stat-trend up">+18% cette année</div>
+                    </>
+                )}
+            </div>
+            <button
+                onClick={nextSlide}
+                style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "5px",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer"
+                }}
+            >
+                <FaChevronRight />
+            </button>
+        </div>
+    );
+};

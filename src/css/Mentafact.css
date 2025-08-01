@@ -101,7 +101,7 @@ body {
 /* Sidebar Styles */
 .sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #feb47b 0%, #4a6fa5 100%);
+  background: linear-gradient(135deg, #4a6fa5 0%,  #ffc107 100%);
   color: white;
   transition: var(--transition);
   display: flex;
@@ -131,7 +131,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   color: white;
-  background: var(--primary-gradient);
+  background: #ffc107;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1426,7 +1426,7 @@ body {
 }
 .client-type-badge {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   right: 10px;
   background: #4caf50;
   color: white;
