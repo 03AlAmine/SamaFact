@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Chart as ChartJS,
   BarElement,
@@ -27,6 +27,92 @@ ChartJS.register(
   Filler
 );
 
+// Palette de couleurs cohérente
+const CHART_COLORS = {
+  primary: 'rgba(99, 102, 241, 0.8)',
+  secondary: 'rgba(79, 70, 229, 0.8)',
+  success: 'rgba(16, 185, 129, 0.8)',
+  danger: 'rgba(239, 68, 68, 0.8)',
+  warning: 'rgba(245, 158, 11, 0.8)',
+  info: 'rgba(59, 130, 246, 0.8)',
+  light: 'rgba(209, 213, 219, 0.8)',
+  dark: 'rgba(55, 65, 81, 0.8)'
+};
+
+const CHART_BORDERS = {
+  primary: 'rgba(99, 102, 241, 1)',
+  secondary: 'rgba(79, 70, 229, 1)',
+  success: 'rgba(16, 185, 129, 1)',
+  danger: 'rgba(239, 68, 68, 1)',
+  warning: 'rgba(245, 158, 11, 1)',
+  info: 'rgba(59, 130, 246, 1)',
+  light: 'rgba(209, 213, 219, 1)',
+  dark: 'rgba(55, 65, 81, 1)'
+};
+
+// Options communes
+const commonOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        font: {
+          family: "'Inter', sans-serif",
+          size: 12,
+          weight: '500'
+        },
+        padding: 20,
+        usePointStyle: true,
+        pointStyle: 'circle'
+      }
+    },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      titleFont: {
+        family: "'Inter', sans-serif",
+        size: 14,
+        weight: 'bold'
+      },
+      bodyFont: {
+        family: "'Inter', sans-serif",
+        size: 12
+      },
+      padding: 12,
+      cornerRadius: 8,
+      displayColors: true,
+      usePointStyle: true
+    }
+  },
+  scales: {
+    y: {
+      grid: {
+        color: 'rgba(0, 0, 0, 0.05)'
+      },
+      ticks: {
+        font: {
+          family: "'Inter', sans-serif"
+        }
+      }
+    },
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        font: {
+          family: "'Inter', sans-serif"
+        }
+      }
+    }
+  },
+  animation: {
+    duration: 1000,
+    easing: 'easeOutQuart'
+  }
+};
+
 // 📊 Factures mensuelles (Barres)
 export const InvoiceChart = ({ invoices }) => {
   const monthlyData = Array(12).fill(0);
@@ -39,22 +125,15 @@ export const InvoiceChart = ({ invoices }) => {
       monthlyData[month] += parseFloat(invoice.totalTTC) || 0;
     }
   });
-  const backgroundColors = [
-    'rgba(255, 99, 132, 0.6)',  // Jan
-    'rgba(54, 162, 235, 0.6)',  // Fév
-    'rgba(255, 206, 86, 0.6)',  // Mar
-    'rgba(75, 192, 192, 0.6)',  // Avr
-    'rgba(153, 102, 255, 0.6)', // Mai
-    'rgba(0, 128, 128, 0.6)',   // Jun
-    'rgba(255, 159, 64, 0.6)',  // Jul
-    'rgba(255, 105, 180, 0.6)', // Aoû
-    'rgba(0, 191, 255, 0.6)',   // Sep
-    'rgba(34, 139, 34, 0.6)',   // Oct
-    'rgba(255, 140, 0, 0.6)',   // Nov
-    'rgba(128, 0, 128, 0.6)'    // Déc
-  ];
 
-  const borderColors = backgroundColors.map(color => color.replace('0.6', '1'));
+  // Palette dégradée
+  const backgroundColors = Array(12).fill(0).map((_, i) => {
+    const ratio = i / 12;
+    return `rgba(99, 102, 241, ${0.4 + ratio * 0.4})`;
+  });
+
+  const borderColors = backgroundColors.map(color => color.replace('0.4', '1').replace('0.8', '1'));
+
   const data = {
     labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
     datasets: [
@@ -64,16 +143,19 @@ export const InvoiceChart = ({ invoices }) => {
         backgroundColor: backgroundColors,
         borderColor: borderColors,
         borderWidth: 1,
+        borderRadius: 4,
+        hoverBackgroundColor: borderColors,
+        hoverBorderWidth: 2
       },
     ],
   };
 
-
   const options = {
-    responsive: true,
+    ...commonOptions,
     plugins: {
-      legend: { position: 'top' },
+      ...commonOptions.plugins,
       tooltip: {
+        ...commonOptions.plugins.tooltip,
         callbacks: {
           label: function (context) {
             return `${context.dataset.label}: ${context.raw.toLocaleString()} FCFA`;
@@ -82,73 +164,288 @@ export const InvoiceChart = ({ invoices }) => {
       }
     },
     scales: {
+      ...commonOptions.scales,
       y: {
+        ...commonOptions.scales.y,
         beginAtZero: true,
         ticks: {
+          ...commonOptions.scales.y.ticks,
           callback: value => value.toLocaleString() + ' FCFA'
         }
       }
     }
   };
 
-  return <Bar data={data} options={options} />;
+  return (
+    <div style={{ height: '250px', padding: '1rem' }}>
+      <Bar data={data} options={options} />
+    </div>
+  );
 };
 
 // 🧍‍♂️ Clients par entreprise (Doughnut)
-export const ClientChart = ({ clients }) => {
-  const companies = {};
 
-  // ✅ Vérification sécurisée
+const navButtonStyle = {
+  background: '#4f46e5',
+  color: 'white',
+  border: 'none',
+  borderRadius: '50%',
+  width: '32px',
+  height: '32px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  ':hover': {
+    background: '#4338ca',
+    transform: 'scale(1.05)'
+  },
+  ':disabled': {
+    background: '#e2e8f0',
+    color: '#94a3b8',
+    cursor: 'not-allowed',
+    transform: 'none'
+  }
+};
+
+const legendItemStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  padding: '8px 12px',
+  borderRadius: '8px',
+  transition: 'all 0.2s ease',
+  ':hover': {
+    backgroundColor: '#f8fafc',
+    transform: 'translateX(2px)'
+  }
+};
+
+export const ClientChart = ({ clients }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 5;
+  const intervalRef = useRef(null);
+
+  const companies = {};
   if (Array.isArray(clients)) {
     clients.forEach(client => {
       const company = client.nom || 'Non spécifié';
       companies[company] = (companies[company] || 0) + 1;
     });
-  } else {
-    console.warn('clients est vide ou non défini');
   }
 
-  function generateRandomColors(count) {
-    const colors = [];
+  const labels = Object.keys(companies);
+  const values = Object.values(companies);
 
-    for (let i = 0; i < count; i++) {
-      const r = Math.floor(Math.random() * 256);   // Rouge: 0-255
-      const g = Math.floor(Math.random() * 256);   // Vert
-      const b = Math.floor(Math.random() * 256);   // Bleu
-      const a = 0.6;                                // Opacité constante
-
-      colors.push(`rgba(${r}, ${g}, ${b}, ${a})`);
-    }
-
-    return colors;
-  }
-
-  const backgroundColors = generateRandomColors(100); // génère 10 couleurs aléatoires
-
+  // Palette de couleurs modernes
+  const backgroundColors = [
+    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#ef4444',
+    '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
+    '#64748b', '#94a3b8', '#cbd5e1'
+  ];
 
   const data = {
-    labels: Object.keys(companies),
-    datasets: [
-      {
-        label: 'Nombre de clients',
-        data: Object.values(companies),
-        backgroundColor: backgroundColors.slice(0, Object.keys(companies).length),
-        borderColor: backgroundColors.map(c => c.replace('0.6', '1')),
-        borderWidth: 1,
-      },
-    ],
+    labels,
+    datasets: [{
+      label: 'Nombre de clients',
+      data: values,
+      backgroundColor: backgroundColors.slice(0, labels.length),
+      borderColor: '#fff',
+      borderWidth: 2,
+      hoverOffset: 10,
+      cutout: '75%',
+    }]
   };
 
   const options = {
-    responsive: true,
-      maintainAspectRatio: false, // <== important pour respecter la taille du conteneur
-
-    plugins: {
-      legend: { position: 'right' },
+    plugins: { 
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: false
+      }
     },
+    cutout: '75%',
+    layout: { 
+      padding: 20 
+    },
+    animation: {
+      animateScale: true,
+      animateRotate: true
+    }
   };
 
-  return <Doughnut data={data} options={options} />;
+  const totalPages = Math.ceil(labels.length / itemsPerPage);
+  const start = currentPage * itemsPerPage;
+  const end = start + itemsPerPage;
+  const visibleLegends = labels.slice(start, end);
+
+  // Auto-slide toutes les 3 secondes
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCurrentPage(prev => (prev + 1) % totalPages);
+    }, 3000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [totalPages]);
+
+  const pauseAutoSlide = () => clearInterval(intervalRef.current);
+  const resumeAutoSlide = () => {
+    intervalRef.current = setInterval(() => {
+      setCurrentPage(prev => (prev + 1) % totalPages);
+    }, 3000);
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      gap: '2rem',
+      alignItems: 'center',
+      maxWidth: '800px',
+      margin: '0 auto'
+    }}>
+      {/* Graphique */}
+      <div style={{ 
+        height: '250px', 
+        width: '250px',
+        position: 'relative'
+      }}>
+        <Doughnut data={data} options={options} />
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#1e293b'
+          }}>
+            {values.reduce((a, b) => a + b, 0)}
+          </div>
+          <div style={{
+            fontSize: '14px',
+            color: '#64748b'
+          }}>
+            Clients
+          </div>
+        </div>
+      </div>
+
+      {/* Légende avec carousel */}
+      <div
+        onMouseEnter={pauseAutoSlide}
+        onMouseLeave={resumeAutoSlide}
+        style={{
+          flex: 1,
+          minWidth: '240px',
+          padding: '1rem',
+          borderRadius: '12px',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+        }}
+      >
+
+
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1px',
+          minHeight: '160px'
+        }}>
+          {visibleLegends.map((label, i) => (
+            <div key={label} style={legendItemStyle}>
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  backgroundColor: backgroundColors[start + i],
+                  marginRight: 12,
+                  borderRadius: '4px',
+                  flexShrink: 0
+                }}
+              />
+              <span style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: '#334155',
+                fontWeight: '500'
+              }}>
+                {label}
+              </span>
+              <span style={{
+                marginLeft: 'auto',
+                color: '#64748b',
+                fontSize: '13px',
+                fontWeight: '600'
+              }}>
+                {values[start + i]}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation et indicateur de page */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          marginTop: '1rem'
+        }}>
+          <button
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
+            disabled={currentPage === 0}
+            style={{
+              ...navButtonStyle,
+              background: currentPage === 0 ? '#e2e8f0' : '#6366f1',
+              color: currentPage === 0 ? '#94a3b8' : 'white'
+            }}
+          >
+            ◀
+          </button>
+          
+          <div style={{
+            display: 'flex',
+            gap: '6px'
+          }}>
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <div 
+                key={idx}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: currentPage === idx ? '#6366f1' : '#cbd5e1',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+            ))}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages - 1))}
+            disabled={currentPage === totalPages - 1}
+            style={{
+              ...navButtonStyle,
+              background: currentPage === totalPages - 1 ? '#e2e8f0' : '#6366f1',
+              color: currentPage === totalPages - 1 ? '#94a3b8' : 'white'
+            }}
+          >
+            ▶
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 
@@ -174,21 +471,33 @@ export const StatusChart = ({ invoices }) => {
         label: 'Statut des factures',
         data: Object.values(statusCounts),
         backgroundColor: [
-          'rgba(75, 192, 192, 0.6)', // payée
-          'rgba(255, 206, 86, 0.6)', // en attente
-          'rgba(255, 99, 132, 0.6)', // impayée
+          CHART_COLORS.success,
+          CHART_COLORS.warning,
+          CHART_COLORS.danger
         ],
-        borderColor: [
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(255, 99, 132, 1)',
-        ],
-        borderWidth: 1,
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverOffset: 10
       },
     ],
   };
 
-  return <Pie data={data} />;
+  const options = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      legend: {
+        ...commonOptions.plugins.legend,
+        position: 'right'
+      }
+    }
+  };
+
+  return (
+    <div style={{ height: '275px', padding: '1rem' }}>
+      <Pie data={data} options={options} />
+    </div>
+  );
 };
 
 // 📈 Comparaison mensuelle entre 2 années (Lignes)
@@ -217,27 +526,38 @@ export const MonthlyComparisonChart = ({ invoices }) => {
       {
         label: `${currentYear}`,
         data: currentYearData,
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.4,
+        borderColor: CHART_BORDERS.primary,
+        backgroundColor: CHART_COLORS.primary,
+        tension: 0.3,
         fill: true,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: CHART_BORDERS.primary,
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
       },
       {
         label: `${lastYear}`,
         data: lastYearData,
-        borderColor: 'rgba(54, 162, 235, 1)',
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        tension: 0.4,
+        borderColor: CHART_BORDERS.secondary,
+        backgroundColor: CHART_COLORS.secondary,
+        tension: 0.3,
         fill: true,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: CHART_BORDERS.secondary,
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
       },
     ],
   };
 
   const options = {
-    responsive: true,
+    ...commonOptions,
     plugins: {
-      legend: { position: 'top' },
+      ...commonOptions.plugins,
       tooltip: {
+        ...commonOptions.plugins.tooltip,
         callbacks: {
           label: function (context) {
             return `${context.dataset.label}: ${context.raw.toLocaleString()} FCFA`;
@@ -246,14 +566,26 @@ export const MonthlyComparisonChart = ({ invoices }) => {
       }
     },
     scales: {
+      ...commonOptions.scales,
       y: {
+        ...commonOptions.scales.y,
         beginAtZero: true,
         ticks: {
+          ...commonOptions.scales.y.ticks,
           callback: value => value.toLocaleString() + ' FCFA'
         }
+      }
+    },
+    elements: {
+      line: {
+        borderWidth: 2
       }
     }
   };
 
-  return <Line data={data} options={options} />;
+  return (
+    <div style={{ height: '250px', padding: '1rem' }}>
+      <Line data={data} options={options} />
+    </div>
+  );
 };

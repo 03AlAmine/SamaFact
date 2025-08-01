@@ -10,7 +10,7 @@ import InvoicePDF from './InvoicePDF';
 import DynamicPDFViewer from '../components/DynamicPDFViewer';
 import empty from '../assets/empty_article.png';
 import { invoiceService } from '../services/invoiceService';
-import { FaArrowLeft, FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { FaArrowLeft, FaArrowDown, FaArrowUp, FaEye } from "react-icons/fa";
 
 
 
@@ -264,6 +264,14 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
 
   return (
     <div className="dashboard-layoute">
+      <div className="floating-buttons">
+      <button
+        className="floating-show-button"
+        onClick={() => togglePreview()}
+      >
+        <FaEye className="button-icon" />
+        <span className="button-text">Aperçu</span>
+      </button>
       <button
         className="floating-back-button"
         onClick={() => window.history.back()}
@@ -271,6 +279,7 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
         <FaArrowLeft className="button-icon" />
         <span className="button-text">Quitter</span>
       </button>
+      </div>
       <Sidebar
         sidebarOpen={true}
         activeTab="factures"

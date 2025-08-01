@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaUsers, FaFileInvoiceDollar, FaBell, FaPlus } from "react-icons/fa";
+import { FaUsers, FaFileInvoiceDollar, FaBell, FaPlus, FaBolt, FaUserPlus, FaFileImport } from "react-icons/fa";
 import { InvoiceChart, ClientChart } from "../components/Charts";
 import { DocumentSliderCard, MonthlyAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
 
@@ -43,6 +43,21 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, clie
                 </div>
             </div>
 
+            {/* Actions rapides */}
+            <div className="quick-actions-grid">
+                <button onClick={() => navigate("/bill")} className="quick-action">
+                    <FaBolt className="action-icon" />
+                    <span>Facture Express</span>
+                </button>
+                <button onClick={() => navigate("/client/new")} className="quick-action">
+                    <FaUserPlus className="action-icon" />
+                    <span>Nouveau Client</span>
+                </button>
+                <button onClick={() => navigate("/import")} className="quick-action">
+                    <FaFileImport className="action-icon" />
+                    <span>Importer</span>
+                </button>
+            </div>
             <div className="charts-row">
                 <div className="chart-card">
                     <h3>Chiffre d'affaires mensuel</h3>
