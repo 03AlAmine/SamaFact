@@ -28,7 +28,7 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
   const { currentUser } = useAuth();
   const [selectedRibs, setSelectedRibs] = useState(data.ribs || []);
   const [objet, setObjet] = useState(data.objet || "");
-  const [showSignature, setShowSignature] = useState(data.showSignature !== false);
+  const [showSignature, setShowSignature] = useState(data.showSignature || false);
   const handleClientChange = (e) => {
     const clientId = e.target.value;
     setSelectedClientId(clientId);
@@ -265,20 +265,20 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
   return (
     <div className="dashboard-layoute">
       <div className="floating-buttons">
-      <button
-        className="floating-show-button"
-        onClick={() => togglePreview()}
-      >
-        <FaEye className="button-icon" />
-        <span className="button-text">Aperçu</span>
-      </button>
-      <button
-        className="floating-back-button"
-        onClick={() => window.history.back()}
-      >
-        <FaArrowLeft className="button-icon" />
-        <span className="button-text">Quitter</span>
-      </button>
+        <button
+          className="floating-show-button"
+          onClick={() => togglePreview()}
+        >
+          <FaEye className="button-icon" />
+          <span className="button-text">Aperçu</span>
+        </button>
+        <button
+          className="floating-back-button"
+          onClick={() => window.history.back()}
+        >
+          <FaArrowLeft className="button-icon" />
+          <span className="button-text">Quitter</span>
+        </button>
       </div>
       <Sidebar
         sidebarOpen={true}
@@ -492,12 +492,13 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
                     <h2>Options</h2>
                     <div className="form-group">
                       <label className="checkbox-label">
+                        <span className="checkbox-text-label">Inclure la signature</span>
                         <input
+                          className="checkbox-label-input"
                           type="checkbox"
                           checked={showSignature}
                           onChange={(e) => setShowSignature(e.target.checked)}
                         />
-                        <span className="checkbox-text-label">Inclure la signature</span>
 
                       </label>
                     </div>

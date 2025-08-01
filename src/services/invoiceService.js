@@ -86,7 +86,7 @@ export const invoiceService = {
       clientId: formData.clientId || null,
       ribs: formData.ribs || ["CBAO"],
       objet: formData.objet || "", // Ajout de l'objet ici
-      showSignature: formData.showSignature !== false, // Ajout de l'option signature
+      showSignature: formData.showSignature !== false, // false par défaut si non défini
       items: formData.items.Designation.map((_, index) => ({
         designation: formData.items.Designation[index],
         quantite: formData.items.Quantite[index],
