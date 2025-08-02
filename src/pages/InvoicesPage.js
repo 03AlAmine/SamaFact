@@ -221,6 +221,33 @@ const InvoicesPage = ({
 
     };
 
+    const handleMarkAsPaid = async (invoiceId, type) => {
+        try {
+            const result = await invoiceService.markAsPaid(companyId, invoiceId);
+            if (result.success) {
+                // Optionnel: Afficher une notification
+                alert(result.message);
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error("Erreur:", error);
+            alert("Une erreur est survenue lors de la mise à jour du statut");
+        }
+    };
+    const handleMarkAsPending = async (invoiceId, type) => {
+        try {
+            const result = await invoiceService.markAsPending(companyId, invoiceId);
+            if (result.success) {
+                alert(result.message);
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error("Erreur:", error);
+            alert("Une erreur est survenue lors de l'annulation du statut");
+        }
+    };
 
     return (
         <>
@@ -297,6 +324,9 @@ const InvoicesPage = ({
                     onPreview={handlePreview}
                     onDownload={handleDownload}
                     onDuplicate={(doc) => handleDuplicateDocument(doc, "facture")}
+                    onMarkAsPaid={handleMarkAsPaid}
+                    onMarkAsPending={handleMarkAsPending}
+
 
                 />
             )}
@@ -313,6 +343,9 @@ const InvoicesPage = ({
                     onPreview={handlePreview}
                     onDownload={handleDownload}
                     onDuplicate={(doc) => handleDuplicateDocument(doc, "devis")}
+                    onMarkAsPaid={handleMarkAsPaid}
+                    onMarkAsPending={handleMarkAsPending}
+
 
                 />
             )}
@@ -329,6 +362,9 @@ const InvoicesPage = ({
                     onPreview={handlePreview}
                     onDownload={handleDownload}
                     onDuplicate={(doc) => handleDuplicateDocument(doc, "avoir")}
+                    onMarkAsPaid={handleMarkAsPaid}
+                    onMarkAsPending={handleMarkAsPending}
+
 
                 />
             )}

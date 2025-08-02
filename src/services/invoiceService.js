@@ -237,5 +237,45 @@ export const invoiceService = {
       console.error("Erreur getInvoiceById :", error);
       return { success: false, message: "Erreur récupération facture." };
     }
+  },
+  // Dans invoiceService.js
+  markAsPaid: async (companyId, invoiceId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir marquer cette facture comme payée ?")) {
+      return;
+    }
+
+    try {
+      const invoiceRef = doc(db, `companies/${companyId}/factures/${invoiceId}`);
+      const resumeRef = doc(db, `companies/${companyId}/factures_resume/${invoiceId}`);
+
+      // Mise à jour dans les deux collections
+      await updateDoc(invoiceRef, { statut: "payé" });
+      await updateDoc(resumeRef, { statut: "payé" });
+
+      return { success: true, message: "Facture marquée comme payée avec succès !" };
+    } catch (error) {
+      console.error("Erreur lors du marquage comme payé :", error);
+      return { success: false, message: "Erreur lors de la mise à jour du statut." };
+    }
+  },
+
+  markAsPending: async (companyId, invoiceId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir annuler le paiement de cette facture ?")) {
+      return;
+    }
+
+    try {
+      const invoiceRef = doc(db, `companies/${companyId}/factures/${invoiceId}`);
+      const resumeRef = doc(db, `companies/${companyId}/factures_resume/${invoiceId}`);
+
+      await updateDoc(invoiceRef, { statut: "en attente" });
+      await updateDoc(resumeRef, { statut: "en attente" });
+
+      return { success: true, message: "Statut de paiement annulé avec succès !" };
+    } catch (error) {
+      console.error("Erreur lors de l'annulation du paiement :", error);
+      return { success: false, message: "Erreur lors de l'annulation du statut." };
+    }
   }
+
 };

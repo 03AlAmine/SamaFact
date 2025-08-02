@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaFileInvoiceDollar, FaChevronRight, FaChartLine } from "react-icons/fa";
+import { FaFileInvoiceDollar, FaChevronRight, FaChartLine, FaBell, FaCheckCircle } from "react-icons/fa";
 
 
 export const DocumentSliderCard = ({ stats, className = "", showTrend = false, showName = true }) => {
@@ -207,6 +207,82 @@ export const TotalAmountSliderCard = ({ allFactures, allDevis, allAvoirs, classN
                     </>
                 )}
             </div>
+            <button
+                onClick={nextSlide}
+                style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "5px",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer"
+                }}
+            >
+                <FaChevronRight />
+            </button>
+        </div>
+    );
+};
+export const PaymentStatusSliderCard = ({
+    stats,
+    className = "",
+    showTrend = false,
+    showName = true
+}) => {
+    const items = [
+        {
+            label: "Impayées",
+            value: stats.facturesImpayees,
+            color: "#f59e0b",
+            icon: <FaBell />,
+            trend: "+2% ce mois"
+        },
+        {
+            label: "Payées",
+            value: stats.facturesPayees,
+            color: "#10b981",
+            icon: <FaCheckCircle />,
+            trend: "+5% ce mois"
+        }
+    ];
+
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Auto-défilement toutes les 3 secondes
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentIndex(prev => (prev + 1) % items.length);
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [items.length]);
+
+    const nextSlide = () => setCurrentIndex((currentIndex + 1) % items.length);
+
+    return (
+        <div className={`stat-card ${className}`}>
+            <div
+                className="stat-icon"
+                style={{ background: items[currentIndex].color }}
+            >
+                {items[currentIndex].icon}
+            </div>
+
+            <div className="stat-info">
+                <h3>{items[currentIndex].value || 0}</h3>
+
+                {showName && (
+                    <p>{items[currentIndex].label}</p>
+                )}
+
+                {showTrend && (
+                    <div className={`stat-trend ${currentIndex === 0 ? 'down' : 'up'}`}>
+                        {items[currentIndex].trend}
+                    </div>
+                )}
+            </div>
+
             <button
                 onClick={nextSlide}
                 style={{

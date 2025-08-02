@@ -64,6 +64,7 @@ const Mentafact = () => {
         totalFactures: 0,
         revenusMensuels: 0,
         facturesImpayees: 0,
+        facturesPayees: 0,
         totalEquipes: 0,
     });
 
@@ -123,7 +124,8 @@ const Mentafact = () => {
                     revenusMensuels: filteredFactures
                         .filter(f => f?.date && new Date(f.date).getMonth() === new Date().getMonth())
                         .reduce((sum, f) => sum + (parseFloat(f?.totalTTC) || 0), 0),
-                    facturesImpayees: filteredFactures.filter(f => f.statut === "en attente").length
+                    facturesImpayees: filteredFactures.filter(f => f.statut === "en attente").length,
+                    facturesPayees: filteredFactures.filter(f => f.statut === "payé").length
                 }));
             });
             if (typeof invoicesUnsub === "function") unsubscribers.push(invoicesUnsub);

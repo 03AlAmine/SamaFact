@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { FaUsers, FaFileInvoiceDollar, FaBell, FaPlus, FaBolt, FaUserPlus, FaFileImport } from "react-icons/fa";
+import { FaUsers, FaFileInvoiceDollar, FaPlus, FaBolt, FaUserPlus, FaFileImport } from "react-icons/fa";
 import { InvoiceChart, ClientChart } from "../components/Charts";
-import { DocumentSliderCard, MonthlyAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
+import { DocumentSliderCard, MonthlyAmountSliderCard, PaymentStatusSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
 
 const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, clients }) => {
     const [activeSlide, setActiveSlide] = useState("factures");
@@ -32,15 +32,8 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, clie
                 </div>
                 <DocumentSliderCard stats={stats} />
                 <MonthlyAmountSliderCard stats={stats} allFactures={allFactures} allDevis={allDevis} allAvoirs={allAvoirs} />
-                <div className="stat-card">
-                    <div className="stat-icon pending">
-                        <FaBell />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.facturesImpayees}</h3>
-                        <p>Impayées</p>
-                    </div>
-                </div>
+                <PaymentStatusSliderCard stats={stats} />
+
             </div>
 
             {/* Actions rapides */}
