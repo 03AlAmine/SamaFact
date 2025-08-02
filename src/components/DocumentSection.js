@@ -35,8 +35,8 @@ const DocumentSection = ({
     onPreview
 }) => {
     const [sortBy, setSortBy] = useState('numero');
-    const [sortOrder, setSortOrder] = useState('asc');
-    const [viewMode, setViewMode] = useState('card');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [viewMode, setViewMode] = useState('list');
     const [hoveredItem, setHoveredItem] = useState(null);
 
     // Filtre et tri

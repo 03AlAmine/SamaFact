@@ -8,7 +8,8 @@ import {
   deleteDoc,
   updateDoc,
   where,
-  getDocs
+  getDocs,
+  orderBy
 } from "firebase/firestore";
 
 export const clientService = {
@@ -80,43 +81,65 @@ export const clientService = {
   },
 
   loadClientInvoices: async (companyId, clientId, type) => {
-
     try {
-      const chemin = `companies/${companyId}/factures`;
+      // Vérification des paramètres obligatoires
+      if (!companyId || !clientId || !type) {
+        throw new Error("Paramètres manquants : companyId, clientId et type sont requis");
+      }
 
-      const invoicesRef = collection(db, chemin);
+      // Construction du chemin de collection
+      const invoicesRef = collection(db, `companies/${companyId}/factures`);
+
+      // Création de la requête avec tri par date décroissante
       const q = query(
         invoicesRef,
         where("clientId", "==", clientId),
-        where("type", "==", type)
+        where("type", "==", type),
+        orderBy("date", "desc") // Tri par date décroissante
       );
-
 
       const querySnapshot = await getDocs(q);
 
-      /*  if (querySnapshot.empty) {
-          console.warn("Aucun document trouvé pour cette requête");
-          return [];
-        }*/
-
-      const resultats = querySnapshot.docs.map(doc => {
+      // Transformation des documents avec gestion robuste des dates
+      const invoices = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const date = data.date ? convertIfTimestamp(data.date) : null;
 
         return {
           id: doc.id,
           ...data,
-          date: data.date?.toDate?.() || null
+          date: date instanceof Date ? date.toISOString().split('T')[0] : null
         };
       });
 
-      return resultats;
+      // Helper pour convertir Firestore Timestamp ou Date
+      function convertIfTimestamp(value) {
+        // Firestore Timestamp a une méthode toDate()
+        if (value && typeof value.toDate === 'function') {
+          return value.toDate();
+        }
+        // Si c'est déjà un objet Date
+        if (value instanceof Date) {
+          return value;
+        }
+        // Sinon, essayer de parser
+        const parsed = new Date(value);
+        return isNaN(parsed) ? null : parsed;
+      }
+
+      return invoices;
+
     } catch (error) {
-      console.error("❌ Erreur complète:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
+      console.error("❌ Erreur lors du chargement des factures:", {
+        errorCode: error.code,
+        errorMessage: error.message,
+        companyId,
+        clientId,
+        type
       });
-      throw error;
+
+      // Relancer une erreur plus descriptive
+      throw new Error(`Impossible de charger les factures: ${error.message}`);
     }
   }
 
