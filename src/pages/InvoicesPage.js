@@ -8,6 +8,11 @@ import { db } from "../firebase";
 import { useAuth } from "../auth/AuthContext"; // ou ton propre contexte auth
 import { downloadPdf, previewPdf } from '../services/pdfService';
 import { invoiceService } from '../services/invoiceService';
+// Ajoutez ces imports en haut du fichier
+import ModalPaiement from "../components/ModalPaiement";
+import { message } from "antd";
+
+// Ajoutez ces états au début de votre composant InvoicesPage
 
 const InvoicesPage = ({
     activeTab_0,
@@ -24,7 +29,9 @@ const InvoicesPage = ({
     const [factures, setFactures] = useState([]);
     const [devis, setDevis] = useState([]);
     const [avoirs, setAvoirs] = useState([]);
-
+    const [modalVisible, setModalVisible] = useState(false);
+    const [currentInvoice, setCurrentInvoice] = useState(null);
+    const [paymentLoading, setPaymentLoading] = useState(false);
     const [dateRange, setDateRange] = useState({
         from: null,
         to: null
@@ -222,17 +229,39 @@ const InvoicesPage = ({
     };
 
     const handleMarkAsPaid = async (invoiceId, type) => {
+        setCurrentInvoice(filteredItems[activeTab_0].find(inv => inv.id === invoiceId));
+        setModalVisible(true);
+    };
+
+    // Ajoutez cette nouvelle fonction pour confirmer le paiement
+    const handleConfirmPayment = async (paymentDetails) => {
+        if (!currentInvoice) return;
+
+        setPaymentLoading(true);
         try {
-            const result = await invoiceService.markAsPaid(companyId, invoiceId);
+            // Ajoutez le montant total à l'objet paymentDetails
+            const completePaymentDetails = {
+                ...paymentDetails,
+                totalTTC: parseFloat(currentInvoice.totalTTC.replace(/\s/g, '').replace(',', '.')) || 0
+            };
+
+            const result = await invoiceService.markAsPaid(
+                companyId,
+                currentInvoice.id,
+                completePaymentDetails
+            );
+
             if (result.success) {
-                // Optionnel: Afficher une notification
-                alert(result.message);
+                message.success(result.message);
+                setModalVisible(false);
             } else {
-                alert(result.message);
+                message.error(result.message);
             }
         } catch (error) {
             console.error("Erreur:", error);
-            alert("Une erreur est survenue lors de la mise à jour du statut");
+            message.error("Une erreur est survenue lors de la mise à jour du statut");
+        } finally {
+            setPaymentLoading(false);
         }
     };
     const handleMarkAsPending = async (invoiceId, type) => {
@@ -368,6 +397,13 @@ const InvoicesPage = ({
 
                 />
             )}
+            <ModalPaiement
+                visible={modalVisible}
+                onCancel={() => setModalVisible(false)}
+                onConfirm={handleConfirmPayment}
+                invoice={currentInvoice}
+                loading={paymentLoading}
+            />
         </>
     );
 };

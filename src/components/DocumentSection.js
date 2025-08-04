@@ -85,6 +85,7 @@ const DocumentSection = ({
             default: return '#4f46e5';
         }
     };
+    
 
     return (
         <div className="document-section-container">

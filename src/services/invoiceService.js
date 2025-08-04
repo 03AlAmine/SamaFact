@@ -12,7 +12,8 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  setDoc
+  setDoc,
+  deleteField
 } from "firebase/firestore";
 
 const convertIfTimestamp = (value) =>
@@ -35,7 +36,6 @@ export const invoiceService = {
       callback(invoicesData);
     });
   },
-
   // 🔢 Génération d’un numéro unique de facture
   generateInvoiceNumber: async (companyId, date = new Date(), type = "facture") => {
     if (!companyId) return `${type}-TEMP`;
@@ -71,7 +71,6 @@ export const invoiceService = {
       return `${prefix}-1`;
     }
   },
-
   // 📝 Préparer les données de facture
   prepareInvoiceData: (formData) => {
     return {
@@ -101,7 +100,6 @@ export const invoiceService = {
       totalTTC: formData.totals["Total TTC"][0]
     };
   },
-
   // 🔄 Transformer une facture Firestore → formulaire
   transformFactureData: (facture) => {
     if (!facture) return null;
@@ -150,7 +148,6 @@ export const invoiceService = {
       showSignature: facture.showSignature !== false // Valeur par défaut true
     };
   },
-
   // ➕ Création de facture
   addInvoice: async (companyId, userId, invoiceData) => {
     try {
@@ -185,7 +182,6 @@ export const invoiceService = {
       return { success: false, message: "Erreur lors de la création de la facture." };
     }
   },
-
   // ✏️ Mise à jour de facture
   updateInvoice: async (companyId, invoiceId, invoiceData) => {
     try {
@@ -207,7 +203,6 @@ export const invoiceService = {
       return { success: false, message: "Erreur lors de la mise à jour de la facture." };
     }
   },
-
   // ❌ Suppression
   deleteInvoice: async (companyId, invoiceId) => {
     try {
@@ -222,7 +217,6 @@ export const invoiceService = {
       return { success: false, message: "Erreur lors de la suppression de la facture." };
     }
   },
-
   // 🔍 Récupérer une facture par ID
   getInvoiceById: async (companyId, invoiceId) => {
     try {
@@ -239,26 +233,39 @@ export const invoiceService = {
     }
   },
   // Dans invoiceService.js
-  markAsPaid: async (companyId, invoiceId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir marquer cette facture comme payée ?")) {
-      return;
-    }
-
+  markAsPaid: async (companyId, invoiceId, paymentDetails) => {
     try {
       const invoiceRef = doc(db, `companies/${companyId}/factures/${invoiceId}`);
       const resumeRef = doc(db, `companies/${companyId}/factures_resume/${invoiceId}`);
 
-      // Mise à jour dans les deux collections
-      await updateDoc(invoiceRef, { statut: "payé" });
-      await updateDoc(resumeRef, { statut: "payé" });
+      const paymentData = {
+        statut: "payé",
+        datePaiement: new Date().toISOString(),
+        modePaiement: paymentDetails.modePaiement,
+        typePaiement: paymentDetails.typePaiement,
+        notePaiement: paymentDetails.note || "",
+        ...(paymentDetails.reference ? { referencePaiement: paymentDetails.reference } : {}),
+        ...(paymentDetails.typePaiement === "acompte" && {
+          montantPaye: paymentDetails.montantPaye,
+          resteAPayer: paymentDetails.totalTTC - paymentDetails.montantPaye
+        })
+      };
 
-      return { success: true, message: "Facture marquée comme payée avec succès !" };
+
+      await updateDoc(invoiceRef, paymentData);
+      await updateDoc(resumeRef, paymentData);
+
+      return {
+        success: true,
+        message: paymentDetails.typePaiement === "acompte"
+          ? "Acompte enregistré avec succès !"
+          : "Paiement enregistré avec succès !"
+      };
     } catch (error) {
       console.error("Erreur lors du marquage comme payé :", error);
       return { success: false, message: "Erreur lors de la mise à jour du statut." };
     }
   },
-
   markAsPending: async (companyId, invoiceId) => {
     if (!window.confirm("Êtes-vous sûr de vouloir annuler le paiement de cette facture ?")) {
       return;
@@ -268,8 +275,19 @@ export const invoiceService = {
       const invoiceRef = doc(db, `companies/${companyId}/factures/${invoiceId}`);
       const resumeRef = doc(db, `companies/${companyId}/factures_resume/${invoiceId}`);
 
-      await updateDoc(invoiceRef, { statut: "en attente" });
-      await updateDoc(resumeRef, { statut: "en attente" });
+      // Données à supprimer
+      const resetData = {
+        statut: "en attente",
+        datePaiement: deleteField(), // Supprime le champ
+        modePaiement: deleteField(),
+        referencePaiement: deleteField(),
+        typePaiement: deleteField(),
+        notePaiement: deleteField()
+      };
+
+      // Mise à jour dans les deux collections
+      await updateDoc(invoiceRef, resetData);
+      await updateDoc(resumeRef, resetData);
 
       return { success: true, message: "Statut de paiement annulé avec succès !" };
     } catch (error) {

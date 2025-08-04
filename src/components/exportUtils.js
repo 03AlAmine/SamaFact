@@ -21,7 +21,7 @@ export const exportToExcel = (data, fileName, dateRange) => {
     'Numéro': item.numero,
     'Client': item.clientNom || 'N/A',
     'Date': item.date,
-    'objet': item.objet,
+    'Objet': item.objet || 'N/A',
     'Montant HT (FCFA)': item.totalHT,
     'TVA (FCFA)': item.totalTVA,
     'Montant TTC (FCFA)': item.totalTTC,
@@ -35,7 +35,6 @@ export const exportToExcel = (data, fileName, dateRange) => {
   saveAs(blob, `${fileName}.xlsx`);
 };
 
-// Fonction pour exporter en PDF
 // Fonction pour exporter en PDF
 export const exportToPDF = (data, fileName, dateRange) => {
   // Filtrer par date si une plage est spécifiée
