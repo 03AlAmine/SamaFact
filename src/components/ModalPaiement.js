@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Form, Input, Select, InputNumber } from "antd";
-
+import { Form as AntdForm, Modal, Button, Input, Select, InputNumber } from "antd";
 const { Option } = Select;
 
 const formatCurrency = (value) => {
@@ -12,7 +11,7 @@ const formatCurrency = (value) => {
 };
 
 const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
-    const [form] = Form.useForm();
+    const [form] = AntdForm.useForm();
     const [isAcompte, setIsAcompte] = useState(false);
     const [totalTTC, setTotalTTC] = useState(0);
 
@@ -24,11 +23,12 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
     }, [invoice]);
 
     useEffect(() => {
-        if (!visible) {
+        if (visible) {
             form.resetFields();
             setIsAcompte(false);
         }
     }, [visible, form]);
+
 
     const handleTypePaiementChange = (value) => {
         setIsAcompte(value === "acompte");
@@ -51,7 +51,7 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
 
     const formItems = [
         React.createElement(
-            Form.Item,
+            AntdForm.Item,
             {
                 key: "modePaiement",
                 name: "modePaiement",
@@ -68,7 +68,7 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
             )
         ),
         React.createElement(
-            Form.Item,
+            AntdForm.Item,
             {
                 key: "reference",
                 name: "reference",
@@ -79,7 +79,7 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
             })
         ),
         React.createElement(
-            Form.Item,
+            AntdForm.Item,
             {
                 key: "typePaiement",
                 name: "typePaiement",
@@ -104,7 +104,7 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
 
         formItems.push(
             React.createElement(
-                Form.Item,
+                AntdForm.Item,
                 {
                     key: "montantPaye",
                     name: "montantPaye",
@@ -135,7 +135,7 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
 
     formItems.push(
         React.createElement(
-            Form.Item,
+            AntdForm.Item,
             {
                 key: "note",
                 name: "note",
@@ -176,13 +176,14 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
             ]
         },
         React.createElement(
-            Form,
+            AntdForm,
             {
                 form: form,
                 layout: "vertical"
             },
             ...formItems
         )
+
     );
 };
 

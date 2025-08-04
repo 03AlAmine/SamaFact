@@ -28,6 +28,7 @@ import empty from '../assets/empty.png';
 import '../css/DocumentSection.css';
 import UserNameLookup from './UserNameLookup';
 
+
 const DocumentSection = ({
     title,
     items,
