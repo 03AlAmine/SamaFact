@@ -21,7 +21,8 @@ import {
     FaCreditCard,
     FaStickyNote,
     FaUserEdit,
-    FaCheckCircle
+    FaCheckCircle,
+    FaPaperPlane
 } from 'react-icons/fa';
 import { Modal, Button } from 'antd';
 import empty from '../assets/empty.png';
@@ -258,16 +259,18 @@ const DocumentSection = ({
                                             <FaCheck />
                                         </button>
                                     )}
-                                    <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
-                                        <FaInfoCircle />
-                                    </button>
+
+
                                 </div>
 
-                                {/*<div className="action-group">
+                                <div className="action-group">
                                     <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
                                         <FaInfoCircle />
                                     </button>
-                                </div>*/}
+                                    <button className="action-btn send" title="Envoyer par email">
+                                        <FaPaperPlane />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -389,6 +392,9 @@ const DocumentSection = ({
                                             <div className="secondary-actions">
                                                 <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
                                                     <FaInfoCircle />
+                                                </button>
+                                                <button className="action-btn send" title="Envoyer par email">
+                                                    <FaPaperPlane />
                                                 </button>
                                             </div>
                                         </div>
