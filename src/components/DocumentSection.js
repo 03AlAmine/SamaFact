@@ -16,13 +16,17 @@ import {
     FaMoneyBillWave,
     FaUser,
     FaCheck,
-    FaTimes
-
+    FaTimes,
+    FaInfoCircle,
+    FaCreditCard,
+    FaStickyNote,
+    FaUserEdit,
+    FaCheckCircle
 } from 'react-icons/fa';
+import { Modal, Button } from 'antd';
 import empty from '../assets/empty.png';
-import '../css/DocumentSection.css'; // Assurez-vous d'avoir un fichier CSS pour le style
+import '../css/DocumentSection.css';
 import UserNameLookup from './UserNameLookup';
-
 
 const DocumentSection = ({
     title,
@@ -36,16 +40,25 @@ const DocumentSection = ({
     onDuplicate,
     onDownload,
     onPreview,
-    onMarkAsPaid, // Nouvelle prop
-    onMarkAsPending // Nouvelle prop
-
+    onMarkAsPaid,
+    onMarkAsPending
 }) => {
     const [sortBy, setSortBy] = useState('numero');
     const [sortOrder, setSortOrder] = useState('desc');
     const [viewMode, setViewMode] = useState('list');
     const [hoveredItem, setHoveredItem] = useState(null);
+    const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
 
-    // Filtre et tri
+    const showInfoModal = (document) => {
+        setSelectedDocument(document);
+        setIsInfoModalVisible(true);
+    };
+
+    const handleInfoModalCancel = () => {
+        setIsInfoModalVisible(false);
+    };
+
     const filteredItems = items
         .filter(item =>
         (item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,7 +67,6 @@ const DocumentSection = ({
         .sort((a, b) => {
             let compareValue;
             if (sortBy === 'numero') {
-                // Utilisez parseInt pour convertir en nombre avant de comparer
                 const numA = parseInt(a.numero.replace(/\D/g, ''));
                 const numB = parseInt(b.numero.replace(/\D/g, ''));
                 compareValue = numA - numB;
@@ -65,9 +77,9 @@ const DocumentSection = ({
             } else if (sortBy === 'totalTTC') {
                 compareValue = a.totalTTC - b.totalTTC;
             }
-
             return sortOrder === 'asc' ? compareValue : -compareValue;
-        })
+        });
+
     const toggleSort = (field) => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -85,7 +97,6 @@ const DocumentSection = ({
             default: return '#4f46e5';
         }
     };
-    
 
     return (
         <div className="document-section-container">
@@ -179,7 +190,6 @@ const DocumentSection = ({
                             onMouseLeave={() => setHoveredItem(null)}
                             onClick={() => onPreview(f)}
                         >
-                            {/* En-tête avec badge de statut */}
                             <div className="card-header" style={{ borderTop: `4px solid ${getTypeColor()}` }}>
                                 <div className="header-status">
                                     <span className={`status-badge ${f.statut === "payé" ? "paid" : "pending"}`}>
@@ -196,7 +206,6 @@ const DocumentSection = ({
                                 </div>
                             </div>
 
-                            {/* Détails de la carte */}
                             <div className="card-details">
                                 <div className="detail-item">
                                     <FaCalendarAlt className="detail-icon" />
@@ -219,7 +228,6 @@ const DocumentSection = ({
                                 </div>
                             </div>
 
-                            {/* Actions */}
                             <div className={`card-actions ${hoveredItem === f.id ? 'visible' : ''}`}>
                                 <div className="action-group">
                                     <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu">
@@ -228,17 +236,17 @@ const DocumentSection = ({
                                     <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger">
                                         <FaDownload />
                                     </button>
-                                    <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier">
-                                        <FaEdit />
+                                    <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer">
+                                        <FaTrash />
                                     </button>
                                 </div>
 
                                 <div className="action-group">
+                                    <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier">
+                                        <FaEdit />
+                                    </button>
                                     <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer">
                                         <FaCopy />
-                                    </button>
-                                    <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer">
-                                        <FaTrash />
                                     </button>
                                     {f.statut === "payé" ? (
                                         <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement">
@@ -249,7 +257,16 @@ const DocumentSection = ({
                                             <FaCheck />
                                         </button>
                                     )}
+                                    <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
+                                        <FaInfoCircle />
+                                    </button>
                                 </div>
+
+                                {/*<div className="action-group">
+                                    <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
+                                        <FaInfoCircle />
+                                    </button>
+                                </div>*/}
                             </div>
                         </div>
                     ))}
@@ -318,14 +335,12 @@ const DocumentSection = ({
                                             : '0'} FCFA
                                     </td>
 
-                                    {/* Colonne Statut */}
                                     <td>
                                         <span className={`status-badge ${f.statut === "payé" ? "paid" : "pending"}`}>
                                             {f.statut === "payé" ? "Payé" : "En attente"}
                                         </span>
                                     </td>
 
-                                    {/* Colonne Actions */}
                                     <td className="actions-cell">
                                         <div className="actions-container">
                                             <div className="main-actions">
@@ -335,6 +350,12 @@ const DocumentSection = ({
                                                 <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger">
                                                     <FaDownload />
                                                 </button>
+                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer">
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+
+                                            <div className="secondary-actions">
                                                 <button className="action-btn edit" onClick={(e) => {
                                                     e.stopPropagation();
                                                     navigate("/bill", {
@@ -350,17 +371,10 @@ const DocumentSection = ({
                                                 }} title="Modifier">
                                                     <FaEdit />
                                                 </button>
-                                            </div>
-
-                                            <div className="secondary-actions">
                                                 <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer">
                                                     <FaCopy />
                                                 </button>
-                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer">
-                                                    <FaTrash />
-                                                </button>
 
-                                                {/* Bouton Statut */}
                                                 {f.statut === "payé" ? (
                                                     <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement">
                                                         <FaTimes />
@@ -371,6 +385,11 @@ const DocumentSection = ({
                                                     </button>
                                                 )}
                                             </div>
+                                            <div className="secondary-actions">
+                                                <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
+                                                    <FaInfoCircle />
+                                                </button>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -379,6 +398,147 @@ const DocumentSection = ({
                     </table>
                 </div>
             )}
+
+            <Modal
+                title={
+                    <div className="modal-title">
+                        <FaFileInvoiceDollar style={{ color: getTypeColor(), marginRight: 10 }} />
+                        <span>Détails de {selectedDocument?.numero}</span>
+                    </div>
+                }
+                open={isInfoModalVisible}
+                onCancel={handleInfoModalCancel}
+                footer={[
+                    <Button
+                        key="back"
+                        onClick={handleInfoModalCancel}
+                        style={{ padding: '8px 20px', height: 'auto' }}
+                    >
+                        Fermer
+                    </Button>
+                ]}
+                width={600}
+                className="document-details-modal-container"
+            >
+                {selectedDocument && (
+                    <div className="document-details-content">
+                        {/* Section Principale */}
+                        <div className="details-main-section">
+                            <div className="details-row">
+                                <div className="detail-item">
+                                    <span className="detail-label">
+                                        <FaCalendarAlt className="detail-icon" />
+                                        Date
+                                    </span>
+                                    <span className="detail-value">{selectedDocument.date}</span>
+                                </div>
+
+                                <div className="detail-item">
+                                    <span className="detail-label">
+                                        <FaUser className="detail-icon" />
+                                        Client
+                                    </span>
+                                    <span className="detail-value">{selectedDocument.clientNom || "Non spécifié"}</span>
+                                </div>
+                            </div>
+
+                            <div className="details-row">
+                                <div className="detail-item">
+                                    <span className="detail-label">
+                                        <FaMoneyBillWave className="detail-icon" />
+                                        Montant Total
+                                    </span>
+                                    <span className="detail-value amount">
+                                        {selectedDocument.totalTTC
+                                            ? Number(selectedDocument.totalTTC.toString().replace(/\s/g, '').replace(',', '.'))
+                                                .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' FCFA'
+                                            : '0,00 FCFA'}
+                                    </span>
+                                </div>
+
+                                <div className="detail-item">
+                                    <span className="detail-label">
+                                        <FaCheckCircle className="detail-icon" />
+                                        Statut
+                                    </span>
+                                    <span className={`detail-value status ${selectedDocument.statut === "payé" ? "paid" : "pending"}`}>
+                                        {selectedDocument.statut === "payé" ? "Payé" : "En attente"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section Paiement */}
+                        <div className="payment-section">
+                            <h4 className="section-subtitle">
+                                <FaCreditCard style={{ marginRight: 8 }} />
+                                Informations de Paiement
+                            </h4>
+
+                            <div className="details-grid">
+                                <div className="detail-item">
+                                    <span className="detail-label">Montant Payé</span>
+                                    <span className="detail-value highlight">
+                                        {selectedDocument.montantPaye !== undefined && selectedDocument.montantPaye !== null
+                                            ? Number(
+                                                selectedDocument.montantPaye.toString()
+                                                    .replace(/\s/g, '')
+                                                    .replace(',', '.')
+                                            ).toLocaleString('fr-FR', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            }) + ' FCFA'
+                                            : '0,00 FCFA'}
+                                    </span>
+                                </div>
+
+                                <div className="detail-item">
+                                    <span className="detail-label">Mode de Paiement</span>
+                                    <span className="detail-value">
+                                        {selectedDocument.modePaiement
+                                            ? selectedDocument.modePaiement.charAt(0).toUpperCase() + selectedDocument.modePaiement.slice(1)
+                                            : 'Non spécifié'}
+                                    </span>
+                                </div>
+
+                                <div className="detail-item">
+                                    <span className="detail-label">Référence</span>
+                                    <span className="detail-value">
+                                        {selectedDocument.referencePaiement || 'Aucune référence'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section Création */}
+                        <div className="creation-section">
+                            <div className="detail-item full-width">
+                                <span className="detail-label">
+                                    <FaUserEdit className="detail-icon" />
+                                    Créé par
+                                </span>
+                                <span className="detail-value">
+                                    <UserNameLookup userId={selectedDocument.userId} />
+                                    <span className="creation-date">le {new Date(selectedDocument.createdAt).toLocaleDateString('fr-FR')}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Notes */}
+                        {selectedDocument.note && (
+                            <div className="notes-section">
+                                <h4 className="section-subtitle">
+                                    <FaStickyNote style={{ marginRight: 8 }} />
+                                    Notes
+                                </h4>
+                                <div className="notes-content">
+                                    {selectedDocument.note}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
