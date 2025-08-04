@@ -209,17 +209,6 @@ const navButtonStyle = {
   }
 };
 
-const legendItemStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  padding: '8px 12px',
-  borderRadius: '8px',
-  transition: 'all 0.2s ease',
-  ':hover': {
-    backgroundColor: '#f8fafc',
-    transform: 'translateX(2px)'
-  }
-};
 
 export const ClientChart = ({ clients }) => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -259,7 +248,7 @@ export const ClientChart = ({ clients }) => {
   };
 
   const options = {
-    plugins: { 
+    plugins: {
       legend: { display: false },
       tooltip: {
         backgroundColor: 'rgba(15, 23, 42, 0.9)',
@@ -271,8 +260,8 @@ export const ClientChart = ({ clients }) => {
       }
     },
     cutout: '75%',
-    layout: { 
-      padding: 20 
+    layout: {
+      padding: 20
     },
     animation: {
       animateScale: true,
@@ -304,16 +293,20 @@ export const ClientChart = ({ clients }) => {
   return (
     <div style={{
       display: 'flex',
-      gap: '2rem',
+      gap: '1rem',
       alignItems: 'center',
-      maxWidth: '800px',
-      margin: '0 auto'
+      flexWrap: 'wrap', // ✅ pour responsivité
+      maxWidth: '100%',
+      margin: '0 auto',
+      padding: '0,5rem',
+      boxSizing: 'border-box'
     }}>
       {/* Graphique */}
-      <div style={{ 
-        height: '250px', 
+      <div style={{
+        height: '250px',
         width: '250px',
-        position: 'relative'
+        position: 'relative',
+        flexShrink: 0
       }}>
         <Doughnut data={data} options={options} />
         <div style={{
@@ -345,24 +338,35 @@ export const ClientChart = ({ clients }) => {
         onMouseLeave={resumeAutoSlide}
         style={{
           flex: 1,
-          minWidth: '240px',
+          minWidth: '260px',
           padding: '1rem',
           borderRadius: '12px',
           background: '#f8fafc',
           border: '1px solid #e2e8f0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          maxWidth: '100%',
+          boxSizing: 'border-box'
         }}
       >
 
-
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
           gap: '1px',
-          minHeight: '160px'
+          minHeight: '160px',
+          maxWidth: '100%',
+          overflow: 'hidden'
         }}>
           {visibleLegends.map((label, i) => (
-            <div key={label} style={legendItemStyle}>
+            <div key={label} style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+              overflow: 'hidden',
+              maxWidth: '100%'
+            }}>
               <div
                 style={{
                   width: 14,
@@ -378,7 +382,10 @@ export const ClientChart = ({ clients }) => {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 color: '#334155',
-                fontWeight: '500'
+                fontWeight: '500',
+                maxWidth: '80%',
+                flexGrow: 1,
+                display: 'inline-block'
               }}>
                 {label}
               </span>
@@ -386,7 +393,9 @@ export const ClientChart = ({ clients }) => {
                 marginLeft: 'auto',
                 color: '#64748b',
                 fontSize: '13px',
-                fontWeight: '600'
+                fontWeight: '600',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}>
                 {values[start + i]}
               </span>
@@ -394,12 +403,12 @@ export const ClientChart = ({ clients }) => {
           ))}
         </div>
 
-        {/* Navigation et indicateur de page */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        {/* Navigation & pagination */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '1rem'
+          marginTop: '0.5rem'
         }}>
           <button
             onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
@@ -412,13 +421,13 @@ export const ClientChart = ({ clients }) => {
           >
             ◀
           </button>
-          
+
           <div style={{
             display: 'flex',
             gap: '6px'
           }}>
             {Array.from({ length: totalPages }).map((_, idx) => (
-              <div 
+              <div
                 key={idx}
                 style={{
                   width: '8px',
@@ -430,7 +439,7 @@ export const ClientChart = ({ clients }) => {
               />
             ))}
           </div>
-          
+
           <button
             onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages - 1))}
             disabled={currentPage === totalPages - 1}
@@ -446,6 +455,7 @@ export const ClientChart = ({ clients }) => {
       </div>
     </div>
   );
+
 };
 
 
