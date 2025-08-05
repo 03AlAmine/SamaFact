@@ -428,121 +428,172 @@ const DocumentSection = ({
                 className="document-details-modal-container"
             >
                 {selectedDocument && (
-                    <div className="document-details-content">
-                        {/* Section Principale */}
-                        <div className="details-main-section">
-                            <div className="details-row">
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaCalendarAlt className="detail-icon" />
-                                        Date
-                                    </span>
-                                    <span className="detail-value">{selectedDocument.date}</span>
+                    <div className="document-details-content-container">
+                        {/* Barre de progression verticale */}
+                        <div className="document-details-content">
+
+                            {/* Section Principale */}
+                            <div className="details-main-section">
+                                <div className="details-row">
+                                    <div className="detail-item">
+                                        <span className="detail-label">
+                                            <FaCalendarAlt className="detail-icon" />
+                                            Date
+                                        </span>
+                                        <span className="detail-value">{selectedDocument.date}</span>
+                                    </div>
+
+                                    <div className="detail-item">
+                                        <span className="detail-label">
+                                            <FaUser className="detail-icon" />
+                                            Client
+                                        </span>
+                                        <span className="detail-value">{selectedDocument.clientNom || "Non spécifié"}</span>
+                                    </div>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaUser className="detail-icon" />
-                                        Client
-                                    </span>
-                                    <span className="detail-value">{selectedDocument.clientNom || "Non spécifié"}</span>
-                                </div>
-                            </div>
+                                <div className="details-row">
+                                    <div className="detail-item">
+                                        <span className="detail-label">
+                                            <FaMoneyBillWave className="detail-icon" />
+                                            Montant Total
+                                        </span>
+                                        <span className="detail-value amount">
+                                            {selectedDocument.totalTTC
+                                                ? Number(selectedDocument.totalTTC.toString().replace(/\s/g, '').replace(',', '.'))
+                                                    .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' FCFA'
+                                                : '0,00 FCFA'}
+                                        </span>
+                                    </div>
 
-                            <div className="details-row">
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaMoneyBillWave className="detail-icon" />
-                                        Montant Total
-                                    </span>
-                                    <span className="detail-value amount">
-                                        {selectedDocument.totalTTC
-                                            ? Number(selectedDocument.totalTTC.toString().replace(/\s/g, '').replace(',', '.'))
-                                                .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' FCFA'
-                                            : '0,00 FCFA'}
-                                    </span>
-                                </div>
-
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaCheckCircle className="detail-icon" />
-                                        Statut
-                                    </span>
-                                    <span className={`detail-value status ${selectedDocument.statut === "payé" ? "paid" : "pending"}`}>
-                                        {selectedDocument.statut === "payé" ? "Payé" : "En attente"}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section Paiement */}
-                        <div className="payment-section">
-                            <h4 className="section-subtitle">
-                                <FaCreditCard style={{ marginRight: 8 }} />
-                                Informations de Paiement
-                            </h4>
-
-                            <div className="details-grid">
-                                <div className="detail-item">
-                                    <span className="detail-label">Montant Payé</span>
-                                    <span className="detail-value highlight">
-                                        {selectedDocument.montantPaye !== undefined && selectedDocument.montantPaye !== null
-                                            ? Number(
-                                                selectedDocument.montantPaye.toString()
-                                                    .replace(/\s/g, '')
-                                                    .replace(',', '.')
-                                            ).toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) + ' FCFA'
-                                            : '0,00 FCFA'}
-                                    </span>
-                                </div>
-
-                                <div className="detail-item">
-                                    <span className="detail-label">Mode de Paiement</span>
-                                    <span className="detail-value">
-                                        {selectedDocument.modePaiement
-                                            ? selectedDocument.modePaiement.charAt(0).toUpperCase() + selectedDocument.modePaiement.slice(1)
-                                            : 'Non spécifié'}
-                                    </span>
-                                </div>
-
-                                <div className="detail-item">
-                                    <span className="detail-label">Référence</span>
-                                    <span className="detail-value">
-                                        {selectedDocument.referencePaiement || 'Aucune référence'}
-                                    </span>
+                                    <div className="detail-item">
+                                        <span className="detail-label">
+                                            <FaCheckCircle className="detail-icon" />
+                                            Statut
+                                        </span>
+                                        <span className={`detail-value status ${selectedDocument.statut === "payé" ? "paid" : "pending"}`}>
+                                            {selectedDocument.statut === "payé" ? "Payé" : "En attente"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Section Création */}
-                        <div className="creation-section">
-                            <div className="detail-item full-width">
-                                <span className="detail-label">
-                                    <FaUserEdit className="detail-icon" />
-                                    Créé par
-                                </span>
-                                <span className="detail-value">
-                                    <UserNameLookup userId={selectedDocument.userId} />
-                                    <span className="creation-date">le {new Date(selectedDocument.createdAt).toLocaleDateString('fr-FR')}</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Notes */}
-                        {selectedDocument.note && (
-                            <div className="notes-section">
+                            {/* Section Paiement */}
+                            <div className="payment-section">
                                 <h4 className="section-subtitle">
-                                    <FaStickyNote style={{ marginRight: 8 }} />
-                                    Notes
+                                    <FaCreditCard style={{ marginRight: 8 }} />
+                                    Informations de Paiement
                                 </h4>
-                                <div className="notes-content">
-                                    {selectedDocument.note}
+
+                                <div className="details-grid">
+                                    <div className="detail-item">
+                                        <span className="detail-label">Montant Payé</span>
+                                        <span className="detail-value highlight">
+                                            {selectedDocument.montantPaye !== undefined && selectedDocument.montantPaye !== null
+                                                ? Number(
+                                                    selectedDocument.montantPaye.toString()
+                                                        .replace(/\s/g, '')
+                                                        .replace(',', '.')
+                                                ).toLocaleString('fr-FR', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2
+                                                }) + ' FCFA'
+                                                : '0,00 FCFA'}
+                                        </span>
+                                    </div>
+
+                                    <div className="detail-item">
+                                        <span className="detail-label">Mode de Paiement</span>
+                                        <span className="detail-value">
+                                            {selectedDocument.modePaiement
+                                                ? selectedDocument.modePaiement.charAt(0).toUpperCase() + selectedDocument.modePaiement.slice(1)
+                                                : 'Non spécifié'}
+                                        </span>
+                                    </div>
+
+                                    <div className="detail-item">
+                                        <span className="detail-label">Référence</span>
+                                        <span className="detail-value">
+                                            {selectedDocument.referencePaiement || 'Aucune référence'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        )}
+
+                            {/* Section Création */}
+                            <div className="creation-section">
+                                <div className="detail-item full-width">
+                                    <span className="detail-label">
+                                        <FaUserEdit className="detail-icon" />
+                                        Créé par
+                                    </span>
+                                    <span className="detail-value">
+                                        <UserNameLookup userId={selectedDocument.userId} />
+                                        <span className="creation-date">le {new Date(selectedDocument.createdAt).toLocaleDateString('fr-FR')}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            {selectedDocument.note && (
+                                <div className="notes-section">
+                                    <h4 className="section-subtitle">
+                                        <FaStickyNote style={{ marginRight: 8 }} />
+                                        Notes
+                                    </h4>
+                                    <div className="notes-content">
+                                        {selectedDocument.note}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="status-progress-bar">
+                            <div className="progress-steps-container">
+                                <div className={`progress-step ${selectedDocument.statut ? 'completed' : ''}`}>
+                                    <div className="step-circle">
+                                        {selectedDocument.statut && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">Créé</div>
+                                    <div className="step-connector"></div>
+                                </div>
+
+                                <div className={`progress-step ${['en attente', 'accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase())
+                                    ? selectedDocument.statut?.toLowerCase() === 'en attente'
+                                        ? 'pending'
+                                        : selectedDocument.statut?.toLowerCase() === 'accompte'
+                                            ? 'partial'
+                                            : 'completed'
+                                    : ''
+                                    }`}>
+                                    <div className="step-circle">
+                                        {['en attente', 'accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase()) && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">En Attente</div>
+                                    <div className="step-connector"></div>
+                                </div>
+
+                                <div className={`progress-step ${['accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase())
+                                    ? selectedDocument.statut?.toLowerCase() === 'accompte'
+                                        ? 'partial'
+                                        : 'completed'
+                                    : ''
+                                    }`}>
+                                    <div className="step-circle">
+                                        {['accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase()) && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">Accompte</div>
+                                    <div className="step-connector"></div>
+                                </div>
+
+                                <div className={`progress-step ${selectedDocument.statut?.toLowerCase() === 'payé' ? 'completed' : ''
+                                    }`}>
+                                    <div className="step-circle">
+                                        {selectedDocument.statut?.toLowerCase() === 'payé' && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">Payé</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </Modal>

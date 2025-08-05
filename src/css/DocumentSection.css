@@ -322,7 +322,7 @@
   color: #ff9e88;
 }
 .action-btn.edit:hover {
-  color: #3b82f6 ;
+  color: #3b82f6;
 }
 .action-btn.duplicate:hover {
   color: #ffc107;
@@ -441,7 +441,6 @@
   background-color: var(--hover-bg);
   border-left: 3px solid #ffc107;
   border-radius: 38px 0 0 38px;
-
 }
 
 .cell-content {
@@ -559,6 +558,10 @@
   background-color: #fee2e2;
   color: #b91c1c;
 }
+.status-badge.partial {
+  background-color: #fef3c7;
+  color: #92400e;
+}
 
 /* Groupes d'actions */
 .card-actions {
@@ -572,9 +575,6 @@
   gap: 4px;
 }
 
-
-
-/* Styles pour le modal de détails */
 .document-details-modal-container .ant-modal-content {
   border-radius: 12px;
   overflow: hidden;
@@ -588,12 +588,133 @@
   color: #333;
 }
 
+.document-details-content-container {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+}
+
 .document-details-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
+.status-progress-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  height: 100%;
+  position: relative;
+}
+
+.progress-steps-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 40px);
+  justify-content: space-between;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-height: 60px;
+}
+
+.step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #d9d9d9;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+
+/* Modifier les styles existants et ajouter ces nouvelles classes */
+.progress-step.pending .step-circle {
+  border-color: #ef4444;
+  background-color: #ef4444;
+}
+
+.progress-step.partial .step-circle {
+  border-color: #f59e0b;
+  background-color: #f59e0b;
+}
+
+.progress-step.completed .step-circle {
+  border-color: #10b981;
+  background-color: #10b981;
+}
+
+.progress-step.pending .step-connector {
+  background-color: #fca5a5;
+}
+
+.progress-step.partial .step-connector {
+  background-color: #fcd34d;
+}
+
+.progress-step.completed .step-connector {
+  background-color: #6ee7b7;
+}
+
+.progress-step.pending .step-label {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.progress-step.partial .step-label {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.progress-step.completed .step-label {
+  color: #10b981;
+  font-weight: 500;
+}
+.check-icon {
+  color: white;
+  font-size: 14px;
+}
+
+.step-label {
+  margin-left: 15px;
+  color: #666;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.progress-step.completed .step-label {
+  color: #333;
+  font-weight: 500;
+}
+
+.step-connector {
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  height: calc(100% - 28px);
+  width: 2px;
+  background-color: #d9d9d9;
+}
+
+.progress-step:last-child .step-connector {
+  display: none;
+}
+
+.progress-step.completed .step-connector {
+  background-color: #52c41a;
+}
+
+/* Reste du CSS existant amélioré */
 .details-main-section {
   background: #f9fafb;
   padding: 20px;
@@ -720,11 +841,45 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .document-details-content-container {
+    flex-direction: column;
+  }
+
+  .status-progress-bar {
+    flex-direction: row;
+    height: auto;
+    width: 100%;
+    padding: 10px 0;
+    justify-content: space-between;
+  }
+
+  .progress-step {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .step-connector {
+    position: absolute;
+    left: 50%;
+    top: 14px;
+    height: 2px;
+    width: calc(100% - 28px);
+  }
+
+  .step-label {
+    margin-left: 0;
+    margin-top: 8px;
+    font-size: 12px;
+    white-space: normal;
+    text-align: center;
+    max-width: 80px;
+  }
+
   .details-row {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .details-grid {
     grid-template-columns: 1fr;
   }

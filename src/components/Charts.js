@@ -228,11 +228,23 @@ export const ClientChart = ({ clients }) => {
 
   // Palette de couleurs modernes
   const backgroundColors = [
+    // Couleurs existantes
     '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#ef4444',
     '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
     '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
-    '#64748b', '#94a3b8', '#cbd5e1'
+    '#64748b', '#94a3b8', '#cbd5e1',
+
+    // Couleurs ajoutées
+    '#a855f7', '#9333ea', '#7c3aed', '#6d28d9', // violet
+    '#d946ef', '#c026d3', '#a21caf', '#86198f', // rose/violet
+    '#facc15', '#fde68a', '#fef08a', '#fcd34d', // jaune
+    '#4ade80', '#34d399', '#2dd4bf', '#5eead4', // vert-menthe
+    '#0d9488', '#0891b2', '#0284c7', '#2563eb', // bleu
+    '#1d4ed8', '#1e40af', '#1e3a8a', '#172554', // bleu foncé
+    '#f43f5e', '#fb7185', '#fca5a5', '#fecaca', // rouge/rose
+    '#e2e8f0', '#f1f5f9', '#f8fafc', '#e5e7eb'  // gris/pastel
   ];
+
 
   const data = {
     labels,
