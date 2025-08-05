@@ -474,9 +474,9 @@ export const ClientChart = ({ clients }) => {
 // 💳 Statut des factures (Pie)
 export const StatusChart = ({ invoices }) => {
   const statusCounts = {
-    'payée': 0,
+    'payé': 0,
     'en attente': 0,
-    'impayée': 0,
+    'acompte': 0,
   };
 
   invoices.forEach(invoice => {
