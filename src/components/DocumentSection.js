@@ -43,7 +43,8 @@ const DocumentSection = ({
     onDownload,
     onPreview,
     onMarkAsPaid,
-    onMarkAsPending
+    onMarkAsPending,
+    getStatus
 }) => {
     const [sortBy, setSortBy] = useState('numero');
     const [sortOrder, setSortOrder] = useState('desc');
@@ -187,15 +188,20 @@ const DocumentSection = ({
                     {filteredItems.map((f) => (
                         <div
                             key={f.id}
-                            className={`document-card ${f.statut === "payé" ? "paid-card" : ""}`}
+                            className={`document-card ${getStatus(f) === "Payé" ? "paid-card" :
+                                getStatus(f) === "Accompte" ? "partial-card" :
+                                    ""
+                                }`}
                             onMouseEnter={() => setHoveredItem(f.id)}
                             onMouseLeave={() => setHoveredItem(null)}
                             onClick={() => onPreview(f)}
                         >
                             <div className="card-header" style={{ borderTop: `4px solid ${getTypeColor()}` }}>
                                 <div className="header-status">
-                                    <span className={`status-badge ${f.statut === "payé" ? "paid" : "pending"}`}>
-                                        {f.statut === "payé" ? "Payé" : "En attente"}
+                                    <span className={`status-badge ${getStatus(f) === "Payé" ? "paid" :
+                                        getStatus(f) === "Accompte" ? "partial" : "pending"
+                                        }`}>
+                                        {getStatus(f)}
                                     </span>
                                 </div>
 
@@ -280,120 +286,184 @@ const DocumentSection = ({
                     <table className="documents-table">
                         <thead>
                             <tr>
-                                <th
-                                    onClick={() => toggleSort('numero')}
-                                    className={sortBy === 'numero' ? 'active' : ''}
-                                >
-                                    <div className="th-content">
-                                        Numéro
-                                        {sortBy === 'numero' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                <th
-                                    onClick={() => toggleSort('clientNom')}
-                                    className={sortBy === 'clientNom' ? 'active' : ''}
-                                >
-                                    <div className="th-content">
-                                        Client
-                                        {sortBy === 'clientNom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                <th
-                                    onClick={() => toggleSort('date')}
-                                    className={sortBy === 'date' ? 'active' : ''}
-                                >
-                                    <div className="th-content">
-                                        Date
-                                        {sortBy === 'date' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-
-                                <th
-                                    onClick={() => toggleSort('totalTTC')}
-                                    className={sortBy === 'totalTTC' ? 'active' : ''}
-                                >
-                                    <div className="th-content">
-                                        Montant
-                                        {sortBy === 'totalTTC' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
+                                {['numero', 'clientNom', 'date', 'totalTTC'].map((field) => (
+                                    <th
+                                        key={field}
+                                        onClick={() => toggleSort(field)}
+                                        className={sortBy === field ? 'active' : ''}
+                                    >
+                                        <div className="th-content">
+                                            {{
+                                                numero: 'Numéro',
+                                                clientNom: 'Client',
+                                                date: 'Date',
+                                                totalTTC: 'Montant'
+                                            }[field]}
+                                            {sortBy === field && (
+                                                <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                                            )}
+                                        </div>
+                                    </th>
+                                ))}
                                 <th>Statut</th>
-
                                 <th>Actions</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             {filteredItems.map((f) => (
-                                <tr key={f.id} onClick={() => onPreview(f)} className={f.statut === "payé" ? "paid-row" : ""}>
+                                <tr
+                                    key={f.id}
+                                    onClick={() => onPreview(f)}
+                                    className={
+                                        getStatus(f) === 'Payé' ? 'paid-row' :
+                                            getStatus(f) === 'Accompte' ? 'partial-row' :
+                                                ''
+                                    }
+                                >
                                     <td>
                                         <div className="cell-content">
-                                            <FaFileInvoiceDollar className="cell-icon" style={{ color: getTypeColor() }} />
+                                            <FaFileInvoiceDollar
+                                                className="cell-icon"
+                                                style={{ color: getTypeColor() }}
+                                            />
                                             {f.numero}
                                         </div>
                                     </td>
-                                    <td>{f.clientNom || "Sans client"}</td>
+
+                                    <td>{f.clientNom || 'Sans client'}</td>
                                     <td>{f.date}</td>
+
                                     <td className="amount-cell">
                                         {f.totalTTC
-                                            ? Number(f.totalTTC.replace(/\s/g, '').replace(',', '.')).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                                            ? Number(f.totalTTC.replace(/\s/g, '').replace(',', '.')).toLocaleString('fr-FR', {
+                                                minimumFractionDigits: 0,
+                                                maximumFractionDigits: 0
+                                            })
                                             : '0'} FCFA
                                     </td>
 
                                     <td>
-                                        <span className={`status-badge ${f.statut === "payé" ? "paid" : "pending"}`}>
-                                            {f.statut === "payé" ? "Payé" : "En attente"}
+                                        <span className={`status-badge ${getStatus(f) === 'Payé' ? 'paid' :
+                                            getStatus(f) === 'Accompte' ? 'partial' : 'pending'
+                                            }`}>
+                                            {getStatus(f)}
                                         </span>
                                     </td>
 
                                     <td className="actions-cell">
                                         <div className="actions-container">
+                                            {/* Actions principales */}
                                             <div className="main-actions">
-                                                <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu">
+                                                <button
+                                                    className="action-btn view"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onPreview(f);
+                                                    }}
+                                                    title="Aperçu"
+                                                >
                                                     <FaEye />
                                                 </button>
-                                                <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger">
+
+                                                <button
+                                                    className="action-btn download"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDownload(f);
+                                                    }}
+                                                    title="Télécharger"
+                                                >
                                                     <FaDownload />
                                                 </button>
-                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer">
+
+                                                <button
+                                                    className="action-btn delete"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDelete(f.id, type);
+                                                    }}
+                                                    title="Supprimer"
+                                                >
                                                     <FaTrash />
                                                 </button>
                                             </div>
 
+                                            {/* Actions secondaires */}
                                             <div className="secondary-actions">
-                                                <button className="action-btn edit" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate("/bill", {
-                                                        state: {
-                                                            facture: f,
-                                                            client: selectedClient,
-                                                            type: f.type,
-                                                            objet: f.objet,
-                                                            ribs: f.ribs,
-                                                            showSignature: f.showSignature
-                                                        }
-                                                    });
-                                                }} title="Modifier">
+                                                <button
+                                                    className="action-btn edit"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate("/bill", {
+                                                            state: {
+                                                                facture: f,
+                                                                client: selectedClient,
+                                                                type: f.type,
+                                                                objet: f.objet,
+                                                                ribs: f.ribs,
+                                                                showSignature: f.showSignature
+                                                            }
+                                                        });
+                                                    }}
+                                                    title="Modifier"
+                                                >
                                                     <FaEdit />
                                                 </button>
-                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer">
+
+                                                <button
+                                                    className="action-btn duplicate"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDuplicate(f);
+                                                    }}
+                                                    title="Dupliquer"
+                                                >
                                                     <FaCopy />
                                                 </button>
 
-                                                {f.statut === "payé" ? (
-                                                    <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement">
+                                                {f.statut === 'payé' ? (
+                                                    <button
+                                                        className="action-btn unpaid"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onMarkAsPending(f.id, type);
+                                                        }}
+                                                        title="Annuler le paiement"
+                                                    >
                                                         <FaTimes />
                                                     </button>
                                                 ) : (
-                                                    <button className="action-btn paid" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(f.id, type); }} title="Marquer comme payé">
+                                                    <button
+                                                        className="action-btn paid"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onMarkAsPaid(f.id, type);
+                                                        }}
+                                                        title="Marquer comme payé"
+                                                    >
                                                         <FaCheck />
                                                     </button>
                                                 )}
                                             </div>
+
+                                            {/* Autres actions */}
                                             <div className="secondary-actions">
-                                                <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
+                                                <button
+                                                    className="action-btn info"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showInfoModal(f);
+                                                    }}
+                                                    title="Détails"
+                                                >
                                                     <FaInfoCircle />
                                                 </button>
-                                                <button className="action-btn send" title="Envoyer par email">
+
+                                                <button
+                                                    className="action-btn send"
+                                                    title="Envoyer par email"
+                                                >
                                                     <FaPaperPlane />
                                                 </button>
                                             </div>
@@ -404,6 +474,7 @@ const DocumentSection = ({
                         </tbody>
                     </table>
                 </div>
+
             )}
 
             <Modal
@@ -472,7 +543,7 @@ const DocumentSection = ({
                                             Statut
                                         </span>
                                         <span className={`detail-value status ${selectedDocument.statut === "payé" ? "paid" : "pending"}`}>
-                                            {selectedDocument.statut === "payé" ? "Payé" : "En attente"}
+                                            {getStatus(selectedDocument)}
                                         </span>
                                     </div>
                                 </div>

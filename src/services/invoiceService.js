@@ -238,39 +238,77 @@ export const invoiceService = {
       const invoiceRef = doc(db, `companies/${companyId}/factures/${invoiceId}`);
       const resumeRef = doc(db, `companies/${companyId}/factures_resume/${invoiceId}`);
 
-      const paymentData = {
-        statut: "payé",
-        datePaiement: new Date().toISOString(),
-        modePaiement: paymentDetails.modePaiement,
-        typePaiement: paymentDetails.typePaiement,
-        notePaiement: paymentDetails.note || "",
-        ...(paymentDetails.reference ? { referencePaiement: paymentDetails.reference } : {}),
-        ...(paymentDetails.typePaiement === "acompte" && {
-          montantPaye: paymentDetails.montantPaye,
-          resteAPayer: paymentDetails.totalTTC - paymentDetails.montantPaye
-        })
+      // Récupérer le document actuel
+      const invoiceSnap = await getDoc(invoiceRef);
+      const currentData = invoiceSnap.data();
+
+      // Fonction pour convertir proprement les montants
+      const parseAmount = (value) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          // Gérer les espaces comme séparateurs de milliers et virgule comme décimale
+          return parseFloat(value.replace(/\s/g, '').replace(',', '.'));
+        }
+        return 0;
       };
 
+      // Convertir les montants avec précision
+      const totalTTC = parseAmount(paymentDetails.totalTTC);
+      const currentPaid = parseAmount(currentData.montantPaye);
+      const newPayment = parseAmount(paymentDetails.montantPaye);
+      const totalPaid = currentPaid + newPayment;
 
+      // Comparaison avec une tolérance pour les arrondis (1 FCFA)
+      const isFullPayment = paymentDetails.isFullPayment ||
+        Math.abs(totalPaid - totalTTC) < 1 ||
+        totalPaid >= totalTTC;
+
+      // Arrondir à 2 décimales pour éviter les problèmes de floating point
+      const roundedTotalPaid = Math.round(totalPaid * 100) / 100;
+      const roundedTotalTTC = Math.round(totalTTC * 100) / 100;
+
+      // Préparer les données de mise à jour
+      const paymentData = {
+        datePaiement: new Date().toISOString(),
+        modePaiement: paymentDetails.modePaiement,
+        referencePaiement: paymentDetails.reference || "",
+        notePaiement: paymentDetails.note || "",
+        montantPaye: roundedTotalPaid,
+        statut: isFullPayment ? "payé" : "accompte",
+        typePaiement: isFullPayment ? "complet" : "acompte"
+      };
+
+      // Gestion du reste à payer avec tolérance d'arrondi
+      if (isFullPayment) {
+        paymentData.resteAPayer = deleteField();
+        // Si écart d'arrondi, ajuster pour égaliser
+        if (Math.abs(roundedTotalPaid - roundedTotalTTC) < 1) {
+          paymentData.montantPaye = roundedTotalTTC;
+        }
+      } else {
+        paymentData.resteAPayer = roundedTotalTTC - roundedTotalPaid;
+      }
+
+      // Mettre à jour les documents
       await updateDoc(invoiceRef, paymentData);
       await updateDoc(resumeRef, paymentData);
 
       return {
         success: true,
-        message: paymentDetails.typePaiement === "acompte"
-          ? "Acompte enregistré avec succès !"
-          : "Paiement enregistré avec succès !"
+        newStatus: paymentData.statut,
+        message: isFullPayment
+          ? "Facture marquée comme payée avec succès"
+          : "Acompte enregistré avec succès"
       };
     } catch (error) {
-      console.error("Erreur lors du marquage comme payé :", error);
-      return { success: false, message: "Erreur lors de la mise à jour du statut." };
+      console.error("Erreur:", error);
+      return {
+        success: false,
+        message: "Erreur technique lors de l'enregistrement"
+      };
     }
   },
   markAsPending: async (companyId, invoiceId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir annuler le paiement de cette facture ?")) {
-      return;
-    }
-
     try {
       const invoiceRef = doc(db, `companies/${companyId}/factures/${invoiceId}`);
       const resumeRef = doc(db, `companies/${companyId}/factures_resume/${invoiceId}`);
@@ -278,21 +316,29 @@ export const invoiceService = {
       // Données à supprimer
       const resetData = {
         statut: "en attente",
-        datePaiement: deleteField(), // Supprime le champ
+        datePaiement: deleteField(),
         modePaiement: deleteField(),
         referencePaiement: deleteField(),
         typePaiement: deleteField(),
-        notePaiement: deleteField()
+        notePaiement: deleteField(),
+        montantPaye: deleteField(),
+        resteAPayer: deleteField()
       };
 
       // Mise à jour dans les deux collections
       await updateDoc(invoiceRef, resetData);
       await updateDoc(resumeRef, resetData);
 
-      return { success: true, message: "Statut de paiement annulé avec succès !" };
+      return {
+        success: true,
+        message: "Statut remis en attente avec succès"
+      };
     } catch (error) {
       console.error("Erreur lors de l'annulation du paiement :", error);
-      return { success: false, message: "Erreur lors de l'annulation du statut." };
+      return {
+        success: false,
+        message: "Erreur lors de l'annulation du statut"
+      };
     }
   }
 

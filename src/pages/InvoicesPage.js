@@ -1,49 +1,70 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DocumentSection from "../components/DocumentSection";
 import { exportToExcel, exportToPDF } from "../components/exportUtils";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import ModernDateRangePicker from "../components/ModernDateRangePicker";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
-import { useAuth } from "../auth/AuthContext"; // ou ton propre contexte auth
+import { useAuth } from "../auth/AuthContext";
 import { downloadPdf, previewPdf } from '../services/pdfService';
 import { invoiceService } from '../services/invoiceService';
-// Ajoutez ces imports en haut du fichier
 import ModalPaiement from "../components/ModalPaiement";
-import { message } from "antd";
-
-// Ajoutez ces états au début de votre composant InvoicesPage
+import { message, Modal } from "antd";
 
 const InvoicesPage = ({
-    activeTab_0,
-    setActiveTab_0,
     searchTerm,
     setSearchTerm,
     navigate,
-    handleDeleteFacture,
     selectedClient,
     companyId,
 }) => {
-    const { currentUser } = useAuth(); // récupération de l'utilisateur connecté
-
-    const [factures, setFactures] = useState([]);
-    const [devis, setDevis] = useState([]);
-    const [avoirs, setAvoirs] = useState([]);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [currentInvoice, setCurrentInvoice] = useState(null);
-    const [paymentLoading, setPaymentLoading] = useState(false);
-    const [dateRange, setDateRange] = useState({
-        from: null,
-        to: null
-    });
-    const [filteredItems, setFilteredItems] = useState({
+    const { currentUser } = useAuth();
+    const [documents, setDocuments] = useState({
         factures: [],
         devis: [],
         avoirs: []
     });
+    const [modalVisible, setModalVisible] = useState(false);
+    const [currentDocument, setCurrentDocument] = useState(null);
+    const [paymentLoading, setPaymentLoading] = useState(false);
+    const [dateRange, setDateRange] = useState({ from: null, to: null });
+    const [activeTab, setActiveTab] = useState("factures");
+    const currentTab = activeTab || "factures";
 
-    // Fonction pour filtrer les éléments en fonction de la plage de dates
-    const filterItemsByDate = React.useCallback((items) => {
+    // Fonction pour obtenir le statut d'un document
+    const getStatus = (document) => {
+        // Convertir les montants en nombres pour comparaison
+        const totalTTC = typeof document.totalTTC === 'string'
+            ? parseFloat(document.totalTTC.replace(/\s/g, '').replace(',', '.'))
+            : document.totalTTC || 0;
+
+        const montantPaye = typeof document.montantPaye === 'string'
+            ? parseFloat(document.montantPaye.replace(/\s/g, '').replace(',', '.'))
+            : document.montantPaye || 0;
+
+        // Définition d'une marge d'erreur pour les comparaisons (0.01 pour les centimes)
+        const EPSILON = 0.01;
+
+        // 1. Si pas de paiement ou montant payé = 0 → "En attente"
+        if (montantPaye < EPSILON) {
+            return "En attente";
+        }
+        // 2. Si montant payé est (presque) égal au total → "Payé"
+        else if (Math.abs(montantPaye - totalTTC) < EPSILON) {
+            return "Payé";
+        }
+        // 3. Si montant payé > 0 mais < total → "Accompte"
+        else if (montantPaye < totalTTC) {
+            return "Accompte";
+        }
+        // Cas par défaut (normalement ne devrait pas arriver)
+        return document.statut ?
+            document.statut.charAt(0).toUpperCase() + document.statut.slice(1)
+            : "En attente";
+    };
+
+    // Fonction pour filtrer par date
+    const filterByDate = useCallback((items) => {
         if (!dateRange.from && !dateRange.to) return items;
 
         return items.filter(item => {
@@ -58,353 +79,276 @@ const InvoicesPage = ({
         });
     }, [dateRange]);
 
+    // Chargement des documents depuis Firestore
     useEffect(() => {
         if (!currentUser || !companyId) return;
 
-        const facturesRef = collection(db, `companies/${companyId}/factures`);
+        const documentsRef = collection(db, `companies/${companyId}/factures`);
 
-        // Pour chaque type, construire la requête en fonction du rôle
         const buildQuery = (type) => {
-            if (currentUser.role === 'admin') {
-                // Admin : pas de filtre sur userId, mais filtrage sur le type uniquement
-                return query(facturesRef, where("type", "==", type));
-            } else {
-                // Autres utilisateurs : filtrer sur userId et type
-                return query(
-                    facturesRef,
-                    where("userId", "==", currentUser.uid),
-                    where("type", "==", type)
-                );
+            const conditions = [where("type", "==", type)];
+            if (currentUser.role !== 'admin') {
+                conditions.push(where("userId", "==", currentUser.uid));
             }
+            return query(documentsRef, ...conditions);
         };
 
-        const qFactures = buildQuery("facture");
-        const qDevis = buildQuery("devis");
-        const qAvoirs = buildQuery("avoir");
-
-        const unsubFactures = onSnapshot(qFactures, (snapshot) => {
-            setFactures(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        });
-        const unsubDevis = onSnapshot(qDevis, (snapshot) => {
-            setDevis(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        });
-        const unsubAvoirs = onSnapshot(qAvoirs, (snapshot) => {
-            setAvoirs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        });
+        const unsubscribe = {
+            factures: onSnapshot(buildQuery("facture"), (snapshot) => {
+                setDocuments(prev => ({
+                    ...prev,
+                    factures: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                }));
+            }),
+            devis: onSnapshot(buildQuery("devis"), (snapshot) => {
+                setDocuments(prev => ({
+                    ...prev,
+                    devis: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                }));
+            }),
+            avoirs: onSnapshot(buildQuery("avoir"), (snapshot) => {
+                setDocuments(prev => ({
+                    ...prev,
+                    avoirs: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                }));
+            })
+        };
 
         return () => {
-            unsubFactures();
-            unsubDevis();
-            unsubAvoirs();
+            Object.values(unsubscribe).forEach(unsub => unsub());
         };
     }, [currentUser, companyId]);
 
-
-    // Mettre à jour les éléments filtrés quand la date ou l'onglet change
-    useEffect(() => {
-        setFilteredItems({
-            factures: filterItemsByDate(factures),
-            devis: filterItemsByDate(devis),
-            avoirs: filterItemsByDate(avoirs)
-        });
-    }, [dateRange, activeTab_0, factures, devis, avoirs, filterItemsByDate]);
-
-    const handleExport = (type) => {
-        let data = [];
-        let fileName = '';
-
-        switch (activeTab_0) {
-            case 'factures':
-                data = filteredItems.factures;
-                fileName = 'Factures';
-                break;
-            case 'devis':
-                data = filteredItems.devis;
-                fileName = 'Devis';
-                break;
-            case 'avoirs':
-                data = filteredItems.avoirs;
-                fileName = 'Avoirs';
-                break;
-            default:
-                return;
-        }
-
-        if (type === 'excel') {
-            exportToExcel(data, fileName, {
-                from: dateRange.from ? dateRange.from.toISOString().split('T')[0] : '',
-                to: dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''
-            });
-        } else {
-            exportToPDF(data, fileName, {
-                from: dateRange.from ? dateRange.from.toISOString().split('T')[0] : '',
-                to: dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''
-            });
-        }
-    };
-    // Remplacez handleDownload par:
-    const handleDownload = async (facture) => {
-        try {
-            await downloadPdf(facture);
-        } catch (error) {
-            alert(`Échec du téléchargement: ${error.message}`);
-        }
-    };
-
-    // Ajoutez cette fonction pour l'aperçu:
-    const handlePreview = async (facture) => {
-        try {
-            await previewPdf(facture);
-        } catch (error) {
-            alert(`Échec de l'aperçu: ${error.message}`);
-        }
-    };
-
-
-    // eslint-disable-next-line no-unused-vars
-    const [data, setData] = useState({
-        facture: {
-            // mets ici la structure initiale de ta facture
-            Type: [],
-            Numéro: [],
-            Date: []
-        }
-    });
-
-    const handleDuplicateDocument = async (document, newType = "facture") => {
-        // Créer une nouvelle date pour la facture dupliquée
-        const today = new Date();
-        const newDate = today.toISOString().split('T')[0];
-
-        // Créer une nouvelle date d'échéance (7 jours plus tard)
-        const dueDate = new Date(today);
-        dueDate.setDate(dueDate.getDate() + 7);
-        const newDueDate = dueDate.toISOString().split('T')[0];
-
-        let newNumber = `Test`; // Valeur temporaire par défaut
-
-        try {
-            newNumber = await invoiceService.generateInvoiceNumber(companyId, new Date(), newType);
-            setData(prev => ({
-                ...prev,
-                facture: {
-                    ...prev.facture,
-                    Type: [newType],
-                    Numéro: [newNumber]
-                }
-            }));
-        } catch (error) {
-            console.error("Erreur génération numéro:", error);
-            setData(prev => ({
-                ...prev,
-                facture: {
-                    ...prev.facture,
-                    Type: [newType]
-                }
-            }));
-        }
-
-        navigate("/bill", {
-            state: {
-                facture: {
-                    ...document,
-                    id: undefined,  // NE PAS transmettre l'ID original
-                    date: newDate,
-                    dateEcheance: newDueDate,
-                    numero: newNumber,
-                    objet: document.objet || "",
-                    ribs: document.ribs || [],
-                    showSignature: document.showSignature !== false
-                },
-                isDuplicate: true,
-                type: newType,
-                client: {
-                    nom: document.clientNom || "",
-                    adresse: document.clientAdresse || "",
-                    ville: document.clientVille || ""
+    // Gestion de la suppression avec confirmation
+    const handleDelete = async (id, type) => {
+        Modal.confirm({
+            title: 'Confirmer la suppression',
+            content: 'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
+            okText: 'Supprimer',
+            okType: 'danger',
+            cancelText: 'Annuler',
+            onOk: async () => {
+                try {
+                    const result = await invoiceService.deleteInvoice(companyId, id);
+                    if (result.success) {
+                        message.success(result.message);
+                    } else {
+                        message.error(result.message);
+                    }
+                } catch (error) {
+                    console.error("Erreur suppression:", error);
+                    message.error("Erreur lors de la suppression");
                 }
             }
         });
-
     };
 
-    const handleMarkAsPaid = async (invoiceId, type) => {
-        setCurrentInvoice(filteredItems[activeTab_0].find(inv => inv.id === invoiceId));
-        setModalVisible(true);
+    // Gestion des exports
+    const handleExport = (format) => {
+        const data = filterByDate(documents[activeTab]);
+        const fileName = {
+            factures: 'Factures',
+            devis: 'Devis',
+            avoirs: 'Avoirs'
+        }[activeTab];
+
+        if (format === 'excel') {
+            exportToExcel(data, fileName, {
+                from: dateRange.from?.toISOString().split('T')[0] || '',
+                to: dateRange.to?.toISOString().split('T')[0] || ''
+            });
+        } else {
+            exportToPDF(data, fileName, {
+                from: dateRange.from?.toISOString().split('T')[0] || '',
+                to: dateRange.to?.toISOString().split('T')[0] || ''
+            });
+        }
     };
 
-    // Ajoutez cette nouvelle fonction pour confirmer le paiement
+    // Duplication de document
+    const handleDuplicate = async (document) => {
+        const today = new Date().toISOString().split('T')[0];
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        const newDueDate = dueDate.toISOString().split('T')[0];
+
+        try {
+            const newNumber = await invoiceService.generateInvoiceNumber(
+                companyId,
+                new Date(),
+                document.type || activeTab.slice(0, -1)
+            );
+
+            navigate("/bill", {
+                state: {
+                    facture: {
+                        ...document,
+                        id: undefined,
+                        date: today,
+                        dateEcheance: newDueDate,
+                        numero: newNumber,
+                        statut: "en attente"
+                    },
+                    isDuplicate: true,
+                    type: document.type || activeTab.slice(0, -1),
+                    client: {
+                        nom: document.clientNom || "",
+                        adresse: document.clientAdresse || "",
+                        ville: document.clientVille || ""
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Erreur duplication:", error);
+            message.error("Erreur lors de la duplication");
+        }
+    };
+
+    // Gestion du paiement avec confirmation pour annulation
+    const handlePayment = async (id, action) => {
+        const docToUpdate = documents[activeTab].find(doc => doc.id === id);
+        setCurrentDocument(docToUpdate);
+
+        if (action === 'paid') {
+            setModalVisible(true);
+        } else {
+            Modal.confirm({
+                title: 'Confirmer le changement de statut',
+                content: 'Êtes-vous sûr de vouloir remettre ce document en attente ?',
+                okText: 'Confirmer',
+                cancelText: 'Annuler',
+                onOk: async () => {
+                    try {
+                        const result = await invoiceService.markAsPending(companyId, id);
+                        if (result.success) {
+                            message.success("Statut mis à jour avec succès");
+                        } else {
+                            message.error(result.message);
+                        }
+                    } catch (error) {
+                        console.error("Erreur:", error);
+                        message.error("Erreur lors de la mise à jour du statut");
+                    }
+                }
+            });
+        }
+    };
+
     const handleConfirmPayment = async (paymentDetails) => {
-        if (!currentInvoice) return;
+        if (!currentDocument) return;
 
         setPaymentLoading(true);
         try {
-            // Ajoutez le montant total à l'objet paymentDetails
-            const completePaymentDetails = {
-                ...paymentDetails,
-                totalTTC: parseFloat(currentInvoice.totalTTC.replace(/\s/g, '').replace(',', '.')) || 0
-            };
+            const totalTTC = typeof currentDocument.totalTTC === 'string'
+                ? parseFloat(currentDocument.totalTTC.replace(/\s/g, '').replace(',', '.'))
+                : currentDocument.totalTTC || 0;
+
+            const montantPaye = typeof paymentDetails.montant === 'string'
+                ? parseFloat(paymentDetails.montant.replace(/\s/g, '').replace(',', '.'))
+                : paymentDetails.montant || 0;
+
+            const EPSILON = 0.01; // Marge d'erreur
+
+            // Déterminer le statut automatiquement
+            let newStatus;
+            if (montantPaye < EPSILON) {
+                newStatus = "en attente";
+            } else if (Math.abs(montantPaye - totalTTC) < EPSILON) {
+                newStatus = "payé";
+            } else {
+                newStatus = "accompte";
+            }
 
             const result = await invoiceService.markAsPaid(
                 companyId,
-                currentInvoice.id,
-                completePaymentDetails
+                currentDocument.id,
+                {
+                    ...paymentDetails,
+                    totalTTC: totalTTC,
+                    statut: newStatus, // On envoie le statut calculé
+                    isFullPayment: newStatus === "payé",
+                    isPartialPayment: newStatus === "accompte"
+                }
             );
 
             if (result.success) {
-                message.success(result.message);
+                message.success(`Document marqué comme ${newStatus}`);
                 setModalVisible(false);
             } else {
                 message.error(result.message);
             }
         } catch (error) {
             console.error("Erreur:", error);
-            message.error("Une erreur est survenue lors de la mise à jour du statut");
+            message.error("Erreur lors du paiement");
         } finally {
             setPaymentLoading(false);
         }
     };
-    const handleMarkAsPending = async (invoiceId, type) => {
-        try {
-            const result = await invoiceService.markAsPending(companyId, invoiceId);
-            if (result.success) {
-                alert(result.message);
-            } else {
-                alert(result.message);
-            }
-        } catch (error) {
-            console.error("Erreur:", error);
-            alert("Une erreur est survenue lors de l'annulation du statut");
-        }
-    };
 
     return (
-        <>
+        <div className="invoices-page-container">
             <div className="navbar-tabs">
-                <button
-                    className={activeTab_0 === "factures" ? "active" : ""}
-                    onClick={() => setActiveTab_0("factures")}
-                >
-                    Factures ({filteredItems.factures.length})
-                </button>
-                <button
-                    className={activeTab_0 === "devis" ? "active" : ""}
-                    onClick={() => setActiveTab_0("devis")}
-                >
-                    Devis ({filteredItems.devis.length})
-                </button>
-                <button
-                    className={activeTab_0 === "avoirs" ? "active" : ""}
-                    onClick={() => setActiveTab_0("avoirs")}
-                >
-                    Avoirs ({filteredItems.avoirs.length})
-                </button>
+                {['factures', 'devis', 'avoirs'].map((tab) => (
+                    <button
+                        key={tab}
+                        className={activeTab === tab ? "active" : ""}
+                        onClick={() => setActiveTab(tab)}
+                    >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)} ({filterByDate(documents[tab]).length})
+                    </button>
+                ))}
             </div>
 
-            {/* Nouveau filtre de date moderne */}
             <div className="filters-container">
                 <ModernDateRangePicker dateRange={dateRange} setDateRange={setDateRange} />
 
-                <div className="date-range-summary-container">
-                    <div className="date-range-summary">
-                        {activeTab_0 === "factures" && "Factures"}
-                        {activeTab_0 === "devis" && "Devis"}
-                        {activeTab_0 === "avoirs" && "Avoirs"}
-                        {dateRange.from || dateRange.to ? (
-                            <>
-                                {" du "}
-                                {dateRange.from ? dateRange.from.toLocaleDateString('fr-FR') : '...'}
-                                {" au "}
-                                {dateRange.to ? dateRange.to.toLocaleDateString('fr-FR') : '...'}
-                            </>
-                        ) : " (Toutes dates)"}
-                    </div>
+                <div className="date-range-summary">
+                    {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                    {dateRange.from || dateRange.to ? (
+                        <>
+                            {" du "}
+                            {dateRange.from?.toLocaleDateString('fr-FR') || '...'}
+                            {" au "}
+                            {dateRange.to?.toLocaleDateString('fr-FR') || '...'}
+                        </>
+                    ) : " (Toutes dates)"}
                 </div>
 
-
                 <div className="export-buttons">
-                    <button
-                        onClick={() => handleExport('excel')}
-                        className="export-btn-excel"
-                        title="Exporter en Excel"
-                    >
+                    <button onClick={() => handleExport('excel')} className="export-btn-excel">
                         <FaFileExcel /> Excel
                     </button>
-                    <button
-                        onClick={() => handleExport('pdf')}
-                        className="export-btn-pdf"
-                        title="Exporter en PDF"
-                    >
+                    <button onClick={() => handleExport('pdf')} className="export-btn-pdf">
                         <FaFilePdf /> PDF
                     </button>
                 </div>
             </div>
 
-            {activeTab_0 === "factures" && (
-                <DocumentSection
-                    title="Factures"
-                    items={filteredItems.factures}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    navigate={navigate}
-                    onDelete={handleDeleteFacture}
-                    selectedClient={selectedClient}
-                    type="facture"
-                    onPreview={handlePreview}
-                    onDownload={handleDownload}
-                    onDuplicate={(doc) => handleDuplicateDocument(doc, "facture")}
-                    onMarkAsPaid={handleMarkAsPaid}
-                    onMarkAsPending={handleMarkAsPending}
+            <DocumentSection
+                title={currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}
+                items={filterByDate(documents[activeTab])}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                navigate={navigate}
+                onDelete={handleDelete}
+                selectedClient={selectedClient}
+                type={activeTab.slice(0, -1)} // "factures" -> "facture"
+                onPreview={previewPdf}
+                onDownload={downloadPdf}
+                onDuplicate={handleDuplicate}
+                onMarkAsPaid={(id) => handlePayment(id, 'paid')}
+                onMarkAsPending={(id) => handlePayment(id, 'pending')}
+                getStatus={getStatus}
+            />
 
-
-                />
-            )}
-            {activeTab_0 === "devis" && (
-                <DocumentSection
-                    title="Devis"
-                    items={filteredItems.devis}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    navigate={navigate}
-                    onDelete={handleDeleteFacture}
-                    selectedClient={selectedClient}
-                    type="devis"
-                    onPreview={handlePreview}
-                    onDownload={handleDownload}
-                    onDuplicate={(doc) => handleDuplicateDocument(doc, "devis")}
-                    onMarkAsPaid={handleMarkAsPaid}
-                    onMarkAsPending={handleMarkAsPending}
-
-
-                />
-            )}
-            {activeTab_0 === "avoirs" && (
-                <DocumentSection
-                    title="Avoirs"
-                    items={filteredItems.avoirs}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    navigate={navigate}
-                    onDelete={handleDeleteFacture}
-                    selectedClient={selectedClient}
-                    type="avoir"
-                    onPreview={handlePreview}
-                    onDownload={handleDownload}
-                    onDuplicate={(doc) => handleDuplicateDocument(doc, "avoir")}
-                    onMarkAsPaid={handleMarkAsPaid}
-                    onMarkAsPending={handleMarkAsPending}
-
-
-                />
-            )}
             <ModalPaiement
                 visible={modalVisible}
                 onCancel={() => setModalVisible(false)}
                 onConfirm={handleConfirmPayment}
-                invoice={currentInvoice}
+                invoice={currentDocument}
                 loading={paymentLoading}
             />
-        </>
+        </div>
     );
 };
 
