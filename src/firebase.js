@@ -7,7 +7,7 @@ import { getStorage } from "firebase/storage";
 
 // Configuration Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyDYEz7Kz_H9Q57qnpFnP6lebW12rFkT180",
+  apiKey: process.env.REACT_APP_API_KEY,
   authDomain: "mentafact.firebaseapp.com",
   projectId: "mentafact",
   storageBucket: "mentafact.firebasestorage.app",
