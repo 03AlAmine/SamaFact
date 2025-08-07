@@ -5,16 +5,7 @@ import 'jspdf-autotable';
 import autoTable from 'jspdf-autotable'; // Import spécifique pour autoTable
 
 // Fonction pour exporter en Excel
-export const exportToExcel = (data, fileName, dateRange) => {
-  // Filtrer par date si une plage est spécifiée
-  let filteredData = data;
-  if (dateRange && dateRange.from && dateRange.to) {
-    filteredData = data.filter(item => {
-      const itemDate = new Date(item.date);
-      return itemDate >= new Date(dateRange.from) && itemDate <= new Date(dateRange.to);
-    });
-  }
-
+export const exportToExcel = (filteredData, fileName) => {
   // Préparer les données pour Excel
   const excelData = filteredData.map(item => ({
     'Type': item.type === 'facture' ? 'Facture' : item.type === 'devis' ? 'Devis' : 'Avoir',
@@ -36,16 +27,7 @@ export const exportToExcel = (data, fileName, dateRange) => {
 };
 
 // Fonction pour exporter en PDF
-export const exportToPDF = (data, fileName, dateRange) => {
-  // Filtrer par date si une plage est spécifiée
-  let filteredData = data;
-  if (dateRange && dateRange.from && dateRange.to) {
-    filteredData = data.filter(item => {
-      const itemDate = new Date(item.date);
-      return itemDate >= new Date(dateRange.from) && itemDate <= new Date(dateRange.to);
-    });
-  }
-
+export const exportToPDF = (filteredData, fileName) => {
   // Créer un nouveau document PDF en mode paysage
   const doc = new jsPDF({
     orientation: 'landscape'
@@ -55,13 +37,6 @@ export const exportToPDF = (data, fileName, dateRange) => {
   doc.setFontSize(16);
   doc.setTextColor(40, 40, 40);
   doc.text(`Liste des documents (${fileName})`, 14, 15);
-
-  // Sous-titre avec dates si filtre appliqué
-  if (dateRange && dateRange.from && dateRange.to) {
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Période: ${formatDate(dateRange.from)} au ${formatDate(dateRange.to)}`, 14, 22);
-  }
 
   // Préparer les données pour le tableau
   const tableData = filteredData.map(item => [

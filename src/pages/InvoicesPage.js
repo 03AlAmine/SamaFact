@@ -144,8 +144,30 @@ const InvoicesPage = ({
     };
 
     // Gestion des exports
+    // Dans InvoicesPage.js, modifiez la fonction handleExport
     const handleExport = (format) => {
-        const data = filterByDate(documents[activeTab]);
+        // Récupérer les données déjà filtrées (par date, recherche, etc.)
+        const filteredData = filterByDate(documents[activeTab])
+            .filter(item => {
+                // Filtre par recherche
+                if (searchTerm) {
+                    const searchLower = searchTerm.toLowerCase();
+                    return (
+                        item.numero.toLowerCase().includes(searchLower) ||
+                        (item.clientNom && item.clientNom.toLowerCase().includes(searchLower)) ||
+                        (item.objet && item.objet.toLowerCase().includes(searchLower))
+                    );
+                }
+                return true;
+            })
+            .filter(item => {
+                // Filtre par client sélectionné
+                if (selectedClient) {
+                    return item.clientNom === selectedClient.nom;
+                }
+                return true;
+            });
+
         const fileName = {
             factures: 'Factures',
             devis: 'Devis',
@@ -153,18 +175,11 @@ const InvoicesPage = ({
         }[activeTab];
 
         if (format === 'excel') {
-            exportToExcel(data, fileName, {
-                from: dateRange.from?.toISOString().split('T')[0] || '',
-                to: dateRange.to?.toISOString().split('T')[0] || ''
-            });
+            exportToExcel(filteredData, fileName);
         } else {
-            exportToPDF(data, fileName, {
-                from: dateRange.from?.toISOString().split('T')[0] || '',
-                to: dateRange.to?.toISOString().split('T')[0] || ''
-            });
+            exportToPDF(filteredData, fileName);
         }
     };
-
     // Duplication de document
     const handleDuplicate = async (document) => {
         const today = new Date().toISOString().split('T')[0];
