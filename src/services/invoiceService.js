@@ -269,7 +269,7 @@ export const invoiceService = {
 
       // Préparer les données de mise à jour
       const paymentData = {
-        datePaiement: new Date().toISOString(),
+        datePaiement: paymentDetails.datePaiement || new Date().toISOString(), // Utilise la date du formulaire ou la date actuelle
         modePaiement: paymentDetails.modePaiement,
         referencePaiement: paymentDetails.reference || "",
         notePaiement: paymentDetails.note || "",

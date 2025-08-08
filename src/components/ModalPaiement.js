@@ -42,7 +42,9 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
             setPaymentType('total');
             form.setFieldsValue({
                 montantPaye: remainingAmount > 0 ? remainingAmount : totalTTC,
-                typePaiement: 'total'
+                typePaiement: 'total',
+                datePaiement: getTodayDate() // Date du jour par défaut
+
             });
         }
     }, [visible, form, totalTTC, remainingAmount]);
@@ -78,7 +80,26 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
             console.error("Validation failed:", error);
         }
     };
+    // Fonction pour valider que la date de paiement n'est pas antérieure à la date de facture
+    const validatePaymentDate = (_, value) => {
+        if (!value) return Promise.reject('La date de paiement est requise');
 
+        const paymentDate = new Date(value);
+        const invoiceDate = new Date(invoice.date);
+
+        if (paymentDate < invoiceDate) {
+            return Promise.reject('La date de paiement ne peut pas être antérieure à la date de facture');
+        }
+
+        return Promise.resolve();
+    };
+    const getTodayDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
     return (
         <Modal
             title={`Paiement de la facture ${invoice?.numero} - Total: ${formatCurrency(totalTTC)} FCFA`}
@@ -147,7 +168,19 @@ const ModalPaiement = ({ visible, onCancel, onConfirm, invoice, loading }) => {
                         <Option value="total">Paiement complet</Option>
                     </Select>
                 </AntdForm.Item>
-
+                <AntdForm.Item
+                    name="datePaiement"
+                    label="Date de paiement"
+                    rules={[
+                        { required: true, message: "La date de paiement est requise" },
+                        { validator: validatePaymentDate }
+                    ]}
+                >
+                    <Input
+                        type="date"
+                        style={{ width: '100%' }}
+                    />
+                </AntdForm.Item>
                 {paymentType === 'acompte' && (
                     <AntdForm.Item
                         name="montantPaye"
