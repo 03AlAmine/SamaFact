@@ -1,29 +1,44 @@
 name: Deploy to O2Switch
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Node.js
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'npm'
+          
       - name: Install dependencies
-        run: npm install
+        run: npm ci # Utilise ci pour des installations plus propres
+      
       - name: Build project
         run: npm run build
+        env:
+          REACT_APP_ENV: production # Injection des variables d'environnement
+          
+      - name: Verify build
+        run: |
+          ls -lh build/ # Vérification de la structure
+          [ -f build/index.html ] || exit 1 # Validation du build
+          
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: 'ftp.leaderinterime.com'  # Entre guillemets
-          username: ${{ secrets.FTP_USERNAME }}  # Nom exact du secret
-          password: ${{ secrets.FTP_PASSWORD }}  # Nom exact du secret
+          server: 'ftp.leaderinterime.com'
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/
-          server-dir: /  # Ajoutez un slash final
+          server-dir: / # Chemin standard O2Switch
           port: 21
           protocol: ftp
-
+          dangerous-clean-slate: false
+          exclude: |
+            /.htaccess
+          log-level: verbose # Activation des logs détaillés
