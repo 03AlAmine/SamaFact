@@ -1,7 +1,7 @@
 name: Deploy to O2Switch
 on:
   push:
-    branches: [master]
+    branches: [ master ]
 
 jobs:
   deploy:
@@ -14,14 +14,16 @@ jobs:
           node-version: 18
       - name: Install dependencies
         run: npm install
-      ## - name: Build project
-      ##   run: npm run build
+      - name: Build project
+        run: npm run build
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: "ftp.leaderinterime.com" # Entre guillemets
-          username: ${{ secrets.FTP_USERNAME }} # Nom exact du secret
-          password: ${{ secrets.FTP_PASSWORD }} # Nom exact du secret
-          server-dir: / # Ajoutez un slash final
+          server: 'ftp.leaderinterime.com'  # Entre guillemets
+          username: ${{ secrets.FTP_USERNAME }}  # Nom exact du secret
+          password: ${{ secrets.FTP_PASSWORD }}  # Nom exact du secret
+          local-dir: ./build/
+          server-dir: /  # Ajoutez un slash final
           port: 21
           protocol: ftp
+
