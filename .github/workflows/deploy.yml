@@ -8,15 +8,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm install
+      ## - name: Build project
+      ##   run: npm run build
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: "ftp.leaderinterime.com"
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: "ftp.leaderinterime.com" # Entre guillemets
+          username: ${{ secrets.FTP_USERNAME }} # Nom exact du secret
+          password: ${{ secrets.FTP_PASSWORD }} # Nom exact du secret
           local-dir: ./build/
-          server-dir: /
+          server-dir: / # Ajoutez un slash final
           port: 21
           protocol: ftp
-          dangerous-clean-slate: true
