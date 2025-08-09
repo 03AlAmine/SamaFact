@@ -8,37 +8,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'npm'
-          
+
       - name: Install dependencies
-        run: npm ci # Utilise ci pour des installations plus propres
-      
+        run: npm install
+
       - name: Build project
         run: npm run build
         env:
-          REACT_APP_ENV: production # Injection des variables d'environnement
-          
-      - name: Verify build
-        run: |
-          ls -lh build/ # Vérification de la structure
-          [ -f build/index.html ] || exit 1 # Validation du build
-          
+          REACT_APP_ADMIN_SECRET: ${{ secrets.REACT_APP_ADMIN_SECRET }}
+          REACT_APP_API_KEY: ${{ secrets.REACT_APP_API_KEY }}
+          ##GENERATE_SOURCEMAP: ${{ secrets.GENERATE_SOURCEMAP }}
+          REACT_APP_ENV: production
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: 'ftp.leaderinterime.com'
+          server: "ftp.leaderinterime.com"
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/
-          server-dir: / # Chemin standard O2Switch
+          server-dir: /
           port: 21
           protocol: ftp
-          dangerous-clean-slate: false
-          exclude: |
-            /.htaccess
-          log-level: verbose # Activation des logs détaillés
