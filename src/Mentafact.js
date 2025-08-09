@@ -662,7 +662,7 @@ const Mentafact = () => {
 
                                 <Link to="/profile" className="dropdown-item">
                                     <FaUser className="dropdown-icon" />
-                                    <span>Profil</span>
+                                    <span>Mon Profil</span>
                                     <FaChevronRight className="dropdown-arrow-right" />
                                 </Link>
                                 <Link to="/settings" className="dropdown-item">
