@@ -1,4 +1,4 @@
-name: Deploy to O2Switch
+name: Deploy to O2Switch LIS
 on:
   push:
     branches: [ master ]
