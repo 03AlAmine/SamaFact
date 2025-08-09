@@ -509,54 +509,6 @@ const DocumentSection = ({
             >
                 {selectedDocument && (
                     <div className="document-details-content-container">
-                        {/* Barre de progression verticale */}
-                        <div className="status-progress-bar">
-                            <div className="progress-steps-container">
-                                <div className={`progress-step ${selectedDocument.statut ? 'completed' : ''}`}>
-                                    <div className="step-circle">
-                                        {selectedDocument.statut && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">Créé</div>
-                                    <div className="step-connector"></div>
-                                </div>
-
-                                <div className={`progress-step ${['en attente', 'accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase())
-                                    ? selectedDocument.statut?.toLowerCase() === 'en attente'
-                                        ? 'pending'
-                                        : selectedDocument.statut?.toLowerCase() === 'accompte'
-                                            ? 'partial'
-                                            : 'completed'
-                                    : ''
-                                    }`}>
-                                    <div className="step-circle">
-                                        {['en attente', 'accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase()) && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">En Attente</div>
-                                    <div className="step-connector"></div>
-                                </div>
-
-                                <div className={`progress-step ${['accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase())
-                                    ? selectedDocument.statut?.toLowerCase() === 'accompte'
-                                        ? 'partial'
-                                        : 'completed'
-                                    : ''
-                                    }`}>
-                                    <div className="step-circle">
-                                        {['accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase()) && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">Accompte</div>
-                                    <div className="step-connector"></div>
-                                </div>
-
-                                <div className={`progress-step ${selectedDocument.statut?.toLowerCase() === 'payé' ? 'completed' : ''
-                                    }`}>
-                                    <div className="step-circle">
-                                        {selectedDocument.statut?.toLowerCase() === 'payé' && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">Payé</div>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Section Principale */}
                         <div className="document-details-content">
@@ -682,6 +634,55 @@ const DocumentSection = ({
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Barre de progression verticale */}
+                        <div className="status-progress-bar">
+                            <div className="progress-steps-container">
+                                <div className={`progress-step ${selectedDocument.statut ? 'completed' : ''}`}>
+                                    <div className="step-circle">
+                                        {selectedDocument.statut && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">Créé</div>
+                                    <div className="step-connector"></div>
+                                </div>
+
+                                <div className={`progress-step ${['en attente', 'accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase())
+                                    ? selectedDocument.statut?.toLowerCase() === 'en attente'
+                                        ? 'pending'
+                                        : selectedDocument.statut?.toLowerCase() === 'accompte'
+                                            ? 'partial'
+                                            : 'completed'
+                                    : ''
+                                    }`}>
+                                    <div className="step-circle">
+                                        {['en attente', 'accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase()) && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">En Attente</div>
+                                    <div className="step-connector"></div>
+                                </div>
+
+                                <div className={`progress-step ${['accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase())
+                                    ? selectedDocument.statut?.toLowerCase() === 'accompte'
+                                        ? 'partial'
+                                        : 'completed'
+                                    : ''
+                                    }`}>
+                                    <div className="step-circle">
+                                        {['accompte', 'payé'].includes(selectedDocument.statut?.toLowerCase()) && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">Accompte</div>
+                                    <div className="step-connector"></div>
+                                </div>
+
+                                <div className={`progress-step ${selectedDocument.statut?.toLowerCase() === 'payé' ? 'completed' : ''
+                                    }`}>
+                                    <div className="step-circle">
+                                        {selectedDocument.statut?.toLowerCase() === 'payé' && <FaCheck className="check-icon" />}
+                                    </div>
+                                    <div className="step-label">Payé</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
