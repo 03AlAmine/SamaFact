@@ -1,85 +1,120 @@
 import React from "react";
-import { FaUsers, } from "react-icons/fa";
-import { FaChartBar } from "react-icons/fa";
-import { InvoiceChart, ClientChart, StatusChart, MonthlyComparisonChart } from "../components/Charts";
-import { DocumentSliderCard, PaymentStatusSliderCard, TotalAmountSliderCard } from '../components/DocumentSliderCard'; // ou directement dans le fichier
+import { useAppContext } from "../contexts/AppContext";
+import { FaUsers, FaChartBar, FaMoneyBillWave, FaFileSignature } from "react-icons/fa";
+import {
+  InvoiceChart, ClientChart, StatusChart, MonthlyComparisonChart,
+  PayrollChart, ContractTypeChart, EmployeChart
+} from "../components/Charts";
+import {
+  DocumentSliderCard, PaymentStatusSliderCard, TotalAmountSliderCard
+} from '../components/DocumentSliderCard';
 
-const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients }) => {
+const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls, employees }) => {
+  const { activeModule } = useAppContext();
 
-    return (
-        <div className="stats-section">
-            <h2 className="section-title">
-                <FaChartBar style={{ marginRight: "10px" }} />
-                Statistiques
-            </h2>
+  const moduleConfig = {
+    mentafact: {
+      stats: [
+        {
+          iconClass: "clients",
+          icon: <FaUsers />,
+          value: stats.totalClients,
+          label: "Clients enregistrés",
+          trend: "+12% ce mois-ci",
+          trendClass: "up"
+        },
+        <DocumentSliderCard key="doc" stats={stats} className="large" showTrend={true} showName={false} />,
+        <TotalAmountSliderCard key="total" allFactures={allFactures} allDevis={allDevis} allAvoirs={allAvoirs} className="large" showTrend={true} showName={false} />,
+        <PaymentStatusSliderCard key="payment" stats={stats} className="large" showTrend={true} />,
+        {
+          iconClass: "teams",
+          icon: <FaUsers />,
+          value: stats.totalEquipes,
+          label: "Équipes actives",
+          trend: "Stable",
+          trendClass: "neutral"
+        }
+      ],
+      charts: [
+        { title: "Chiffre d'affaires mensuel", comp: <InvoiceChart invoices={allFactures} /> },
+        { title: "Comparaison annuelle", comp: <MonthlyComparisonChart invoices={allFactures} /> },
+        { title: "Répartition des clients", comp: <ClientChart clients={clients} /> },
+        { title: "Statut des factures", comp: <StatusChart invoices={allFactures} /> }
+      ]
+    },
+    payroll: {
+      stats: [
+        {
+          iconClass: "employees",
+          icon: <FaUsers />,
+          value: stats.totalEmployees,
+          label: "Employés",
+          trend: "+5% ce mois-ci",
+          trendClass: "up"
+        },
+        {
+          iconClass: "payroll",
+          icon: <FaFileSignature />,
+          value: stats.totalPayrolls,
+          label: "Paies",
+          trend: "+2% ce mois-ci",
+          trendClass: "up"
+        },
+        {
+          iconClass: "masse_salariale",
+          icon: <FaMoneyBillWave />,
+          value: (payrolls || []).reduce((sum, p) => sum + (parseFloat(p?.netAPayer) || 0), 0).toLocaleString('fr-FR') + " FCFA",
+          label: "Masse salariale",
+          trend: "Stable",
+          trendClass: "neutral"
+        }
+      ],
+      charts: [
+        { title: "Répartition des paies", comp: <PayrollChart payrolls={payrolls} /> },
+        { title: "Types de contrat", comp: <ContractTypeChart employees={employees} /> },
+        { title: "Répartition des employés", comp: <EmployeChart employees={employees} /> }
+      ]
+    }
+  };
 
-            <div className="stats-grid">
-                <div className="stat-card large">
-                    <div className="stat-icon clients">
-                        <FaUsers />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.totalClients}</h3>
-                        <p>Clients enregistrés</p>
-                        <div className="stat-trend up">+12% ce mois-ci</div>
-                    </div>
-                </div>
-                <DocumentSliderCard stats={stats} className="large" showTrend={true} showName={false}
+  const conf = moduleConfig[activeModule];
 
-                />
-                <TotalAmountSliderCard
-                    allFactures={allFactures}
-                    allDevis={allDevis}
-                    allAvoirs={allAvoirs}
-                    className="large"
-                    showTrend={true}
-                    showName={false}
-                />
-                <PaymentStatusSliderCard stats={stats} className="large" showTrend={true} />
+  return (
+    <div className="stats-section">
+      <h2 className="section-title">
+        <FaChartBar style={{ marginRight: "10px" }} />
+        Statistiques
+      </h2>
 
-                <div className="stat-card large">
-                    <div className="stat-icon teams">
-                        <FaUsers />
-                    </div>
-                    <div className="stat-info">
-                        <h3>{stats.totalEquipes}</h3>
-                        <p>Équipes actives</p>
-                        <div className="stat-trend neutral">Stable</div>
-                    </div>
-                </div>
+      {/* Bloc stats */}
+      <div className="stats-grid">
+        {conf.stats.map((stat, idx) =>
+          React.isValidElement(stat) ? (
+            stat
+          ) : (
+            <div key={idx} className="stat-card large">
+              <div className={`stat-icon ${stat.iconClass}`}>{stat.icon}</div>
+              <div className="stat-info">
+                <h3>{stat.value}</h3>
+                <p>{stat.label}</p>
+                <div className={`stat-trend ${stat.trendClass}`}>{stat.trend}</div>
+              </div>
             </div>
+          )
+        )}
+      </div>
 
-            <div className="charts-container">
-                <div className="chart-card">
-                    <h3>Chiffre d'affaires mensuel</h3>
-                    <div className="chart-container">
-                        <InvoiceChart invoices={allFactures} />
-                    </div>
-                </div>
-
-                <div className="chart-card">
-                    <h3>Comparaison annuelle</h3>
-                    <div className="chart-container">
-                        <MonthlyComparisonChart invoices={allFactures} />
-                    </div>
-                </div>
-
-                <div className="chart-card">
-                    <h3>Répartition des clients</h3>
-                    <div className="chart-container">
-                        <ClientChart clients={clients} />
-                    </div>
-                </div>
-
-                <div className="chart-card">
-                    <h3>Statut des factures</h3>
-                    <div className="chart-container">
-                        <StatusChart invoices={allFactures} />
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+      {/* Graphiques */}
+      <div className="charts-container">
+        {conf.charts.map((chart, idx) => (
+          <div key={idx} className="chart-card">
+            <h3>{chart.title}</h3>
+            <div className="chart-container">{chart.comp}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default StatsPage;

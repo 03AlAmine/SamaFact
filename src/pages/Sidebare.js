@@ -12,25 +12,32 @@ import { MdDashboard } from 'react-icons/md';
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
   const { activeModule } = useAppContext();
 
-  const commonItems = [
-    { icon: <MdDashboard className="nav-icon" />, label: "Tableau de bord", tab: "dashboard" },
+  const dashboardItem = [
+    { icon: <MdDashboard className="nav-icon" />, label: "Tableau de bord", tab: "dashboard" }
+  ];
+
+  const bottomItems = [
     { icon: <FaChartBar className="nav-icon" />, label: "Statistiques", tab: "stats" },
     { icon: <FaUsers className="nav-icon" />, label: "Équipes", tab: "equipes" }
   ];
 
   const moduleSpecificItems = {
     mentafact: [
-      { icon: <FaFileInvoiceDollar className="nav-icon" />, label: "Ment@Fact", tab: "factures" },
       { icon: <FaUsers className="nav-icon" />, label: "Clients", tab: "clients" },
+      { icon: <FaFileInvoiceDollar className="nav-icon" />, label: "Ment@Fact", tab: "factures" },
     ],
     payroll: [
-      { icon: <FaMoneyBillWave className="nav-icon" />, label: "Ment@Roll", tab: "payrolls" },
       { icon: <FaUsers className="nav-icon" />, label: "Employés", tab: "employees" },
-
+      { icon: <FaMoneyBillWave className="nav-icon" />, label: "Ment@Roll", tab: "payrolls" },
     ]
   };
 
-  const menuItems = [...commonItems, ...moduleSpecificItems[activeModule]];
+  // On construit le menu dans l'ordre voulu
+  const menuItems = [
+    ...dashboardItem,
+    ...moduleSpecificItems[activeModule],
+    ...bottomItems
+  ];
 
   return (
     <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
@@ -40,9 +47,14 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
         className="sidebar-header"
         style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
       >
-        <img src={logo} alt="Logo Sam@Salaire" style={{ height: '50px' }} />
-        {sidebarOpen && <h2 style={{ margin: 0 }}>SamaSalaire</h2>}
+        <img src={logo} alt={activeModule === "mentafact" ? "Logo SamaFact" : "Logo SamaSalaire"} style={{ height: '50px' }} />
+        {sidebarOpen && (
+          <h2 style={{ margin: 0 }}>
+            {activeModule === "mentafact" ? "SamaFact" : "SamaSalaire"}
+          </h2>
+        )}
       </Link>
+
 
       <nav className="sidebar-nav">
         <ul>
@@ -71,5 +83,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
     </div>
   );
 };
+
 
 export default Sidebar;

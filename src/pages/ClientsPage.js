@@ -422,8 +422,8 @@ const ClientsPage = ({
                                 className={`client-card ${selectedClient?.id === c.id ? 'active' : ''}`}
                                 onClick={() => handleClientClick(c.id)}  // Utilisation de la nouvelle fonction
                             >
-                                <div className="client-type-badge">
-                                    {c.type === "client" ? "Client" : c.type === "prospect" ? "Prospect" : c.type === "fournisseur" ? "Fournisseur" : "Partenaire"}
+                                <div className={`client-type-badge ${c.type}`}>
+                                    {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
                                 </div>
 
                                 <div className="client-header">
@@ -541,9 +541,10 @@ const ClientsPage = ({
                                             </div>
                                         </td>
                                         <td>
-                                            <div>
-                                                {c.type}
+                                            <div className={`client-badge ${c.type}`}>
+                                                {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
                                             </div>
+
                                         </td>
                                         <td>
                                             <div className="client-contact">

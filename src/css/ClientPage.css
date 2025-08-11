@@ -345,3 +345,18 @@
   width: 3px;
   background-color: var(--primary-color);
 }
+
+.client-badge {
+  background: #4caf50;
+  color: white;
+  border-radius: 12px;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.client-badge.prospect{
+  background: #007bff;
+}
+.client-badge.fournisseur {
+  background: #ff9800;
+}

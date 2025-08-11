@@ -17,7 +17,7 @@
 .employees-table th {
   text-align: left;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #4a6fa5 0%,  #ffc107 100%);
+  background: linear-gradient(135deg, #4a6fa5 0%, #ffc107 100%);
   color: white;
   font-weight: 600;
   position: sticky;
@@ -337,7 +337,7 @@
 }
 
 .employees-table tr.active::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -352,4 +352,43 @@
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   display: inline-block;
+}
+.employee-badge {
+  width: 80%;
+  background: #4caf50;
+  color: white;
+  border-radius: 12px;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.employee-badge.CDD {
+  background: #007bff;
+}
+.employee-badge.Stage {
+  background: #ff9800;
+}
+.employee-badge.Freelance {
+  background: #dc3545;
+}
+
+.payrolls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.create-payroll-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--success-gradient);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(95, 130, 255, 0.2);
 }

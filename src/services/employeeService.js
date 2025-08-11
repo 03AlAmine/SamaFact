@@ -14,18 +14,41 @@ import {
 export const employeeService = {
   // Récupère tous les employés avec écoute en temps réel
   getEmployees: (companyId, callback) => {
-    if (!companyId) return () => {};
+    if (!companyId) return () => { };
 
     const employeesRef = collection(db, `companies/${companyId}/employees`);
-    const q = query(employeesRef, orderBy("nom", "asc")); // Tri par nom par défaut
+    const q = query(employeesRef, orderBy("nom", "asc"));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const employeesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        dateEmbauche: doc.data().dateEmbauche?.toDate?.() || null,
-        createdAt: doc.data().createdAt?.toDate?.() || null
-      }));
+      const employeesData = snapshot.docs.map(doc => {
+        const data = doc.data();
+
+        // Gestion robuste de la date d'embauche
+        let dateEmbauche = null;
+
+        if (data.dateEmbauche) {
+          // Si c'est un Timestamp Firebase
+          if (typeof data.dateEmbauche.toDate === 'function') {
+            dateEmbauche = data.dateEmbauche.toDate().toISOString().split('T')[0];
+          }
+          // Si c'est déjà un objet Date
+          else if (data.dateEmbauche instanceof Date) {
+            dateEmbauche = data.dateEmbauche.toISOString().split('T')[0];
+          }
+          // Si c'est une string au format ISO
+          else if (typeof data.dateEmbauche === 'string') {
+            dateEmbauche = data.dateEmbauche.split('T')[0];
+          }
+        }
+
+        return {
+          id: doc.id,
+          ...data,
+          dateEmbauche: dateEmbauche,
+          createdAt: data.createdAt?.toDate?.() || null
+        };
+      });
+
       callback(employeesData);
     });
 
@@ -43,6 +66,8 @@ export const employeeService = {
       const employeesRef = collection(db, `companies/${companyId}/employees`);
       const docRef = await addDoc(employeesRef, {
         ...employeeData,
+        dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
+
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(), // Pour la recherche
         createdAt: new Date(),
         status: 'active' // Statut par défaut
@@ -53,14 +78,16 @@ export const employeeService = {
         message: "Employé ajouté avec succès !",
         employee: {
           id: docRef.id,
-          ...employeeData
+          ...employeeData,
+          dateEmbauche: employeeData.dateEmbauche
+
         }
       };
     } catch (error) {
       console.error("Erreur:", error);
-      return { 
-        success: false, 
-        message: error.message || "Erreur lors de l'ajout de l'employé." 
+      return {
+        success: false,
+        message: error.message || "Erreur lors de l'ajout de l'employé."
       };
     }
   },
@@ -69,24 +96,31 @@ export const employeeService = {
   updateEmployee: async (companyId, employeeId, employeeData) => {
     try {
       const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
-      
+
       // Mise à jour avec timestamp
       await updateDoc(employeeRef, {
         ...employeeData,
+        dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
+
         updatedAt: new Date(),
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase()
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: "Employé modifié avec succès !",
-        updatedFields: Object.keys(employeeData) 
+        updatedFields: Object.keys(employeeData),
+        updatedEmployee: {
+          ...employeeData,
+          // Retournez la date au format string pour le state
+          dateEmbauche: employeeData.dateEmbauche
+        }
       };
     } catch (error) {
       console.error("Erreur:", error);
-      return { 
-        success: false, 
-        message: "Erreur lors de la modification de l'employé." 
+      return {
+        success: false,
+        message: "Erreur lors de la modification de l'employé."
       };
     }
   },
@@ -95,22 +129,22 @@ export const employeeService = {
   deleteEmployee: async (companyId, employeeId) => {
     try {
       const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
-      
+
       // On ne supprime pas physiquement mais on marque comme inactif (soft delete)
       await updateDoc(employeeRef, {
         status: 'inactive',
         deletedAt: new Date()
       });
 
-      return { 
-        success: true, 
-        message: "Employé désactivé avec succès !" 
+      return {
+        success: true,
+        message: "Employé désactivé avec succès !"
       };
     } catch (error) {
       console.error("Erreur:", error);
-      return { 
-        success: false, 
-        message: "Erreur lors de la suppression de l'employé." 
+      return {
+        success: false,
+        message: "Erreur lors de la suppression de l'employé."
       };
     }
   },
@@ -159,24 +193,24 @@ export const employeeService = {
     try {
       const employeesRef = collection(db, `companies/${companyId}/employees`);
       const queries = [];
-      
+
       // Construction dynamique des requêtes
       if (criteria.nom) {
         queries.push(where("nom", ">=", criteria.nom));
         queries.push(where("nom", "<=", criteria.nom + '\uf8ff'));
       }
-      
+
       if (criteria.departement) {
         queries.push(where("departement", "==", criteria.departement));
       }
-      
+
       if (criteria.typeContrat) {
         queries.push(where("typeContrat", "==", criteria.typeContrat));
       }
 
       const q = query(employeesRef, ...queries);
       const snapshot = await getDocs(q);
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()

@@ -373,8 +373,8 @@ const Mentafact = () => {
             alert(result.message);
         }
     };
-    const handleEditEmployee = (client) => {
-        setEditingEmployee({ ...client });
+    const handleEditEmployee = (employee) => {
+        setEditingEmployee({ ...employee });
         setIsEditing(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -400,7 +400,7 @@ const Mentafact = () => {
 
     const handleUpdateEmployee = async (e) => {
         e.preventDefault();
-        const result = await employeeService.updateClient(companyId, editingEmployee.id, editingEmployee);
+        const result = await employeeService.updateEmployee(companyId, editingEmployee.id, editingEmployee);
         if (result.success) {
             alert(result.message);
             cancelEditEmployee();
@@ -683,7 +683,7 @@ const Mentafact = () => {
                     handleChange={handleChangeemployee}
                     handleSubmit={handleSubmitemployee}
                     editingEmployee={editingEmployee}
-                    handleEditChangee={handleEditChangeemployee}
+                    handleEditChange={handleEditChangeemployee}
                     handleUpdate={handleUpdateEmployee}
                     cancelEdit={cancelEditEmployee}
                 />;
@@ -716,6 +716,8 @@ const Mentafact = () => {
                     clients={clients}
                     allDevis={allDevis}
                     allAvoirs={allAvoirs}
+                    employees={employees}
+                    payrolls={payrolls}
 
                 />;
             case "equipes":

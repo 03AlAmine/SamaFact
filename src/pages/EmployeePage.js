@@ -174,7 +174,7 @@ const EmployeesPage = ({
                 id="edit-dateEmbauche"
                 name="dateEmbauche"
                 type="date"
-                value={editingEmployee.dateEmbauche}
+                value={editingEmployee.dateEmbauche || ""}
                 onChange={handleEditChange}
                 required
                 className="form-input"
@@ -478,7 +478,7 @@ const EmployeesPage = ({
                 className={`employee-card ${selectedEmployee?.id === e.id ? 'active' : ''}`}
                 onClick={() => handleEmployeeClick(e.id)}
               >
-                <div className="employee-type-badge">
+                <div className={`employee-type-badge ${e.typeContrat}`}>
                   {e.typeContrat}
                 </div>
 
@@ -518,21 +518,21 @@ const EmployeesPage = ({
                     <FaIdCard className="detail-icon" />
                     <span className="detail-value">{e.matricule}</span>
                   </div>
-                  
+
                   <div className="employee-detail">
                     <FaCalendarAlt className="detail-icon" />
                     <span className="detail-value">
-                      {new Date(e.dateEmbauche).toLocaleDateString()}
+                      {e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString() : 'Non définie'}
                     </span>
                   </div>
-                  
+
                   <div className="employee-detail">
                     <FaMoneyBillWave className="detail-icon" />
                     <span className="detail-value">
                       {e.salaireBase?.toLocaleString()} FCFA
                     </span>
                   </div>
-                  
+
                   <div className="employee-detail">
                     <FaBuilding className="detail-icon" />
                     <span className="detail-value">{e.departement}</span>
@@ -592,7 +592,11 @@ const EmployeesPage = ({
                     <td>{e.poste}</td>
                     <td>{e.matricule}</td>
                     <td>{e.salaireBase?.toLocaleString()} FCFA</td>
-                    <td>{e.typeContrat}</td>
+                    <td>
+                      <div className={`employee-badge ${e.typeContrat}`}>
+                        {e.typeContrat}
+                      </div>
+                    </td>
                     <td>
                       <div className="table-actions">
                         <button

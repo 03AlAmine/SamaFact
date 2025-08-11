@@ -9,6 +9,7 @@ import { useAuth } from '../auth/AuthContext';
 import { FaArrowLeft, FaEye } from "react-icons/fa";
 import { payrollService } from '../services/payrollService';
 import PDFPreviewDynamic from '../components/PDFPreviewDynamic';
+import Sidebar from "../Sidebar";
 
 
 const PayrollForm = () => {
@@ -384,7 +385,8 @@ const PayrollForm = () => {
     const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
 
     return (
-        <div className="container">
+
+        <div className="dashboard-layoute">
 
             <div className="floating-buttons">
                 <button
@@ -402,358 +404,405 @@ const PayrollForm = () => {
                     <span className="button-text">Quitter</span>
                 </button>
             </div>
-            <div className='pre-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h1 className="header">Bulletin de Paie</h1>
-                <button
-                    className="button primary-button"
-                    onClick={togglePreview}  // Utilise la nouvelle fonction
-                >
-                    <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
-                </button>
-            </div>
+            <Sidebar
+                sidebarOpen={true}
+                activeTab="payrolls"
+                setActiveTab={() => { }}
+                setSidebarOpen={() => { }}
+            />
+            <div className="container">
 
-            <div className="section">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2>Informations du client</h2>
+                <div className='pre-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h1 className="header">Bulletin de Paie</h1>
                     <button
-                        className="first-btn"
-                        onClick={() => setShowEmployeInfo(!showEmployeInfo)}
-                        style={{ fontSize: '0.9rem' }}
+                        className="button primary-button"
+                        onClick={togglePreview}  // Utilise la nouvelle fonction
                     >
-                        {showEmployeInfo ? "Masquer" : "Afficher"}
+                        <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
                     </button>
                 </div>
-                {showEmployeInfo && (
-                    <>
-                        <div className="form-group">
-                            <label className="label">Employé</label>
-                            <select
-                                value={selectedEmployeeId}
-                                onChange={handleEmployeeChange}
-                                className="select"
-                                required
-                            >
-                                <option value="">Sélectionner un employé</option>
-                                {employees.map(employee => (
-                                    <option key={employee.id} value={employee.id}>
-                                        {employee.nom} {employee.prenom} - {employee.poste} (Mat: {employee.matricule})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
 
-                        {selectedEmployeeId && (
-                            <div className="client-info-box">
-                                <h3>Informations de l'employé</h3>
-                                <p><strong>Nom:</strong> {selectedEmployee.nom} {selectedEmployee.prenom}</p>
-                                <p><strong>Poste:</strong> {selectedEmployee.poste}</p>
-                                <p><strong>Matricule:</strong> {selectedEmployee.matricule}</p>
-                                <p><strong>Date d'embauche:</strong> {selectedEmployee.dateEmbauche}</p>
-                                <p><strong>Salaire de base:</strong> {formatCurrency(selectedEmployee.salaireBase)}</p>
-                                <p><strong>Type de contrat:</strong> {selectedEmployee.typeContrat}</p>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-
-            <div className="section">
-                <h2>
-                    Période de Paie
-                </h2>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label className="label">Du</label>
-                        <input
-                            type="date"
-                            name="periode.du"
-                            value={formData.periode.du}
-                            onChange={handleChange}
-                            className="input"
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Au</label>
-                        <input
-                            type="date"
-                            name="periode.au"
-                            value={formData.periode.au}
-                            onChange={handleChange}
-                            className="input"
-                            required
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="section">
-                <h2>
-                    Rémunération
-                </h2>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label className="label">Taux horaire</label>
-                        <input
-                            type="number"
-                            name="remuneration.tauxHoraire"
-                            value={formData.remuneration.tauxHoraire}
-                            onChange={handleChange}
-                            step="0.01"
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Salaire de base</label>
-                        <input
-                            type="number"
-                            name="remuneration.salaireBase"
-                            value={formData.remuneration.salaireBase}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Sursalaire</label>
-                        <input
-                            type="number"
-                            name="remuneration.sursalaire"
-                            value={formData.remuneration.sursalaire}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Indemnité de déplacement</label>
-                        <input
-                            type="number"
-                            name="remuneration.indemniteDeplacement"
-                            value={formData.remuneration.indemniteDeplacement}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Autres indemnités</label>
-                        <input
-                            type="number"
-                            name="remuneration.autresIndemnites"
-                            value={formData.remuneration.autresIndemnites}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Avantages en nature</label>
-                        <input
-                            type="number"
-                            name="remuneration.avantagesNature"
-                            value={formData.remuneration.avantagesNature}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="section">
-                <h2>
-                    Primes et Indemnités
-                </h2>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label className="label">Indemnité de transport</label>
-                        <input
-                            type="number"
-                            name="primes.transport"
-                            value={formData.primes.transport}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Prime de panier</label>
-                        <input
-                            type="number"
-                            name="primes.panier"
-                            value={formData.primes.panier}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Indemnité de responsabilité</label>
-                        <input
-                            type="number"
-                            name="primes.responsabilite"
-                            value={formData.primes.responsabilite}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Autres primes</label>
-                        <input
-                            type="number"
-                            name="primes.autresPrimes"
-                            value={formData.primes.autresPrimes}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="section">
-                <h2>
-                    Retenues
-                </h2>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label className="label">Retenue IPM</label>
-                        <input
-                            type="number"
-                            name="retenues.ipm"
-                            value={formData.retenues.ipm}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Avances</label>
-                        <input
-                            type="number"
-                            name="retenues.avances"
-                            value={formData.retenues.avances}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">TRIMF</label>
-                        <input
-                            type="number"
-                            name="retenues.trimf"
-                            value={formData.retenues.trimf}
-                            onChange={handleChange}
-                            className="input"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">CFCE (1%)</label>
-                        <input
-                            type="number"
-                            name="retenues.cfce"
-                            value={formData.retenues.cfce}
-                            onChange={handleChange}
-                            className="input"
-                            readOnly
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">IR</label>
-                        <input
-                            type="number"
-                            name="retenues.ir"
-                            value={formData.retenues.ir}
-                            onChange={handleChange}
-                            className="input"
-                            readOnly
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {selectedEmployeeId && (
                 <div className="section">
-                    <h2 >Détails des Cotisations</h2>
-                    <div className="table-container">
-                        <table className="totals-table">
-                            <tbody>
-                                <tr>
-                                    <td>IPRES RG (5.6%):</td>
-                                    <td>{formatCurrency(calculations.detailsCotisations.ipresRG)}</td>
-                                </tr>
-                                <tr>
-                                    <td>IPRES RC (2.4%):</td>
-                                    <td>{formatCurrency(calculations.detailsCotisations.ipresRC)}</td>
-                                </tr>
-                                <tr>
-                                    <td>CFCE (1%):</td>
-                                    <td>{formatCurrency(calculations.detailsCotisations.cfce)}</td>
-                                </tr>
-                                <tr>
-                                    <td>IR:</td>
-                                    <td>{formatCurrency(calculations.detailsCotisations.ir)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2>Informations du client</h2>
+                        <button
+                            className="first-btn"
+                            onClick={() => setShowEmployeInfo(!showEmployeInfo)}
+                            style={{ fontSize: '0.9rem' }}
+                        >
+                            {showEmployeInfo ? "Masquer" : "Afficher"}
+                        </button>
                     </div>
-                    <h2 style={{ marginTop: '3rem' }}>
-                        Salaires
-                    </h2>
-                    <div className="table-container">
-                        <table className="totals-table">
-                            <tbody>
-                                <tr>
-                                    <td>Brut Social:</td>
-                                    <td>{formatCurrency(calculations.brutSocial)}</td>
-                                </tr>
-                                <tr>
-                                    <td>Brut Fiscal:</td>
-                                    <td>{formatCurrency(calculations.brutFiscal)}</td>
-                                </tr>
-                                <tr>
-                                    <td>Cotisations Salariales:</td>
-                                    <td>{formatCurrency(calculations.cotisationsSalariales)}</td>
-                                </tr>
-                                <tr>
-                                    <td>Cotisations Patronales:</td>
-                                    <td>{formatCurrency(calculations.cotisationsPatronales)}</td>
-                                </tr>
-                                <tr>
-                                    <td>Salaire Net:</td>
-                                    <td>{formatCurrency(calculations.salaireNet)}</td>
-                                </tr>
-                                <tr>
-                                    <td>Salaire Net à Payer:</td>
-                                    <td className="highlight">{formatCurrency(calculations.salaireNetAPayer)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            <div className="button-group">
-                <button
-                    className="primary-button"
-                    onClick={() => setShowPreview(!showPreview)}
-                >
-                    <i className={`fas fa-${showPreview ? 'eye-slash' : 'eye'}`}></i>
-                    {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
-                </button>
-
-
-
-                <button
-                    className="success-button"
-                    onClick={handleSave}
-                    disabled={isSaving}
-                >
-                    {isSaving ? (
+                    {showEmployeInfo && (
                         <>
-                            <i className="fas fa-spinner fa-spin"></i> Enregistrement...
-                        </>
-                    ) : (
-                        <>
-                            <i className="fas fa-save"></i> {isSaved ? "Mettre à jour" : "Enregistrer"}
+                            <div className="form-group">
+                                <label className="label">Employé</label>
+                                <select
+                                    value={selectedEmployeeId}
+                                    onChange={handleEmployeeChange}
+                                    className="select"
+                                    required
+                                >
+                                    <option value="">Sélectionner un employé</option>
+                                    {employees.map(employee => (
+                                        <option key={employee.id} value={employee.id}>
+                                            {employee.nom} {employee.prenom} - {employee.poste} (Mat: {employee.matricule})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {selectedEmployeeId && (
+                                <div className="client-info-box">
+                                    <h3>Informations de l'employé</h3>
+                                    <p><strong>Nom:</strong> {selectedEmployee.nom} {selectedEmployee.prenom}</p>
+                                    <p><strong>Poste:</strong> {selectedEmployee.poste}</p>
+                                    <p><strong>Matricule:</strong> {selectedEmployee.matricule}</p>
+                                    <p><strong>Date d'embauche:</strong> {selectedEmployee.dateEmbauche}</p>
+                                    <p><strong>Salaire de base:</strong> {formatCurrency(selectedEmployee.salaireBase)}</p>
+                                    <p><strong>Type de contrat:</strong> {selectedEmployee.typeContrat}</p>
+                                </div>
+                            )}
                         </>
                     )}
-                </button>
+                </div>
 
-                {isSaved && (
-                    <PDFDownloadLink
+                <div className="section">
+                    <h2>
+                        Période de Paie
+                    </h2>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label className="label">Du</label>
+                            <input
+                                type="date"
+                                name="periode.du"
+                                value={formData.periode.du}
+                                onChange={handleChange}
+                                className="input"
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Au</label>
+                            <input
+                                type="date"
+                                name="periode.au"
+                                value={formData.periode.au}
+                                onChange={handleChange}
+                                className="input"
+                                required
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="section">
+                    <h2>
+                        Rémunération
+                    </h2>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label className="label">Taux horaire</label>
+                            <input
+                                type="number"
+                                name="remuneration.tauxHoraire"
+                                value={formData.remuneration.tauxHoraire}
+                                onChange={handleChange}
+                                step="0.01"
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Salaire de base</label>
+                            <input
+                                type="number"
+                                name="remuneration.salaireBase"
+                                value={formData.remuneration.salaireBase}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Sursalaire</label>
+                            <input
+                                type="number"
+                                name="remuneration.sursalaire"
+                                value={formData.remuneration.sursalaire}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Indemnité de déplacement</label>
+                            <input
+                                type="number"
+                                name="remuneration.indemniteDeplacement"
+                                value={formData.remuneration.indemniteDeplacement}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Autres indemnités</label>
+                            <input
+                                type="number"
+                                name="remuneration.autresIndemnites"
+                                value={formData.remuneration.autresIndemnites}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Avantages en nature</label>
+                            <input
+                                type="number"
+                                name="remuneration.avantagesNature"
+                                value={formData.remuneration.avantagesNature}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="section">
+                    <h2>
+                        Primes et Indemnités
+                    </h2>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label className="label">Indemnité de transport</label>
+                            <input
+                                type="number"
+                                name="primes.transport"
+                                value={formData.primes.transport}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Prime de panier</label>
+                            <input
+                                type="number"
+                                name="primes.panier"
+                                value={formData.primes.panier}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Indemnité de responsabilité</label>
+                            <input
+                                type="number"
+                                name="primes.responsabilite"
+                                value={formData.primes.responsabilite}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Autres primes</label>
+                            <input
+                                type="number"
+                                name="primes.autresPrimes"
+                                value={formData.primes.autresPrimes}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="section">
+                    <h2>
+                        Retenues
+                    </h2>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label className="label">Retenue IPM</label>
+                            <input
+                                type="number"
+                                name="retenues.ipm"
+                                value={formData.retenues.ipm}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Avances</label>
+                            <input
+                                type="number"
+                                name="retenues.avances"
+                                value={formData.retenues.avances}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">TRIMF</label>
+                            <input
+                                type="number"
+                                name="retenues.trimf"
+                                value={formData.retenues.trimf}
+                                onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">CFCE (1%)</label>
+                            <input
+                                type="number"
+                                name="retenues.cfce"
+                                value={formData.retenues.cfce}
+                                onChange={handleChange}
+                                className="input"
+                                readOnly
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">IR</label>
+                            <input
+                                type="number"
+                                name="retenues.ir"
+                                value={formData.retenues.ir}
+                                onChange={handleChange}
+                                className="input"
+                                readOnly
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {selectedEmployeeId && (
+                    <div className="section">
+                        <h2 >Détails des Cotisations</h2>
+                        <div className="table-container">
+                            <table className="totals-table">
+                                <tbody>
+                                    <tr>
+                                        <td>IPRES RG (5.6%):</td>
+                                        <td>{formatCurrency(calculations.detailsCotisations.ipresRG)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>IPRES RC (2.4%):</td>
+                                        <td>{formatCurrency(calculations.detailsCotisations.ipresRC)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>CFCE (1%):</td>
+                                        <td>{formatCurrency(calculations.detailsCotisations.cfce)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>IR:</td>
+                                        <td>{formatCurrency(calculations.detailsCotisations.ir)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <h2 style={{ marginTop: '3rem' }}>
+                            Salaires
+                        </h2>
+                        <div className="table-container">
+                            <table className="totals-table">
+                                <tbody>
+                                    <tr>
+                                        <td>Brut Social:</td>
+                                        <td>{formatCurrency(calculations.brutSocial)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Brut Fiscal:</td>
+                                        <td>{formatCurrency(calculations.brutFiscal)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cotisations Salariales:</td>
+                                        <td>{formatCurrency(calculations.cotisationsSalariales)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cotisations Patronales:</td>
+                                        <td>{formatCurrency(calculations.cotisationsPatronales)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Salaire Net:</td>
+                                        <td>{formatCurrency(calculations.salaireNet)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Salaire Net à Payer:</td>
+                                        <td className="highlight">{formatCurrency(calculations.salaireNetAPayer)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                <div className="button-group">
+                    <button
+                        className="primary-button"
+                        onClick={() => setShowPreview(!showPreview)}
+                    >
+                        <i className={`fas fa-${showPreview ? 'eye-slash' : 'eye'}`}></i>
+                        {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
+                    </button>
+
+
+
+                    <button
+                        className="success-button"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? (
+                            <>
+                                <i className="fas fa-spinner fa-spin"></i> Enregistrement...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-save"></i> {isSaved ? "Mettre à jour" : "Enregistrer"}
+                            </>
+                        )}
+                    </button>
+
+                    {isSaved && (
+                        <PDFDownloadLink
+                            document={
+                                <PayrollPDF
+                                    employee={selectedEmployee}
+                                    formData={{ ...formData, numero: payrollNumber }}
+                                    calculations={calculations}
+                                    companyInfo={{
+                                        name: "LEADER INTERIM & SERVICES",
+                                        address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
+                                        phone: "33-820-88-46 / 78-434-30-16",
+                                        email: "infos@leaderinterime.com",
+                                        rc: "SN 2015 B24288",
+                                        ninea: "0057262212 A2"
+                                    }}
+                                />
+                            }
+                            fileName={`bulletin_paie_${selectedEmployee.nom}_${selectedEmployee.prenom}_${formData.periode.du}_${formData.periode.au}.pdf`}
+                        >
+                            {({ loading: pdfLoading }) => (
+                                <button className="info-button" disabled={pdfLoading}>
+                                    {pdfLoading ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin"></i> Génération...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-file-download"></i> Télécharger
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </PDFDownloadLink>
+                    )}
+                </div>
+
+                {showPreview && (
+                    <PDFPreviewDynamic
+                        width="100%"
+                        height="800px"
+                        style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
                         document={
                             <PayrollPDF
                                 employee={selectedEmployee}
@@ -769,47 +818,9 @@ const PayrollForm = () => {
                                 }}
                             />
                         }
-                        fileName={`bulletin_paie_${selectedEmployee.nom}_${selectedEmployee.prenom}_${formData.periode.du}_${formData.periode.au}.pdf`}
-                    >
-                        {({ loading: pdfLoading }) => (
-                            <button className="info-button" disabled={pdfLoading}>
-                                {pdfLoading ? (
-                                    <>
-                                        <i className="fas fa-spinner fa-spin"></i> Génération...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="fas fa-file-download"></i> Télécharger
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </PDFDownloadLink>
+                    />
                 )}
             </div>
-
-            {showPreview && (
-                <PDFPreviewDynamic
-                    width="100%"
-                    height="800px"
-                    style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
-                    document={
-                        <PayrollPDF
-                            employee={selectedEmployee}
-                            formData={{ ...formData, numero: payrollNumber }}
-                            calculations={calculations}
-                            companyInfo={{
-                                name: "LEADER INTERIM & SERVICES",
-                                address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
-                                phone: "33-820-88-46 / 78-434-30-16",
-                                email: "infos@leaderinterime.com",
-                                rc: "SN 2015 B24288",
-                                ninea: "0057262212 A2"
-                            }}
-                        />
-                    }
-                />
-            )}
         </div>
     );
 };
