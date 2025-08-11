@@ -1,0 +1,355 @@
+/* Styles améliorés pour la table des employees */
+.employees-table-container {
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-top: 1.5rem;
+  background: white;
+}
+
+.employees-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.employees-table th {
+  text-align: left;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #4a6fa5 0%,  #ffc107 100%);
+  color: white;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.employees-table th:first-child {
+  border-top-left-radius: 10px;
+}
+
+.employees-table th:last-child {
+  border-top-right-radius: 10px;
+}
+
+.employees-table th:hover {
+  background-color: var(--primary-dark);
+}
+
+.employees-table th.active {
+  background-color: var(--primary-dark);
+}
+
+.employees-table td {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+  transition: var(--transition-fast);
+}
+
+.employees-table tr:last-child td {
+  border-bottom: none;
+}
+
+.employees-table tr:hover td {
+  background-color: rgba(67, 97, 238, 0.05);
+}
+
+.employees-table tr.active td {
+  background-color: rgba(67, 97, 238, 0.08);
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-indicator {
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.employee-avatar-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.15rem;
+}
+
+.employee-company {
+  font-size: 0.8rem;
+  color: var(--gray-medium);
+}
+
+.employee-contact div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.employee-contact svg {
+  color: var(--gray-medium);
+  font-size: 0.8rem;
+  min-width: 14px;
+}
+
+.employee-address {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border: none;
+  background: transparent;
+  color: var(--gray-medium);
+}
+
+.action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.edit-btn:hover {
+  color: var(--primary-color);
+}
+
+.delete-btn:hover {
+  color: var(--danger-color);
+}
+
+.view-btn:hover {
+  color: var(--success-color);
+}
+
+/* Styles améliorés pour la table des factures */
+.invoices-table-container {
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-top: 1.5rem;
+  background: white;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.invoice-table th {
+  text-align: left;
+  padding: 1rem 1.25rem;
+  background-color: var(--secondary-color);
+  color: white;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.invoice-table th:first-child {
+  border-top-left-radius: 10px;
+}
+
+.invoice-table th:last-child {
+  border-top-right-radius: 10px;
+}
+
+.invoice-table td {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+  transition: var(--transition-fast);
+}
+
+.invoice-table tr:last-child td {
+  border-bottom: none;
+}
+
+.invoice-table tr:hover td {
+  background-color: rgba(74, 184, 255, 0.05);
+}
+
+.invoice-status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.invoice-status.paid {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--success-color);
+}
+
+.invoice-status.pending {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--warning-color);
+}
+
+.invoice-status.overdue {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--danger-color);
+}
+
+.invoice-table .action-btn {
+  width: 28px;
+  height: 28px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .header-right {
+    width: 100%;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 992px) {
+  .employees-table td,
+  .invoice-table td {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-left,
+  .header-right {
+    width: 100%;
+  }
+
+  .sort-options {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .employee-avatar-small {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+
+  .employee-name {
+    font-size: 0.9rem;
+  }
+
+  .employee-company {
+    font-size: 0.75rem;
+  }
+
+  .employee-contact div,
+  .employee-address {
+    font-size: 0.8rem;
+  }
+
+  .table-actions {
+    gap: 0.5rem;
+  }
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .employees-table th,
+  .invoice-table th {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .employees-table td,
+  .invoice-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .invoice-status {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+/* Ajoutez ces styles à votre CSS */
+.employees-table tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.employees-table tr:hover {
+  background-color: rgba(67, 97, 238, 0.05) !important;
+}
+
+.employees-table tr.active {
+  background-color: rgba(67, 97, 238, 0.08) !important;
+  position: relative;
+}
+
+.employees-table tr.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background-color: var(--primary-color);
+}
+.employee-department {
+  font-size: 0.82rem;
+  color: #718096;
+  background: #f8f9fa;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}

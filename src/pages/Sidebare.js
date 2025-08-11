@@ -1,20 +1,36 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAppContext } from '../contexts/AppContext';
 import {
   FaUsers,
   FaFileInvoiceDollar,
   FaChartBar,
+  FaMoneyBillWave,
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
-  const menuItems = [
+  const { activeModule } = useAppContext();
+
+  const commonItems = [
     { icon: <MdDashboard className="nav-icon" />, label: "Tableau de bord", tab: "dashboard" },
-    { icon: <FaUsers className="nav-icon" />, label: "Clients", tab: "clients" },
-    { icon: <FaFileInvoiceDollar className="nav-icon" />, label: "Ment@Fact", tab: "factures" },
     { icon: <FaChartBar className="nav-icon" />, label: "Statistiques", tab: "stats" },
     { icon: <FaUsers className="nav-icon" />, label: "Équipes", tab: "equipes" }
   ];
+
+  const moduleSpecificItems = {
+    mentafact: [
+      { icon: <FaFileInvoiceDollar className="nav-icon" />, label: "Ment@Fact", tab: "factures" },
+      { icon: <FaUsers className="nav-icon" />, label: "Clients", tab: "clients" },
+    ],
+    payroll: [
+      { icon: <FaMoneyBillWave className="nav-icon" />, label: "Ment@Roll", tab: "payrolls" },
+      { icon: <FaUsers className="nav-icon" />, label: "Employés", tab: "employees" },
+
+    ]
+  };
+
+  const menuItems = [...commonItems, ...moduleSpecificItems[activeModule]];
 
   return (
     <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
@@ -24,8 +40,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
         className="sidebar-header"
         style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
       >
-        <img src={logo} alt="Logo Sam@Fact" style={{ height: '50px' }} />
-          {sidebarOpen && <h2 style={{ margin: 0 }}>SamaF@ct</h2>}
+        <img src={logo} alt="Logo Sam@Salaire" style={{ height: '50px' }} />
+        {sidebarOpen && <h2 style={{ margin: 0 }}>SamaSalaire</h2>}
       </Link>
 
       <nav className="sidebar-nav">

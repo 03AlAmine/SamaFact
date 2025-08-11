@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from './auth/AuthContext';
-import { FaBell, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown, FaCreditCard, FaUser, FaSearch, FaChevronRight } from 'react-icons/fa';
+import { FaBell, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown, FaCreditCard, FaUser, FaSearch, FaChevronRight, FaMoneyBillWave, FaFileInvoiceDollar } from 'react-icons/fa';
 import { clientService } from "./services/clientService";
+import { employeeService } from "./services/employeeService";
 import { invoiceService } from "./services/invoiceService";
+import { payrollService } from "./services/payrollService";
 import { teamService } from "./services/teamService";
 import { getDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
@@ -12,12 +14,17 @@ import { db } from "./firebase";
 // Import pages and components
 import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
+import EmployeesPage from "./pages/EmployeePage";
 import InvoicesPage from "./pages/InvoicesPage";
+import PayrollsPage from "./pages/PayrollsPage";
 import StatsPage from "./pages/StatsPage";
 import TeamsPage from "./pages/TeamsPage";
 import Sidebar from "./pages/Sidebare";
 import Preloader from './components/Preloader';
 import CompanyNameDisplay from './components/CompanyNameDisplay';
+
+import { useAppContext } from './contexts/AppContext';
+
 
 import logo from './assets/Logo_Mf.png';
 import "./css/Mentafact.css";
@@ -59,6 +66,23 @@ const Mentafact = () => {
     const [isEditingEquipe, setIsEditingEquipe] = useState(false);
     const { createSubUser, checkPermission } = useAuth();
 
+    const [employee, setEmployee] = useState({
+        nom: "",
+        prenom: "",
+        matricule: "",
+        poste: "",
+        departement: "",
+        dateEmbauche: "",
+        typeContrat: "CDI",
+        salaireBase: 0
+    });
+    const [employees, setEmployees] = useState([]);
+
+    const [editingEmployee, setEditingEmployee] = useState(null);
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [payrolls, setPayrolls] = useState([]);
+
+
     const [stats, setStats] = useState({
         totalClients: 0,
         totalFactures: 0,
@@ -66,6 +90,8 @@ const Mentafact = () => {
         facturesImpayees: 0,
         facturesPayees: 0,
         totalEquipes: 0,
+        totalemployees: 0,
+        totalpayrolls: 0,
     });
 
     const roleLabels = {
@@ -111,6 +137,24 @@ const Mentafact = () => {
                 }));
             });
             if (typeof clientsUnsub === "function") unsubscribers.push(clientsUnsub);
+
+            const employeesUnsub = employeeService.getEmployees(companyId, (employeesData) => {
+                setEmployees(employeesData);
+                setStats(prev => ({
+                    ...prev,
+                    totalEmployees: employeesData.length
+                }));
+            });
+            if (typeof employeesUnsub === "function") unsubscribers.push(employeesUnsub);
+
+            const payrollsUnsub = payrollService.getPayrolls(companyId, (payrollsData) => {
+                setPayrolls(payrollsData); // Correction ici - utiliser setPayrolls au lieu de setEmployees
+                setStats(prev => ({
+                    ...prev,
+                    totalPayrolls: payrollsData.length
+                }));
+            });
+            if (typeof payrollsUnsub === "function") unsubscribers.push(payrollsUnsub);
 
             const invoicesUnsub = invoiceService.getInvoices(companyId, "facture", (invoicesData) => {
                 let filteredFactures = invoicesData;
@@ -299,6 +343,79 @@ const Mentafact = () => {
         setIsEditing(false);
     };
 
+
+
+    // Handlers employés
+    const loadEmployeePayrolls = (employeeId) => {
+        const employeeObj = employees.find(e => e.id === employeeId);
+        setSelectedEmployee(employeeObj);
+        // Chargez les bulletins de paie ici
+    };
+    const handleChangeemployee = (e) => setEmployee({ ...employee, [e.target.name]: e.target.value });
+    const handleEditChangeemployee = (e) => setEditingEmployee({ ...editingEmployee, [e.target.name]: e.target.value });
+
+    const handleSubmitemployee = async (e) => {
+        e.preventDefault();
+        const result = await employeeService.addEmployee(companyId, employee);
+        if (result.success) {
+            alert(result.message);
+            setEmployee({
+                nom: "",
+                prenom: "",
+                matricule: "",
+                poste: "",
+                departement: "",
+                dateEmbauche: "",
+                typeContrat: "CDI",
+                salaireBase: 0
+            });
+        } else {
+            alert(result.message);
+        }
+    };
+    const handleEditEmployee = (client) => {
+        setEditingEmployee({ ...client });
+        setIsEditing(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteEmployee = async (employeeId) => {
+        if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet employé ?")) {
+            return false;
+        }
+
+        try {
+            const result = await employeeService.deleteEmployee(companyId, employeeId);
+            if (result.success) {
+                setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+                alert(result.message);
+                return true;
+            }
+        } catch (error) {
+            console.error("Erreur suppression employé:", error);
+            alert("Échec de la suppression");
+            return false;
+        }
+    };
+
+    const handleUpdateEmployee = async (e) => {
+        e.preventDefault();
+        const result = await employeeService.updateClient(companyId, editingEmployee.id, editingEmployee);
+        if (result.success) {
+            alert(result.message);
+            cancelEditEmployee();
+        } else {
+            alert(result.message);
+        }
+    };
+
+
+    // Annuler l'édition d'un client
+    const cancelEditEmployee = () => {
+        setEditingEmployee(null);
+        setIsEditing(false);
+    };
+
     // Handlers équipes
     const handleEquipeChange = (e) => setEquipe({ ...equipe, [e.target.name]: e.target.value });
     const handleEquipeEditChange = (e) => setEditingEquipe({ ...editingEquipe, [e.target.name]: e.target.value });
@@ -406,6 +523,12 @@ const Mentafact = () => {
         client.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const filteredEmployees = (employees || []).filter(employee =>
+        employee.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.societe?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const filteredEquipes = equipes.filter(equipe =>
         equipe.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
         equipe.responsable?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -504,6 +627,8 @@ const Mentafact = () => {
             e.target.value = '';
         }
     };
+    const { activeModule, setActiveModule } = useAppContext();
+
 
     const renderActiveTab = () => {
         switch (activeTab) {
@@ -516,7 +641,8 @@ const Mentafact = () => {
                     navigate={navigate}
                     clients={clients}
                     currentUser={currentUser} // 👈 Ajoute ça
-
+                    employees={employees}
+                    payrolls={payrolls}
                 />;
             case "clients":
                 return <ClientsPage
@@ -543,6 +669,24 @@ const Mentafact = () => {
                     handleImportClient={handleImportClient} // <-- Ajoutez cette ligne
                     importProgress={importProgress}
                 />;
+            case "employees":
+                return <EmployeesPage
+                    employees={employees}
+                    filteredEmployees={filteredEmployees}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    selectedEmployee={selectedEmployee}
+                    loadEmployeePayrolls={loadEmployeePayrolls}
+                    handleEdit={handleEditEmployee}
+                    handleDelete={handleDeleteEmployee}
+                    employee={employee}
+                    handleChange={handleChangeemployee}
+                    handleSubmit={handleSubmitemployee}
+                    editingEmployee={editingEmployee}
+                    handleEditChangee={handleEditChangeemployee}
+                    handleUpdate={handleUpdateEmployee}
+                    cancelEdit={cancelEditEmployee}
+                />;
             case "factures":
                 return <InvoicesPage
                     activeTab_0={activeTab_0}
@@ -557,6 +701,13 @@ const Mentafact = () => {
                     selectedClient={selectedClient}
                     companyId={companyId}
 
+                />;
+            case "payrolls":
+                return <PayrollsPage
+                    payrolls={payrolls}
+                    employees={employees}
+                    selectedEmployee={selectedEmployee}
+                    companyId={companyId}
                 />;
             case "stats":
                 return <StatsPage
@@ -621,7 +772,7 @@ const Mentafact = () => {
                             <FaSearch className="search-icon" />
                             <input
                                 type="text"
-                                placeholder="Rechercher clients, factures..."
+                                placeholder="Rechercher employees, factures..."
                                 className="search-input"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -631,6 +782,24 @@ const Mentafact = () => {
                     </div>
 
                     <div className="navbar-right">
+                        <div className="module-toggle">
+                            <button
+                                className="toggle-btn"
+                                onClick={() => setActiveModule(activeModule === 'mentafact' ? 'payroll' : 'mentafact')}
+                            >
+                                {activeModule === 'mentafact' ? (
+                                    <>
+                                        <FaMoneyBillWave className="toggle-icon" />
+                                        <span>Payroll</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaFileInvoiceDollar className="toggle-icon" />
+                                        <span>Mentafact</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                         <button className="notification-btn">
                             <FaBell />
                             <span className="notification-badge pulse">3</span>

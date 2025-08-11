@@ -470,6 +470,265 @@ export const ClientChart = ({ clients }) => {
 
 };
 
+export const EmployeChart = ({ employees }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 5;
+  const intervalRef = useRef(null);
+
+  const companies = {};
+  if (Array.isArray(employees)) {
+    employees.forEach(employee => {
+      const company = [employee?.nom, employee?.prenom].filter(Boolean).join(' ') || 'Non spécifié';
+      companies[company] = (companies[company] || 0) + 1;
+    });
+  }
+
+  const labels = Object.keys(companies);
+  const values = Object.values(companies);
+
+  // Palette de couleurs modernes
+  const backgroundColors = [
+    // Couleurs existantes
+    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#ef4444',
+    '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
+    '#64748b', '#94a3b8', '#cbd5e1',
+
+    // Couleurs ajoutées
+    '#a855f7', '#9333ea', '#7c3aed', '#6d28d9', // violet
+    '#d946ef', '#c026d3', '#a21caf', '#86198f', // rose/violet
+    '#facc15', '#fde68a', '#fef08a', '#fcd34d', // jaune
+    '#4ade80', '#34d399', '#2dd4bf', '#5eead4', // vert-menthe
+    '#0d9488', '#0891b2', '#0284c7', '#2563eb', // bleu
+    '#1d4ed8', '#1e40af', '#1e3a8a', '#172554', // bleu foncé
+    '#f43f5e', '#fb7185', '#fca5a5', '#fecaca', // rouge/rose
+    '#e2e8f0', '#f1f5f9', '#f8fafc', '#e5e7eb'  // gris/pastel
+  ];
+
+
+  const data = {
+    labels,
+    datasets: [{
+      label: 'Nombre d\'employés par ',
+      data: values,
+      backgroundColor: backgroundColors.slice(0, labels.length),
+      borderColor: '#fff',
+      borderWidth: 2,
+      hoverOffset: 10,
+      cutout: '75%',
+    }]
+  };
+
+  const options = {
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: false
+      }
+    },
+    cutout: '75%',
+    layout: {
+      padding: 20
+    },
+    animation: {
+      animateScale: true,
+      animateRotate: true
+    }
+  };
+
+  const totalPages = Math.ceil(labels.length / itemsPerPage);
+  const start = currentPage * itemsPerPage;
+  const end = start + itemsPerPage;
+  const visibleLegends = labels.slice(start, end);
+
+  // Auto-slide toutes les 3 secondes
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCurrentPage(prev => (prev + 1) % totalPages);
+    }, 3000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [totalPages]);
+
+  const pauseAutoSlide = () => clearInterval(intervalRef.current);
+  const resumeAutoSlide = () => {
+    intervalRef.current = setInterval(() => {
+      setCurrentPage(prev => (prev + 1) % totalPages);
+    }, 3000);
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      gap: '1rem',
+      alignItems: 'center',
+      flexWrap: 'wrap', // ✅ pour responsivité
+      maxWidth: '100%',
+      margin: '0 auto',
+      padding: '0,5rem',
+      boxSizing: 'border-box'
+    }}>
+      {/* Graphique */}
+      <div style={{
+        height: '250px',
+        width: '250px',
+        position: 'relative',
+        flexShrink: 0
+      }}>
+        <Doughnut data={data} options={options} />
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#1e293b'
+          }}>
+            {values.reduce((a, b) => a + b, 0)}
+          </div>
+          <div style={{
+            fontSize: '14px',
+            color: '#64748b'
+          }}>
+            Employés
+          </div>
+        </div>
+      </div>
+
+      {/* Légende avec carousel */}
+      <div
+        onMouseEnter={pauseAutoSlide}
+        onMouseLeave={resumeAutoSlide}
+        style={{
+          flex: 1,
+          minWidth: '260px',
+          padding: '1rem',
+          borderRadius: '12px',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          maxWidth: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
+
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1px',
+          minHeight: '160px',
+          maxWidth: '100%',
+          overflow: 'hidden'
+        }}>
+          {visibleLegends.map((label, i) => (
+            <div key={label} style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+              overflow: 'hidden',
+              maxWidth: '100%'
+            }}>
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  backgroundColor: backgroundColors[start + i],
+                  marginRight: 12,
+                  borderRadius: '4px',
+                  flexShrink: 0
+                }}
+              />
+              <span style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: '#334155',
+                fontWeight: '500',
+                maxWidth: '80%',
+                flexGrow: 1,
+                display: 'inline-block'
+              }}>
+                {label}
+              </span>
+              <span style={{
+                marginLeft: 'auto',
+                color: '#64748b',
+                fontSize: '13px',
+                fontWeight: '600',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}>
+                {values[start + i]}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation & pagination */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '0.5rem'
+        }}>
+          <button
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
+            disabled={currentPage === 0}
+            style={{
+              ...navButtonStyle,
+              background: currentPage === 0 ? '#e2e8f0' : '#6366f1',
+              color: currentPage === 0 ? '#94a3b8' : 'white'
+            }}
+          >
+            ◀
+          </button>
+
+          <div style={{
+            display: 'flex',
+            gap: '6px'
+          }}>
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <div
+                key={idx}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: currentPage === idx ? '#6366f1' : '#cbd5e1',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages - 1))}
+            disabled={currentPage === totalPages - 1}
+            style={{
+              ...navButtonStyle,
+              background: currentPage === totalPages - 1 ? '#e2e8f0' : '#6366f1',
+              color: currentPage === totalPages - 1 ? '#94a3b8' : 'white'
+            }}
+          >
+            ▶
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+};
 
 // 💳 Statut des factures (Pie)
 export const StatusChart = ({ invoices }) => {
@@ -608,6 +867,112 @@ export const MonthlyComparisonChart = ({ invoices }) => {
   return (
     <div style={{ height: '250px', padding: '1rem' }}>
       <Line data={data} options={options} />
+    </div>
+  );
+};
+
+export const PayrollChart = ({ payrolls = [] }) => {
+  const data = {
+    labels: payrolls.map(p => p.mois),
+    datasets: [
+      {
+        label: 'Net à payer (FCFA)',
+        data: payrolls.map(p => p.netAPayer),
+        backgroundColor: CHART_COLORS.primary,
+        borderColor: CHART_BORDERS.primary,
+        borderWidth: 2,
+        borderRadius: 4,
+        hoverBackgroundColor: CHART_BORDERS.primary
+      },
+      {
+        label: 'Charges sociales (FCFA)',
+        data: payrolls.map(p => p.chargesSociales),
+        backgroundColor: CHART_COLORS.secondary,
+        borderColor: CHART_BORDERS.secondary,
+        borderWidth: 2,
+        borderRadius: 4,
+        hoverBackgroundColor: CHART_BORDERS.secondary
+      }
+    ]
+  };
+
+  const options = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      tooltip: {
+        ...commonOptions.plugins.tooltip,
+        callbacks: {
+          label: (context) => {
+            return `${context.dataset.label}: ${context.raw.toLocaleString('fr-FR')} FCFA`;
+          }
+        }
+      }
+    },
+    scales: {
+      ...commonOptions.scales,
+      y: {
+        ...commonOptions.scales.y,
+        ticks: {
+          callback: (value) => `${value.toLocaleString('fr-FR')} FCFA`
+        }
+      }
+    }
+  };
+
+  return (
+    <div style={{ height: '300px', padding: '1rem' }}>
+      <Bar data={data} options={options} />
+    </div>
+  );
+};
+
+// Nouveau graphique pour les types de contrat (Payroll)
+export const ContractTypeChart = ({ employees = [] }) => {
+  const contractTypes = {
+    'CDI': 0,
+    'CDD': 0,
+    'Stagiaire': 0,
+    'Autre': 0
+  };
+
+  employees.forEach(emp => {
+    const type = emp.typeContrat || 'Autre';
+    contractTypes[type] = (contractTypes[type] || 0) + 1;
+  });
+
+
+  const data = {
+    labels: Object.keys(contractTypes),
+    datasets: [{
+      data: Object.values(contractTypes),
+      backgroundColor: [
+        CHART_COLORS.success,
+        CHART_COLORS.warning,
+        CHART_COLORS.info,
+        CHART_COLORS.light
+      ],
+      borderColor: '#fff',
+      borderWidth: 2
+    }]
+  };
+
+  return (
+    <div style={{ height: '250px', padding: '1rem' }}>
+      <Pie
+        data={data}
+        options={{
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            title: {
+              display: true,
+              text: 'Types de contrat',
+              font: { size: 16 }
+            }
+          }
+        }}
+      />
     </div>
   );
 };

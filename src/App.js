@@ -5,6 +5,7 @@ import { PrivateRoute } from './auth/PrivateRoute';
 import Login from './auth/Login';
 import Register from './auth/Register';
 import Facture from './bill/Fact';
+import Payroll from './payrolls/PayrollForm';
 import Profile from './profil/Profile';
 import Home from './Mentafact';
 import NotFound from './components/NotFound';
@@ -30,6 +31,7 @@ function App() {
 
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="/bill" element={<PrivateRoute><Facture /></PrivateRoute>} />
+          <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/samafact" element={<PrivateRoute allowedRoles={['superadmin']}><Admin /></PrivateRoute>} />
 
