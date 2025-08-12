@@ -12,6 +12,7 @@ import NotFound from './components/NotFound';
 import Admin from './samafact/SamaFact';
 import AccessDenied from './components/AccessDenied';
 import ForgotPassword from './auth/ForgotPassword';
+import { UiProvider  } from './contexts/uiContext'; // Ajoutez cette importation
 
 function App() {
   return (
@@ -22,21 +23,25 @@ function App() {
       }}
     >
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register_admin" element={<Register />} />
-          <Route path="/access-denied" element={<AccessDenied />} />
+        <UiProvider>
 
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register_admin" element={<Register />} />
+            <Route path="/access-denied" element={<AccessDenied />} />
 
-          <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/bill" element={<PrivateRoute><Facture /></PrivateRoute>} />
-          <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-          <Route path="/samafact" element={<PrivateRoute allowedRoles={['superadmin']}><Admin /></PrivateRoute>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/bill" element={<PrivateRoute><Facture /></PrivateRoute>} />
+            <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
+            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+            <Route path="/samafact" element={<PrivateRoute allowedRoles={['superadmin']}><Admin /></PrivateRoute>} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </UiProvider>
+
       </AuthProvider>
     </Router>
   );

@@ -24,6 +24,7 @@ import Preloader from './components/Preloader';
 import CompanyNameDisplay from './components/CompanyNameDisplay';
 
 import { useAppContext } from './contexts/AppContext';
+import { useUi } from './contexts/uiContext'; // Ajoutez cette importation
 
 
 import logo from './assets/Logo_Mf.png';
@@ -37,7 +38,7 @@ const Mentafact = () => {
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     const [companyId, setCompanyId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState("dashboard");
+    const { activeTab, setActiveTab } = useUi(); // Remplacer l'ancien useState
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab_0, setActiveTab_0] = useState("factures");
     // eslint-disable-next-line no-unused-vars

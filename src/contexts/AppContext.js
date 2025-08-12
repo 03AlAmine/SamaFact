@@ -1,11 +1,19 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useEffect,useContext } from 'react';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  const [activeModule, setActiveModule] = useState('mentafact');
-  
-  // Ajout d'une fonction pour basculer entre les modules
+  // Récupère la valeur depuis localStorage ou utilise 'mentafact' par défaut
+  const [activeModule, setActiveModule] = useState(() => {
+    const savedModule = localStorage.getItem('activeModule');
+    return savedModule || 'mentafact';
+  });
+
+  // Sauvegarde dans localStorage à chaque changement
+  useEffect(() => {
+    localStorage.setItem('activeModule', activeModule);
+  }, [activeModule]);
+
   const toggleModule = () => {
     setActiveModule(prev => prev === 'mentafact' ? 'payroll' : 'mentafact');
   };
