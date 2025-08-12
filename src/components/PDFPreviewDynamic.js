@@ -34,7 +34,7 @@ const PDFPreviewDynamic = ({ document, width = '100%', height = '800px', style =
   }, [document]);
 
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
-  if (!url) return <div>Chargement du PDF...</div>;
+  if (!url) return <div style={{ color: 'red', alignItems: 'center', display: 'flex', justifyContent: 'center' }}>Chargement du PDF...</div>;
 
   return (
     <iframe

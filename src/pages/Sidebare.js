@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 import {
@@ -8,9 +8,31 @@ import {
   FaMoneyBillWave,
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
+import '../css/side.css';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
   const { activeModule } = useAppContext();
+  const [isOpen, setIsOpen] = useState(sidebarOpen); // état interne pour gérer l'anim
+
+  const toggleSidebar = () => {
+    const layout = document.querySelector(".dashboard-layout");
+
+    if (isOpen) {
+      layout.classList.add("closing");
+      layout.classList.remove("opening");
+    } else {
+      layout.classList.add("opening");
+      layout.classList.remove("closing");
+    }
+
+    setIsOpen(!isOpen);
+    setSidebarOpen(!isOpen);
+
+    // Retirer les classes après le plus long délai (3s)
+    setTimeout(() => {
+      layout.classList.remove("opening", "closing");
+    }, 3000);
+  };
 
   const dashboardItem = [
     { icon: <MdDashboard className="nav-icon" />, label: "Tableau de bord", tab: "dashboard" }
@@ -32,7 +54,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
     ]
   };
 
-  // On construit le menu dans l'ordre voulu
   const menuItems = [
     ...dashboardItem,
     ...moduleSpecificItems[activeModule],
@@ -55,7 +76,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
         )}
       </Link>
 
-
       <nav className="sidebar-nav">
         <ul>
           {menuItems.map((item) => (
@@ -74,7 +94,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
       <div className="sidebar-footer">
         <button
           className="toggle-sidebar"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          onClick={toggleSidebar}
           aria-label={sidebarOpen ? "Réduire le menu" : "Agrandir le menu"}
         >
           {sidebarOpen ? '◄' : '►'}
@@ -83,6 +103,5 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
     </div>
   );
 };
-
 
 export default Sidebar;

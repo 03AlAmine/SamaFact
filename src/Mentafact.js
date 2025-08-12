@@ -786,7 +786,7 @@ const Mentafact = () => {
                     <div className="navbar-right">
                         <div className="module-toggle">
                             <button
-                                className="toggle-btn"
+                                className={`toggle-btn ${activeModule === 'mentafact' ? 'mentafact' : 'payroll'} clignote`}
                                 onClick={() => setActiveModule(activeModule === 'mentafact' ? 'payroll' : 'mentafact')}
                             >
                                 {activeModule === 'mentafact' ? (

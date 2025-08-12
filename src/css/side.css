@@ -1,13 +1,128 @@
+/* Sidebar Styles */
+
+.sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #4a6fa5 0%, #ffc107 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.sidebar.closed {
+  width: 80px;
+}
+
+.sidebar.closed .sidebar-header h2,
+.sidebar.closed .sidebar-nav span {
+  display: none;
+}
+
+/* Ouverture */
+.opening .sidebar {
+  transition: width 2s ease;
+}
+
+/* Fermeture */
+.closing .sidebar {
+  transition: width 1s ease;
+}
+
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  background: #ffc107;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1.5rem 0;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+}
+
+.sidebar-nav li {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* espace entre icône et texte */
+  transition: var(--transition);
+  margin: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap; /* empêche le texte de passer sur deux lignes */
+  overflow: hidden; /* évite débordement */
+  text-overflow: ellipsis; /* met "..." si c'est trop long */
+}
+
+.sidebar-nav li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav li.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 3px 0 0 var(--secondary-colore);
+}
+
+.sidebar-nav .nav-icon {
+  margin-right: 15px;
+  font-size: 1.3rem;
+  min-width: 24px;
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+.toggle-sidebar {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-sidebar:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 
 .nav-link {
   display: flex;
   align-items: center;
   text-decoration: none;
   color: inherit;
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
-.nav-link li{
+.nav-link li {
   width: 100%;
   margin-bottom: 0;
-  
 }

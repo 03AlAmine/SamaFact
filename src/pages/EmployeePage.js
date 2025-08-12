@@ -212,6 +212,70 @@ const EmployeesPage = ({
               </select>
             </div>
           </div>
+          <div className="form-section-title">
+            <FaMoneyBillWave style={{ marginRight: "10px" }} />
+            Primes et Indemnités Fixes
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="edit-indemniteTransport" className="form-label">
+                Indemnité de transport (FCFA)
+              </label>
+              <input
+                id="edit-indemniteTransport"
+                name="indemniteTransport"
+                type="number"
+                value={editingEmployee.indemniteTransport || 26000}
+                onChange={handleEditChange}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-primePanier" className="form-label">
+                Prime de panier (FCFA)
+              </label>
+              <input
+                id="edit-primePanier"
+                name="primePanier"
+                type="number"
+                value={editingEmployee.primePanier || 0}
+                onChange={handleEditChange}
+                className="form-input"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="edit-indemniteResponsabilite" className="form-label">
+                Indemnité de responsabilité (FCFA)
+              </label>
+              <input
+                id="edit-indemniteResponsabilite"
+                name="indemniteResponsabilite"
+                type="number"
+                value={editingEmployee.indemniteResponsabilite || 0}
+                onChange={handleEditChange}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-indemniteDeplacement" className="form-label">
+                Indemnité de déplacement (FCFA)
+              </label>
+              <input
+                id="edit-indemniteDeplacement"
+                name="indemniteDeplacement"
+                type="number"
+                value={editingEmployee.indemniteDeplacement || 0}
+                onChange={handleEditChange}
+                className="form-input"
+              />
+            </div>
+          </div>
 
           <div className="form-actions">
             <button type="button" onClick={cancelEdit} className="cancel-btn">
@@ -365,10 +429,76 @@ const EmployeesPage = ({
               </div>
             </div>
 
+            <div className="form-section-title">
+              <FaMoneyBillWave style={{ marginRight: "10px" }} />
+              Primes et Indemnités Fixes
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="indemniteTransport" className="form-label">
+                  Indemnité de transport (FCFA)
+                </label>
+                <input
+                  id="indemniteTransport"
+                  name="indemniteTransport"
+                  type="number"
+                  value={employee.indemniteTransport || 26000}
+                  onChange={handleChange}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="primePanier" className="form-label">
+                  Prime de panier (FCFA)
+                </label>
+                <input
+                  id="primePanier"
+                  name="primePanier"
+                  type="number"
+                  value={employee.primePanier || 0}
+                  onChange={handleChange}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="indemniteResponsabilite" className="form-label">
+                  Indemnité de responsabilité (FCFA)
+                </label>
+                <input
+                  id="indemniteResponsabilite"
+                  name="indemniteResponsabilite"
+                  type="number"
+                  value={employee.indemniteResponsabilite || 0}
+                  onChange={handleChange}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="indemniteDeplacement" className="form-label">
+                  Indemnité de déplacement (FCFA)
+                </label>
+                <input
+                  id="indemniteDeplacement"
+                  name="indemniteDeplacement"
+                  type="number"
+                  value={employee.indemniteDeplacement || 0}
+                  onChange={handleChange}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
             <button type="submit" className="submit-btn">
               Ajouter l'employé
             </button>
           </form>
+
         )
       )}
 

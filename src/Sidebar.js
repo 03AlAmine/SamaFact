@@ -7,10 +7,9 @@ import {
     FaChartBar,
     FaMoneyBillWave
 } from 'react-icons/fa';
-import logo from './assets/logo.png';
+import logo from './assets/Logo_Mf.png';
 import { Link } from "react-router-dom";
 import { useAppContext } from "./contexts/AppContext";
-import './css/side.css';
 
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
     const { activeModule } = useAppContext();
