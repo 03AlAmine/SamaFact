@@ -1,9 +1,15 @@
 .profile-container {
+  width: 100%;
   padding: 2.5rem;
-  width: 80%;
   margin: 0 auto;
+  margin-left: 280px;
+  margin-right: 25px !important;
   background: linear-gradient(135deg, #f5f7fa 0%, #f8f9fa 100%);
   min-height: 100vh;
+}
+
+.sidebar.closed ~ .profile-container {
+  margin-left: 80px;
 }
 
 .profile-header {
@@ -17,7 +23,7 @@
 }
 
 .profile-header::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -1px;
   left: 0;
@@ -62,7 +68,7 @@
 }
 
 .form-section h2::before {
-  content: '';
+  content: "";
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -338,8 +344,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-container p {
@@ -353,15 +363,15 @@
   .profile-container {
     padding: 1.5rem;
   }
-  
+
   .profile-form {
     padding: 1.5rem;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .form-section h2 {
     font-size: 1.3rem;
   }
@@ -371,12 +381,12 @@
   .profile-header {
     font-size: 1.75rem;
   }
-  
+
   .btn-save {
     width: 100%;
     justify-content: center;
   }
-  
+
   .logo-upload-placeholder {
     padding: 1.5rem;
   }
@@ -409,7 +419,7 @@
 }
 
 .subuser-section h2::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -525,7 +535,7 @@
   .subuser-form {
     grid-template-columns: 1fr;
   }
-  
+
   .btn-create-user {
     width: 100%;
     justify-content: center;

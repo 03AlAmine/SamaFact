@@ -22,6 +22,8 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
     "Prix Unitaire": "",
     TVA: "0"
   });
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const [selectedClientId, setSelectedClientId] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
   const [showClientInfo, setShowClientInfo] = useState(true);
@@ -281,10 +283,10 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
         </button>
       </div>
       <Sidebar
-        sidebarOpen={true}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         activeTab="factures"
         setActiveTab={() => { }}
-        setSidebarOpen={() => { }}
       />
 
       <div className="container">

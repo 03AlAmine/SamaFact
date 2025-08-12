@@ -24,6 +24,7 @@ const PayrollForm = () => {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
     const [payrollNumber, setPayrollNumber] = useState("");
     const [showEmployeInfo, setShowEmployeInfo] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const togglePreview = () => {
         const newState = !showPreview;
@@ -36,7 +37,7 @@ const PayrollForm = () => {
                     top: document.body.scrollHeight,
                     behavior: 'smooth'
                 });
-            }, 100);
+            }, 300);
         }
     };
     // États pour le formulaire de paie
@@ -466,10 +467,10 @@ const PayrollForm = () => {
                 </button>
             </div>
             <Sidebar
-                sidebarOpen={true}
+                sidebarOpen={sidebarOpen}
+                setSidebarOpen={setSidebarOpen}
                 activeTab="payrolls"
                 setActiveTab={() => { }}
-                setSidebarOpen={() => { }}
             />
             <div className="container">
 

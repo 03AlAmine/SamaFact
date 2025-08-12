@@ -6,10 +6,12 @@ import './Profile.css';
 import Sidebar from "../Sidebar";
 import { db, storage } from '../firebase';
 import { ROLES } from '../auth/permissions'; // adapte le chemin si nécessaire
+import { FaArrowLeft } from "react-icons/fa";
 
 const Profile = () => {
   // State management
   const { currentUser } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -197,12 +199,21 @@ const Profile = () => {
   return (
     <div className="dashboard-layout">
       <Sidebar
-        sidebarOpen={true}
-        activeTab="profile"
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeTab="dashboard"
         setActiveTab={() => { }}
-        setSidebarOpen={() => { }}
       />
+      <div className="floating-buttons">
 
+        <button
+          className="floating-back-button"
+          onClick={() => window.history.back()}
+        >
+          <FaArrowLeft className="button-icon" />
+          <span className="button-text">Quitter</span>
+        </button>
+      </div>
       <div className="profile-container">
         <h1 className="profile-header">Profil de l'Entreprise</h1>
 
