@@ -394,7 +394,7 @@ const SamaFact = () => {
       {/* Sidebar */}
       <aside className="dashboard-sidebar">
         <div className="sidebar-brand">
-          <h1>SamaFact Admin</h1>
+          <h1>Ment@F@ct</h1>
         </div>
 
         <nav className="sidebar-nav">
