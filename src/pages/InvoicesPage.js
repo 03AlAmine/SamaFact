@@ -202,11 +202,14 @@ const InvoicesPage = ({
                         date: today,
                         dateEcheance: newDueDate,
                         numero: newNumber,
-                        statut: "en attente"
+                        statut: "en attente",
+                        clientId: document.clientId // Ajout du clientId
+
                     },
                     isDuplicate: true,
                     type: document.type || activeTab.slice(0, -1),
                     client: {
+                        id: document.clientId, // Ajout de l'ID ici
                         nom: document.clientNom || "",
                         adresse: document.clientAdresse || "",
                         ville: document.clientVille || ""

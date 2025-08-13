@@ -263,7 +263,22 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
       items: updatedItems
     });
   };
+  useEffect(() => {
+    // Si un client est passé via les props (depuis location.state)
+    if (location.state?.client?.id && !selectedClientId) {
+      setSelectedClientId(location.state.client.id);
 
+      // Mettez aussi à jour les données du client dans data
+      setData(prev => ({
+        ...prev,
+        client: {
+          Nom: [location.state.client.nom || ""],
+          Adresse: [location.state.client.adresse || ""],
+          Ville: [location.state.client.ville || ""]
+        }
+      }));
+    }
+  }, [location.state, selectedClientId, setData]);
   return (
     <div className="dashboard-layoute">
       <div className="floating-buttons">
@@ -918,6 +933,9 @@ const Fact = () => {
           },
           client: initialClient
         }));
+        if (location.state?.client?.id) {
+          setSelectedClientId(location.state.client.id);
+        }
       } catch (error) {
         console.error("Erreur initialisation:", error);
         const now = new Date();
@@ -928,7 +946,9 @@ const Fact = () => {
           facture: {
             ...prev.facture,
             Numéro: [`F-${year}${month}-TEMP`]
-          }
+          },
+          client: initialClient
+
         }));
       } finally {
         setLoadingData(false);
@@ -1044,6 +1064,7 @@ const Fact = () => {
       });
     }
   };
+
 
   if (!currentUser) {
     return (
