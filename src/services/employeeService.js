@@ -8,7 +8,8 @@ import {
   updateDoc,
   where,
   getDocs,
-  orderBy
+  orderBy,
+  deleteDoc
 } from "firebase/firestore";
 
 export const employeeService = {
@@ -126,7 +127,7 @@ export const employeeService = {
   },
 
   // Supprime un employé
-  deleteEmployee: async (companyId, employeeId) => {
+  statusEmployee: async (companyId, employeeId) => {
     try {
       const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
 
@@ -149,6 +150,17 @@ export const employeeService = {
     }
   },
 
+
+  deleteEmployee: async (companyId, employeeId) => {
+    try {
+      const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
+      await deleteDoc(employeeRef);
+      return { success: true, message: "Employé supprimé avec succès !" };
+    } catch (error) {
+      console.error("Erreur:", error);
+      return { success: false, message: "Erreur lors de la suppression de l'employé." };
+    }
+  },
   // Charge les bulletins de paie d'un employé
   loadEmployeePayrolls: async (companyId, employeeId) => {
     try {

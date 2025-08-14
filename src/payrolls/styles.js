@@ -194,7 +194,6 @@ export const styles = StyleSheet.create({
     halfWidth: {
         width: '48%' // Laisse 4% pour le séparateur
     },
-
     primesSection: {
         marginBottom: 6,
         borderWidth: 1,

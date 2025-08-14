@@ -1,14 +1,16 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FaUsers, FaEdit, FaTrash, FaBuilding, FaPlus, FaSearch,
   FaFileAlt, FaFileExcel, FaList, FaTh,
-  FaSortAlphaDown, FaIdCard, FaMoneyBillWave, FaCalendarAlt
+  FaSortAlphaDown, FaIdCard, FaMoneyBillWave, FaCalendarAlt, FaEye
 } from "react-icons/fa";
 import empty_employee from '../assets/empty_employe.png';
 import '../css/EmployeePage.css';
+import { EmployeeDetailsModal } from '../components/EmployeeModal';
+import { Modal, Button } from "antd";
+
 
 const EmployeesPage = ({
-  employees,
   filteredEmployees,
   searchTerm,
   setSearchTerm,
@@ -22,12 +24,13 @@ const EmployeesPage = ({
   editingEmployee,
   handleEditChange,
   handleUpdate,
+  handleUpdateSuivi,
   cancelEdit,
   handleCreatePayroll,
   handleDeletePayroll,
   handleImportEmployees,
   importProgress,
-  setImportProgress
+  setImportProgress,
 }) => {
   const [viewMode, setViewMode] = useState('list');
   const [sortBy, setSortBy] = useState('nom');
@@ -70,6 +73,174 @@ const EmployeesPage = ({
       });
     }, 100);
   };
+
+
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
+  const [isTrackingModalVisible, setIsTrackingModalVisible] = useState(false);
+
+  const handleViewDetails = (employee) => {
+    setSelectedEmployeeDetails(employee);
+    setIsInfoModalVisible(true);
+  };
+
+
+  const handleInfoModalCancel = () => {
+    setIsInfoModalVisible(false);
+  };
+
+
+  const [trackingData, setTrackingData] = useState({
+    joursConges: 0,
+    joursCongesUtilises: 0,
+    joursAbsence: 0,
+    avanceSalaire: 0
+  });
+
+  // Ouvrir le modal avec les données actuelles
+  const handleOpenTrackingModal = (employee) => {
+    setSelectedEmployeeDetails(employee);
+    setTrackingData({
+      joursConges: employee.joursConges || 0,
+      joursCongesUtilises: employee.joursCongesUtilises || 0,
+      joursAbsence: employee.joursAbsence || 0,
+      avanceSalaire: employee.avanceSalaire || 0
+    });
+    setIsTrackingModalVisible(true);
+  };
+
+  // Soumettre les modifications
+  const handleSubmitTracking = async (updatedData) => {
+    try {
+      const updatedEmployee = {
+        ...selectedEmployeeDetails,
+        ...updatedData
+      };
+
+      await handleUpdateSuivi(updatedEmployee);
+      // Ne pas fermer le modal ici - laissez le contrôle à l'utilisateur
+    } catch (error) {
+      console.error("Erreur mise à jour suivi:", error);
+    }
+  };
+  // Gestion des changements
+  const handleTrackingChange = (e) => {
+    const { name, value } = e.target;
+    setTrackingData(prev => ({
+      ...prev,
+      [name]: Number(value)
+    }));
+  };
+
+  const TrackingModal = React.memo(({
+    visible,
+    onCancel,
+    onSubmit,
+    employee,
+    trackingData,
+    onTrackingChange
+  }) => {
+    // Utilisez un état local pour éviter les rerenders inutiles
+    const [localTrackingData, setLocalTrackingData] = useState(trackingData);
+
+    // Mettre à jour l'état local quand les props changent
+    useEffect(() => {
+      setLocalTrackingData(trackingData);
+    }, [trackingData]);
+
+    const handleLocalChange = (e) => {
+      const { name, value } = e.target;
+      setLocalTrackingData(prev => ({
+        ...prev,
+        [name]: Number(value)
+      }));
+    };
+
+    const handleLocalSubmit = (e) => {
+      e.preventDefault();
+      onSubmit(localTrackingData); // Passez directement les données
+    };
+
+    return (
+      <Modal
+        title={`Suivi congés/absences - ${employee?.prenom} ${employee?.nom}`}
+        open={visible}
+        onCancel={onCancel}
+        footer={[
+          <Button key="cancel" onClick={onCancel}>Annuler</Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleLocalSubmit}
+          >
+            Enregistrer
+          </Button>
+        ]}
+        width={800}
+        destroyOnHidden // Remplace destroyOnClose
+        forceRender
+      >
+        <div className="employee-form">
+          <div className="form-section-title">
+            <FaCalendarAlt style={{ marginRight: "10px" }} />
+            Suivi des congés et absences
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Jours congés disponibles</label>
+              <input
+                name="joursConges"
+                type="number"
+                value={localTrackingData.joursConges}
+                onChange={handleLocalChange}
+                className="form-input"
+                min="0"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Congés utilisés</label>
+              <input
+                name="joursCongesUtilises"
+                type="number"
+                value={localTrackingData.joursCongesUtilises}
+                onChange={handleLocalChange}
+                className="form-input"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Jours absence</label>
+              <input
+                name="joursAbsence"
+                type="number"
+                value={localTrackingData.joursAbsence}
+                onChange={handleLocalChange}
+                className="form-input"
+                min="0"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Avance salaire (FCFA)</label>
+              <input
+                name="avanceSalaire"
+                type="number"
+                value={localTrackingData.avanceSalaire}
+                onChange={handleLocalChange}
+                className="form-input"
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    );
+  });
 
   return (
     <>
@@ -275,6 +446,8 @@ const EmployeesPage = ({
                 className="form-input"
               />
             </div>
+
+
           </div>
 
           <div className="form-actions">
@@ -498,7 +671,6 @@ const EmployeesPage = ({
               Ajouter l'employé
             </button>
           </form>
-
         )
       )}
 
@@ -641,6 +813,27 @@ const EmployeesPage = ({
                     >
                       <FaTrash />
                     </button>
+                    <button
+                      onClick={(evt) => {
+                        evt.stopPropagation();
+                        handleViewDetails(e);
+                      }}
+                      className="action-btn view-btn"
+                      title="Voir détails"
+                    >
+                      <FaEye />
+                    </button>
+                    <button
+                      onClick={(evt) => {
+                        evt.stopPropagation();
+                        handleOpenTrackingModal(e); // Passer e au lieu de employee
+                      }}
+                      className="action-btn tracking-btn"
+                    >
+                      <FaCalendarAlt />
+                    </button>
+
+
                   </div>
                 </div>
                 <div className="employee-details">
@@ -749,6 +942,26 @@ const EmployeesPage = ({
                         >
                           <FaTrash />
                         </button>
+                        <button
+                          onClick={(evt) => {
+                            evt.stopPropagation();
+                            handleViewDetails(e);
+                          }}
+                          className="action-btn view-btn"
+                          title="Voir détails"
+                        >
+                          <FaEye />
+                        </button>
+                        <button
+                          onClick={(evt) => {
+                            evt.stopPropagation();
+                            handleOpenTrackingModal(e); // Passer e au lieu de employee
+                          }}
+                          className="action-btn tracking-btn"
+                        >
+                          <FaCalendarAlt />
+                        </button>
+
                       </div>
                     </td>
                   </tr>
@@ -775,6 +988,24 @@ const EmployeesPage = ({
           {/* Section des fiches de paie à implémenter ici */}
         </div>
       )}
+
+
+      <EmployeeDetailsModal
+        isVisible={isInfoModalVisible}
+        onCancel={handleInfoModalCancel}
+        employee={selectedEmployeeDetails}
+      />
+      <TrackingModal
+        visible={isTrackingModalVisible}
+        onCancel={() => setIsTrackingModalVisible(false)}
+        onSubmit={(data) => {
+          handleSubmitTracking(data);
+          setIsTrackingModalVisible(false); // Fermer seulement après soumission
+        }}
+        employee={selectedEmployeeDetails}
+        trackingData={trackingData}
+        onTrackingChange={handleTrackingChange}
+      />
     </>
   );
 };

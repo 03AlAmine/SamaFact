@@ -70,12 +70,22 @@ const Mentafact = () => {
     const [employee, setEmployee] = useState({
         nom: "",
         prenom: "",
-        matricule: "",
+        adresse: "",
+        categorie: "",
         poste: "",
         departement: "",
+        matricule: "",
         dateEmbauche: "",
         typeContrat: "CDI",
-        salaireBase: 0
+        salaireBase: 0,
+        indemniteTransport: 26000,
+        primePanier: 0,
+        indemniteResponsabilite: 0,
+        indemniteDeplacement: 0,
+        joursConges: 0,
+        joursAbsence: 0,
+        avanceSalaire: 0,
+        joursCongesUtilises: 0
     });
     const [employees, setEmployees] = useState([]);
 
@@ -410,6 +420,30 @@ const Mentafact = () => {
         }
     };
 
+    const handleUpdateEmployeeSuivi = async (employeeData) => {  // Ne plus s'attendre à un événement
+        try {
+            const result = await employeeService.updateEmployee(
+                companyId,
+                employeeData.id,
+                employeeData
+            );
+
+            if (result.success) {
+                // Mettre à jour l'état local
+                setEmployees(employees.map(emp =>
+                    emp.id === employeeData.id ? employeeData : emp
+                ));
+                alert(result.message);
+                cancelEditEmployee();
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error("Erreur mise à jour employé:", error);
+            alert("Erreur lors de la mise à jour");
+        }
+    };
+
 
     // Annuler l'édition d'un client
     const cancelEditEmployee = () => {
@@ -629,7 +663,15 @@ const Mentafact = () => {
         }
     };
     const { activeModule, setActiveModule } = useAppContext();
-
+    useEffect(() => {
+        if (activeModule === 'payroll') {
+            if (activeTab === 'clients') setActiveTab('employees');
+            if (activeTab === 'factures') setActiveTab('payrolls');
+        } else {
+            if (activeTab === 'employees') setActiveTab('clients');
+            if (activeTab === 'payrolls') setActiveTab('factures');
+        }
+    }, [activeModule]);
 
     const renderActiveTab = () => {
         switch (activeTab) {
@@ -686,6 +728,7 @@ const Mentafact = () => {
                     editingEmployee={editingEmployee}
                     handleEditChange={handleEditChangeemployee}
                     handleUpdate={handleUpdateEmployee}
+                    handleUpdateSuivi={handleUpdateEmployeeSuivi}
                     cancelEdit={cancelEditEmployee}
                 />;
             case "factures":
