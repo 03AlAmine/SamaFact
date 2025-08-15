@@ -13,9 +13,11 @@ const AuthContext = createContext();
 const ROLES = {
   SUPERADMIN: 'superadmin',      // Créateur / plateforme
   ADMIN: 'admin',                // Admin entreprise
+  RH_DAF: 'rh_daf',             // Directeur Administratif et Financier
   COMPTABLE: 'comptable',        // Peut gérer devis/factures/avoirs
   CHARGE_COMPTE: 'charge_compte',// Assistant / Secrétaire
-  LECTEUR: 'lecteur'             // Lecture seule
+  EMPLOYE: 'employe',           // Lecture seule
+  LECTEUR: 'lecteur'
 };
 
 // ✅ Permissions associées à chaque rôle
@@ -35,6 +37,12 @@ const PERMISSIONS = {
     viewAll: true,
     isSuperAdmin: false
   },
+  [ROLES.RH_DAF]: {
+    managePayroll: true,        // Gestion complète de la paie
+    viewAllPayroll: true,       // Voir toutes les fiches de paie
+    manageEmployees: true,      // Gérer les employés
+    isSuperAdmin: false
+  },
   [ROLES.COMPTABLE]: {
     manageCompany: false,
     manageUsers: false,
@@ -47,6 +55,11 @@ const PERMISSIONS = {
     manageUsers: false,
     manageDocuments: true,       // Peut créer/modifier mais avec des restrictions si besoin
     viewAll: false,              // Peut ne voir que ce qui le concerne
+    isSuperAdmin: false
+  },
+  [ROLES.EMPLOYE]: {
+    viewOwnPayroll: true,       // Peut voir sa propre fiche de paie
+    editOwnInfo: true,          // Peut modifier ses infos personnelles
     isSuperAdmin: false
   },
   [ROLES.LECTEUR]: {
@@ -329,24 +342,42 @@ export function AuthProvider({ children }) {
       currentUser.role === 'super-admin' // Alternative
     );
   }
-function resetPassword(email) {
-  return sendPasswordResetEmail(auth, email);
-}
+  function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
+  }
+
+
+
+  function shouldDefaultToPayroll() {
+    if (!currentUser) return false;
+    return currentUser.role === 'rh_daf';
+  }
+
+  function canToggleModules() {
+    if (!currentUser) return false;
+    // Seuls admin et comptable peuvent basculer entre les modules
+    return ['admin', 'comptable', 'superadmin' ].includes(currentUser.role);
+  }
+
+
 
   // Context value
-const value = {
-  currentUser,
-  signup,
-  login,
-  logout,
-  loading,
-  createSubUser,
-  updateUserRole,
-  checkPermission,
-  ROLES,
-  isSuperAdmin,
-  resetPassword // ✅ Ajout ici
-};
+  const value = {
+    currentUser,
+    signup,
+    login,
+    logout,
+    loading,
+    createSubUser,
+    updateUserRole,
+    checkPermission,
+    ROLES,
+    isSuperAdmin,
+    resetPassword, // ✅ Ajout ici
+    shouldDefaultToPayroll,
+    canToggleModules // Ajoutez cette ligne
+
+  };
 
 
   return (

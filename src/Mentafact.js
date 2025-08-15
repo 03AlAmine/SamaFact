@@ -32,7 +32,12 @@ import "./css/Mentafact.css";
 import * as XLSX from 'xlsx';
 
 const Mentafact = () => {
-    const { currentUser, logout } = useAuth();
+    const {
+        currentUser,
+        logout,
+        canToggleModules, // Ajoutez cette ligne
+        shouldDefaultToPayroll
+    } = useAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
@@ -111,7 +116,8 @@ const Mentafact = () => {
         comptable: "Comptable",
         charge_compte: "Chargé de compte",
         lecteur: "Lecteur",
-        user: "Utilisateur"
+        user: "Utilisateur",
+        rh_daf: "RH_DAF"
     };
     useEffect(() => {
         const fetchCompanyId = async () => {
@@ -663,7 +669,18 @@ const Mentafact = () => {
         }
     };
     const { activeModule, setActiveModule } = useAppContext();
+    const [initialModule] = useState(() => {
+        return shouldDefaultToPayroll() ? 'payroll' : 'mentafact';
+    });
+
+
     useEffect(() => {
+        // D'abord on initialise le module
+        setActiveModule(initialModule);
+    }, [initialModule, setActiveModule]);
+
+    useEffect(() => {
+        // Puis on gère la synchronisation des tabs
         if (activeModule === 'payroll') {
             if (activeTab === 'clients') setActiveTab('employees');
             if (activeTab === 'factures') setActiveTab('payrolls');
@@ -671,7 +688,8 @@ const Mentafact = () => {
             if (activeTab === 'employees') setActiveTab('clients');
             if (activeTab === 'payrolls') setActiveTab('factures');
         }
-    }, [activeModule]);
+    }, [activeModule, activeTab]);
+
 
     const renderActiveTab = () => {
         switch (activeTab) {
@@ -832,6 +850,8 @@ const Mentafact = () => {
                             <button
                                 className={`toggle-btn ${activeModule === 'mentafact' ? 'mentafact' : 'payroll'} clignote`}
                                 onClick={() => setActiveModule(activeModule === 'mentafact' ? 'payroll' : 'mentafact')}
+                                disabled={!canToggleModules()} // Utilisez la nouvelle fonction ici
+                                title={!canToggleModules() ? "Changement de module réservé aux administrateurs et comptables" : ""}
                             >
                                 {activeModule === 'mentafact' ? (
                                     <>
