@@ -23,10 +23,11 @@ export const EmployeeDetailsModal = ({
         return Math.max(0, moisEcoules * 2 - (employee.joursCongesUtilises || 0));
     };
     return (
+
         <Modal
             title={
-                <div className="modal-title">
-                    <FaFileSignature style={{ color: '#3b82f6', marginRight: 10 }} />
+                <div className="employee-modal__header">
+                    <FaFileSignature className="employee-modal__icon" />
                     <span>Détails de {employee?.prenom} {employee?.nom}</span>
                 </div>
             }
@@ -36,133 +37,139 @@ export const EmployeeDetailsModal = ({
                 <Button
                     key="back"
                     onClick={onCancel}
-                    style={{ padding: '8px 20px', height: 'auto' }}
+                    className="employee-modal__close-btn"
                 >
                     Fermer
                 </Button>
             ]}
             width={700}
-            className="document-details-modal-container"
+            className="employee-modal"
         >
             {employee && (
-                <div className="document-details-content-container">
-                    <div className="document-details-content">
-                        <div className="details-main-section">
-                            <div className="details-row">
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaUser className="detail-icon" />
+                <div className="employee-modal__content">
+                    <div className="employee-details">
+                        <div className="employee-details__main">
+                            <div className="employee-details__row">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaUser className="employee-detail__icon" />
                                         Nom complet
                                     </span>
-                                    <span className="detail-value">{employee.prenom} {employee.nom}</span>
+                                    <span className="employee-detail__value">
+                                        {employee.prenom} {employee.nom}
+                                    </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaCalendarAlt className="detail-icon" />
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaCalendarAlt className="employee-detail__icon" />
                                         Date d'embauche
                                     </span>
-                                    <span className="detail-value">
+                                    <span className="employee-detail__value employee-detail__value--date">
                                         {new Date(employee.dateEmbauche).toLocaleDateString('fr-FR')}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="details-row">
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaIdCard className="detail-icon" />
+                            <div className="employee-details__row">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaIdCard className="employee-detail__icon" />
                                         Matricule
                                     </span>
-                                    <span className="detail-value">{employee.matricule}</span>
+                                    <span className="employee-detail__value">
+                                        {employee.matricule}
+                                    </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaBuilding className="detail-icon" />
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaBuilding className="employee-detail__icon" />
                                         Département
                                     </span>
-                                    <span className="detail-value">{employee.departement || 'Non spécifié'}</span>
+                                    <span className="employee-detail__value">
+                                        {employee.departement || 'Non spécifié'}
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="details-row">
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaMoneyBillWave className="detail-icon" />
+                            <div className="employee-details__row">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaMoneyBillWave className="employee-detail__icon" />
                                         Salaire de base
                                     </span>
-                                    <span className="detail-value amount">
+                                    <span className="employee-detail__value employee-detail__value--amount">
                                         {employee.salaireBase?.toLocaleString('fr-FR') || '0'} FCFA
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">
-                                        <FaCheckCircle className="detail-icon" />
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaCheckCircle className="employee-detail__icon" />
                                         Type de contrat
                                     </span>
-                                    <span className={`detail-value status ${employee.typeContrat?.toLowerCase()}`}>
+                                    <span className={`employee-detail__value employee-detail__value--${employee.typeContrat?.toLowerCase()}`}>
                                         {employee.typeContrat}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="payment-section">
-                            <h4 className="section-subtitle">
-                                <FaMoneyBillWave style={{ marginRight: 8 }} />
+                        <div className="employee-section">
+                            <h4 className="employee-section__title">
+                                <FaMoneyBillWave className="employee-section__icon" />
                                 Primes et indemnités
                             </h4>
 
-                            <div className="details-grid two-columns">
-                                <div className="detail-item">
-                                    <span className="detail-label">Transport</span>
-                                    <span className="detail-value">
+                            <div className="employee-details__grid">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Transport</span>
+                                    <span className="employee-detail__value employee-detail__value--amount">
                                         {employee.indemniteTransport?.toLocaleString('fr-FR') || '0'} FCFA
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Panier</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Panier</span>
+                                    <span className="employee-detail__value employee-detail__value--amount">
                                         {employee.primePanier?.toLocaleString('fr-FR') || '0'} FCFA
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Responsabilité</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Responsabilité</span>
+                                    <span className="employee-detail__value employee-detail__value--amount">
                                         {employee.indemniteResponsabilite?.toLocaleString('fr-FR') || '0'} FCFA
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Déplacement</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Déplacement</span>
+                                    <span className="employee-detail__value employee-detail__value--amount">
                                         {employee.indemniteDeplacement?.toLocaleString('fr-FR') || '0'} FCFA
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="payment-section">
-                            <h4 className="section-subtitle">
-                                <FaFileAlt style={{ marginRight: 8 }} />
+                        <div className="employee-section">
+                            <h4 className="employee-section__title">
+                                <FaFileAlt className="employee-section__icon" />
                                 Statistiques
                             </h4>
 
-                            <div className="details-grid two-columns">
-                                <div className="detail-item">
-                                    <span className="detail-label">Nombre de bulletins</span>
-                                    <span className="detail-value">
+                            <div className="employee-details__grid">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Nombre de bulletins</span>
+                                    <span className="employee-detail__value">
                                         {employee.payrolls?.length || 0}
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Dernier bulletin</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Dernier bulletin</span>
+                                    <span className="employee-detail__value employee-detail__value--date">
                                         {employee.payrolls?.length > 0
                                             ? new Date(employee.payrolls[0].periode).toLocaleDateString('fr-FR')
                                             : 'Aucun'}
@@ -170,37 +177,38 @@ export const EmployeeDetailsModal = ({
                                 </div>
                             </div>
                         </div>
-                        <div className="payment-section">
-                            <h4 className="section-subtitle">
-                                <FaCalendarAlt style={{ marginRight: 8 }} />
+
+                        <div className="employee-section">
+                            <h4 className="employee-section__title">
+                                <FaCalendarAlt className="employee-section__icon" />
                                 Suivi des congés et absences
                             </h4>
 
-                            <div className="details-grid two-columns">
-                                <div className="detail-item">
-                                    <span className="detail-label">Congés accumulés</span>
-                                    <span className="detail-value">
+                            <div className="employee-details__grid">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Congés accumulés</span>
+                                    <span className="employee-detail__value">
                                         {calculateJoursConges()} jours
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Congés utilisés</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Congés utilisés</span>
+                                    <span className="employee-detail__value">
                                         {employee.joursCongesUtilises || 0} jours
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Jours d'absence</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Jours d'absence</span>
+                                    <span className="employee-detail__value">
                                         {employee.joursAbsence || 0} jours
                                     </span>
                                 </div>
 
-                                <div className="detail-item">
-                                    <span className="detail-label">Avance sur salaire</span>
-                                    <span className="detail-value">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Avance sur salaire</span>
+                                    <span className="employee-detail__value employee-detail__value--amount">
                                         {employee.avanceSalaire?.toLocaleString('fr-FR') || '0'} FCFA
                                     </span>
                                 </div>
@@ -210,6 +218,7 @@ export const EmployeeDetailsModal = ({
                 </div>
             )}
         </Modal>
+
     );
 };
 

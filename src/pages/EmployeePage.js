@@ -177,7 +177,8 @@ const EmployeesPage = ({
           </Button>
         ]}
         width={800}
-        destroyOnHidden // Remplace destroyOnClose
+        className="employee-form-modal"
+        destroyOnClose
         forceRender
       >
         <div className="employee-form">
