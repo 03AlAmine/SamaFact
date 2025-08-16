@@ -338,8 +338,10 @@ const PayrollForm = () => {
                 payrollData
             );
         } else {
+            // Ajout d'un nouveau bulletin avec companyId et userId
             return payrollService.addPayroll(
                 currentUser.companyId,
+                currentUser.uid,   // 👈 l'utilisateur qui crée
                 payrollData
             );
         }

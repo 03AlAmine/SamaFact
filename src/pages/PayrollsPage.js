@@ -239,25 +239,24 @@ const PayrollsPage = ({
         });
     };
 
-    // Dans votre gestionnaire de preview/download
-    const handlePreview = (payroll) => {
-        // Conversion des dates Firestore si nécessaire
+    // Fonction pour préparer les données communes
+    const preparePayrollData = (payroll) => {
         const convertFirestoreDate = (date) => {
             if (!date) return new Date().toISOString().split('T')[0];
             return date.toDate ? date.toDate().toISOString().split('T')[0] : date;
         };
 
-        // Structure complète des données pour le PDF
-        const payrollData = {
+        return {
             employee: {
                 id: payroll.employeeId,
                 nom: payroll.employeeName?.split(' ')[0] || 'Non',
                 prenom: payroll.employeeName?.split(' ').slice(1).join(' ') || 'spécifié',
-                matricule: payroll.matricule || '',
-                poste: payroll.poste || '',
+                matricule: payroll.employeeMatricule || '',
+                poste: payroll.employeePosition || '',
                 salaireBase: payroll.remuneration?.salaireBase || 0,
                 dateEmbauche: payroll.dateEmbauche || new Date().toISOString(),
-                address: payroll.address || '',
+                adresse: payroll.employeeAddresse || '',
+                categorie: payroll.employeeCategorie || '',
                 typeContrat: payroll.typeContrat || 'CDI'
             },
             formData: {
@@ -291,25 +290,7 @@ const PayrollsPage = ({
                 },
                 numero: payroll.numero || 'NONUM'
             },
-            calculations: {
-                brutSocial: payroll.calculations?.brutSocial || 0,
-                brutFiscal: payroll.calculations?.brutFiscal || 0,
-                cotisationsSalariales: payroll.calculations?.cotisationsSalariales || 0,
-                cotisationsPatronales: payroll.calculations?.cotisationsPatronales || 0,
-                salaireNet: payroll.calculations?.salaireNet || 0,
-                salaireNetAPayer: payroll.calculations?.salaireNetAPayer || 0,
-                detailsCotisations: {
-                    ipresRG: payroll.calculations?.detailsCotisations?.ipresRG || 0,
-                    ipresRC: payroll.calculations?.detailsCotisations?.ipresRC || 0,
-                    ipresRGP: payroll.calculations?.detailsCotisations?.ipresRGP || 0,
-                    ipresRCP: payroll.calculations?.detailsCotisations?.ipresRCP || 0,
-                    allocationFamiliale: payroll.calculations?.detailsCotisations?.allocationFamiliale || 0,
-                    accidentTravail: payroll.calculations?.detailsCotisations?.accidentTravail || 0,
-                    trimf: payroll.calculations?.detailsCotisations?.trimf || 0,
-                    cfce: payroll.calculations?.detailsCotisations?.cfce || 0,
-                    ir: payroll.calculations?.detailsCotisations?.ir || 0
-                }
-            },
+            calculations: payroll.calculations || {},
             companyInfo: {
                 name: "LEADER INTERIM & SERVICES",
                 address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
@@ -319,9 +300,11 @@ const PayrollsPage = ({
                 ninea: "0057262212 A2"
             }
         };
+    };
 
-        console.log('Données envoyées au PDF:', payrollData); // Pour débogage
-
+    // Utilisation pour l'aperçu
+    const handlePreview = (payroll) => {
+        const payrollData = preparePayrollData(payroll);
         previewPayrollPdf(
             payrollData.employee,
             payrollData.formData,
@@ -330,36 +313,22 @@ const PayrollsPage = ({
         );
     };
 
-    // Exemple d'appel
+    // Utilisation pour le téléchargement
     const handleDownload = async (payroll) => {
+        const payrollData = preparePayrollData(payroll);
         try {
             await downloadPayrollPdf(
-                {
-                    id: payroll.employeeId,
-                    nom: payroll.employeeName?.split(' ')[0] || '',
-                    prenom: payroll.employeeName?.split(' ').slice(1).join(' ') || '',
-                    matricule: payroll.matricule || '',
-                    poste: payroll.poste || '',
-                    salaireBase: payroll.remuneration?.salaireBase || 0
-                },
-                {
-                    periode: payroll.periode,
-                    remuneration: payroll.remuneration,
-                    primes: payroll.primes,
-                    retenues: payroll.retenues,
-                    numero: payroll.numero
-                },
-                payroll.calculations,
-                {
-                   // name: "VOTRE ENTREPRISE",
-                    // ... autres infos
-                }
+                payrollData.employee,
+                payrollData.formData,
+                payrollData.calculations,
+                payrollData.companyInfo
             );
         } catch (error) {
             console.error(error);
             alert("Erreur lors du téléchargement");
         }
     };
+
     return (
         <div className="payrolls-page-container">
             <div className="navbar-tabs">

@@ -22,7 +22,7 @@ const convertIfTimestamp = (value) =>
 export const payrollService = {
   // 🔄 Lecture en temps réel des bulletins de paie
   getPayrolls: (companyId, callback) => {
-    if (!companyId) return () => {};
+    if (!companyId) return () => { };
 
     const payrollsRef = collection(db, `companies/${companyId}/payrolls`);
     const q = query(payrollsRef, orderBy("periode.au", "desc"));
@@ -70,6 +70,8 @@ export const payrollService = {
       employeeName: `${employee.nom} ${employee.prenom}`,
       employeeMatricule: employee.matricule,
       employeePosition: employee.poste,
+      employeeAddresse: employee.adresse,
+      employeeCategorie: employee.categorie,
       periode: {
         du: formData.periode.du,
         au: formData.periode.au
@@ -110,21 +112,32 @@ export const payrollService = {
   },
 
   // ➕ Création d'un bulletin de paie
-  addPayroll: async (companyId, payrollData) => {
+  addPayroll: async (companyId, userId, payrollData) => {
     try {
-      const payrollsRef = collection(db, `companies/${companyId}/payrolls`);
-      const docRef = await addDoc(payrollsRef, payrollData);
+      const payrollToSave = {
+        ...payrollData,
+        companyId,           // l'entreprise
+        userId,              // l'utilisateur qui enregistre
+        createdAt: new Date().toISOString(),
+        statut: "draft"      // ou "en attente", selon ton workflow
+      };
 
-      // Créer une entrée dans la collection résumée
+      // Ajouter le bulletin
+      const payrollsRef = collection(db, `companies/${companyId}/payrolls`);
+      const docRef = await addDoc(payrollsRef, payrollToSave);
+
+      // Créer la collection résumée
       const resumeRef = doc(db, `companies/${companyId}/payrolls_resume/${docRef.id}`);
       await setDoc(resumeRef, {
-        numero: payrollData.numero,
-        employeeName: payrollData.employeeName,
-        employeeMatricule: payrollData.employeeMatricule,
-        periode: payrollData.periode,
-        salaireNetAPayer: payrollData.calculations.salaireNetAPayer,
-        statut: payrollData.statut,
-        createdAt: payrollData.createdAt
+        numero: payrollToSave.numero,
+        employeeName: payrollToSave.employeeName,
+        employeeMatricule: payrollToSave.employeeMatricule,
+        periode: payrollToSave.periode,
+        salaireNetAPayer: payrollToSave.calculations.salaireNetAPayer,
+        statut: payrollToSave.statut,
+        userId,              // on conserve l'userId ici aussi
+        companyId,           // et le companyId
+        createdAt: payrollToSave.createdAt
       });
 
       return {
@@ -137,6 +150,7 @@ export const payrollService = {
       return { success: false, message: "Erreur lors de la création du bulletin." };
     }
   },
+
 
   // ✏️ Mise à jour d'un bulletin de paie
   updatePayroll: async (companyId, payrollId, payrollData) => {

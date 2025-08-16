@@ -97,11 +97,17 @@ export const styles = StyleSheet.create({
     employeeInfo: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 15,  // Réduit de 20
+        marginBottom: 10,  // Réduit de 20
         padding: 10,  // Réduit de 15
         backgroundColor: 'rgba(101, 220, 143, 0.1)',
         borderRadius: 4,
         borderLeft: '3px solid #218838'
+    },
+    employeeInfoLine: {
+        marginBottom: 4
+    },
+    employeeInfoPre: {
+        fontWeight: 'bold'
     },
     remunerationSection: {
         marginBottom: 6,

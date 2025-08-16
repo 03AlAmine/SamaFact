@@ -27,7 +27,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
             return "Montant non convertible";
         }
     };
-    // Ajoutez cette fonction de formatage
+    //Ajoutez cette fonction de formatage
     const formatDateShort = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -81,18 +81,37 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                 {/* Employee Info */}
                 <View style={styles.employeeInfo}>
                     <View>
-                        <Text style={{ fontWeight: 'bold' }}>Prénom & Nom: {employee.nom} {employee.prenom}</Text>
-                        <Text>Poste: {employee.poste}</Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Prénom & Nom: </Text>
+                            {employee.prenom} {employee.nom}
+                        </Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Adresse: </Text>
+                            {employee.adresse}
+                        </Text>
                     </View>
                     <View>
-                        <Text>Date embauche: {formatDate(employee.dateEmbauche)}</Text>
-                        <Text>Adresse: {employee.address}</Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Date embauche: </Text>
+                            {formatDate(employee.dateEmbauche)}
+                        </Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Poste: </Text>
+                            {employee.poste}
+                        </Text>
                     </View>
                     <View>
-                        <Text>Catégorie: {formatDate(employee.cat)}</Text>
-                        <Text>Matricule: {employee.matricule}</Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Matricule: </Text>
+                            {employee.matricule}
+                        </Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Catégorie: </Text>
+                            {employee.categorie}
+                        </Text>
                     </View>
                 </View>
+
 
                 {/* Gains */}
                 <View style={styles.remunerationSection}>
