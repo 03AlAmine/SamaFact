@@ -97,29 +97,69 @@ const PayrollForm = () => {
     useEffect(() => {
         const initializeData = async () => {
             try {
-                // Si on édite un bulletin existant
                 if (location.state && location.state.payroll) {
                     const payroll = location.state.payroll;
+
+                    // Ensure all fields have values
                     setFormData({
                         periode: {
-                            du: payroll.periode.du,
-                            au: payroll.periode.au
+                            du: payroll.periode?.du || '',
+                            au: payroll.periode?.au || ''
                         },
-                        remuneration: payroll.remuneration,
-                        primes: payroll.primes,
-                        retenues: payroll.retenues
+                        remuneration: {
+                            tauxHoraire: payroll.remuneration?.tauxHoraire || '0',
+                            salaireBase: payroll.remuneration?.salaireBase || '0',
+                            sursalaire: payroll.remuneration?.sursalaire || '0',
+                            indemniteDeplacement: payroll.remuneration?.indemniteDeplacement || '0',
+                            autresIndemnites: payroll.remuneration?.autresIndemnites || '0',
+                            avantagesNature: payroll.remuneration?.avantagesNature || '0'
+                        },
+                        primes: {
+                            transport: payroll.primes?.transport || '26000',
+                            panier: payroll.primes?.panier || '0',
+                            repas: payroll.primes?.repas || '0',
+                            anciennete: payroll.primes?.anciennete || '0',
+                            responsabilite: payroll.primes?.responsabilite || '0',
+                            autresPrimes: payroll.primes?.autresPrimes || '0'
+                        },
+                        retenues: {
+                            salaire: payroll.retenues?.salaire || '0',
+                            qpartipm: payroll.retenues?.qpartipm || '0',
+                            ipm: payroll.retenues?.ipm || '0',
+                            avances: payroll.retenues?.avances || '0',
+                            trimf: payroll.retenues?.trimf || '300',
+                            cfce: payroll.retenues?.cfce || '0',
+                            ir: payroll.retenues?.ir || '0'
+                        }
                     });
-                    setCalculations(payroll.calculations);
-                    setSelectedEmployeeId(payroll.employeeId);
-                    setPayrollNumber(payroll.numero);
-                    setIsSaved(true);
-                    setLoadingData(false);
-                    return;
-                }
 
-                // Nouveau bulletin - générer un numéro
-                const numero = await payrollService.generatePayrollNumber(currentUser.companyId);
-                setPayrollNumber(numero);
+                    setCalculations(payroll.calculations || {
+                        brutSocial: 0,
+                        brutFiscal: 0,
+                        cotisationsSalariales: 0,
+                        cotisationsPatronales: 0,
+                        salaireNet: 0,
+                        salaireNetAPayer: 0,
+                        detailsCotisations: {
+                            ipresRG: 0,
+                            ipresRC: 0,
+                            ipresRGP: 0,
+                            ipresRCP: 0,
+                            allocationFamiliale: 0,
+                            accidentTravail: 0,
+                            trimf: 0,
+                            cfce: 0,
+                            ir: 0
+                        }
+                    });
+
+                    setSelectedEmployeeId(payroll.employeeId || '');
+                    setPayrollNumber(payroll.numero || '');
+                    setIsSaved(true);
+                } else {
+                    const numero = await payrollService.generatePayrollNumber(currentUser.companyId);
+                    setPayrollNumber(numero);
+                }
             } catch (error) {
                 console.error("Erreur initialisation:", error);
                 const now = new Date();

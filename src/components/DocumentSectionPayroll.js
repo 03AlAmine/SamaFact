@@ -19,13 +19,19 @@ import {
     FaCreditCard,
     FaUserEdit,
     FaCheckCircle,
-    FaFileSignature
+    FaFileSignature,
+    FaChevronRight,
+    FaChevronLeft,
 } from 'react-icons/fa';
 import { Modal, Button } from 'antd';
 import empty from '../assets/empty.png';
 import '../css/DocumentSection.css';
 import UserNameLookup from './UserNameLookup';
 import { useNavigate } from 'react-router-dom';
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import { Autoplay, Navigation } from 'swiper/modules';
+import 'swiper/css/navigation';
 
 const PayrollSection = ({
     title,
@@ -48,7 +54,7 @@ const PayrollSection = ({
     const [viewMode, setViewMode] = useState('list');
     const [hoveredItem, setHoveredItem] = useState(null);
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-    const [selectedPayroll, ] = useState(null);
+    const [selectedPayroll,] = useState(null);
 
 
     const handleInfoModalCancel = () => {
@@ -243,52 +249,92 @@ const PayrollSection = ({
                             </div>
 
                             <div className={`card-actions ${hoveredItem === p.id ? 'visible' : ''}`}>
-                                <div className="action-group">
-                                    <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(p); }} title="Aperçu">
-                                        <FaEye />
-                                    </button>
-                                    <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger">
-                                        <FaDownload />
-                                    </button>
-                                    <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer">
-                                        <FaTrash />
-                                    </button>
-                                </div>
+                                <Swiper
+                                    loop={true}
+                                    spaceBetween={10}
+                                    slidesPerView={1}
+                                    grabCursor={true}
+                                    modules={[Autoplay, Navigation]}
+                                    autoplay={{
+                                        delay: 3000,
+                                        pauseOnMouseEnter: true,
+                                        disableOnInteraction: false,
+                                    }}
+                                    navigation={{
+                                        nextEl: `.swiper-next-${p.id}`,
+                                        prevEl: `.swiper-prev-${p.id}`,
+                                        disabledClass: 'swiper-button-disabled'
+                                    }}
+                                    className="custom-swiper"
+                                    onSlideChange={(swiper) => {
+                                        swiper.autoplay.start();
+                                    }}
+                                >
+                                    {/* Slide 1 */}
+                                    <SwiperSlide>
+                                        <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(p); }} title="Aperçu">
+                                            <FaEye />
+                                        </button>
+                                        <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger">
+                                            <FaDownload />
+                                        </button>
+                                        <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer">
+                                            <FaTrash />
+                                        </button>
+                                    </SwiperSlide>
 
-                                <div className="action-group">
-                                    <button className="action-btn edit" onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate("/payroll", {
-                                            state: {
-                                                payroll: p,
-                                                employee: selectedEmployee || {
-                                                    id: p.employeeId,
-                                                    nom: p.employeeName?.split(' ')[0],
-                                                    prenom: p.employeeName?.split(' ').slice(1).join(' ')
+                                    {/* Slide 2 */}
+                                    <SwiperSlide>
+                                        <button className="action-btn edit" onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate("/payroll", {
+                                                state: {
+                                                    payroll: p,
+                                                    employee: selectedEmployee || {
+                                                        id: p.employeeId,
+                                                        nom: p.employeeName?.split(' ')[0],
+                                                        prenom: p.employeeName?.split(' ').slice(1).join(' ')
+                                                    }
                                                 }
-                                            }
-                                        });
-                                    }} title="Modifier">
-                                        <FaEdit />
-                                    </button>
-                                    <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer">
-                                        <FaCopy />
-                                    </button>
-                                    {p.statut === "draft" ? (
-                                        <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider">
-                                            <FaCheckCircle />
+                                            });
+                                        }} title="Modifier">
+                                            <FaEdit />
                                         </button>
-                                    ) : p.statut === "validated" ? (
-                                        <button className="action-btn pay" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(p.id); }} title="Marquer comme payé">
-                                            <FaCreditCard />
+                                        <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer">
+                                            <FaCopy />
                                         </button>
-                                    ) : p.statut === "paid" ? (
-                                        <button className="action-btn cancel" onClick={(e) => { e.stopPropagation(); onCancel(p.id); }} title="Annuler">
-                                            <FaTimes />
-                                        </button>
-                                    ) : null}
-                                </div>
+
+                                        {p.statut === "draft" ? (
+                                            <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider">
+                                                <FaCheckCircle />
+                                            </button>
+                                        ) : p.statut === "validated" ? (
+                                            <button className="action-btn pay" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(p.id); }} title="Marquer comme payé">
+                                                <FaCreditCard />
+                                            </button>
+                                        ) : p.statut === "paid" ? (
+                                            <button className="action-btn cancel" onClick={(e) => { e.stopPropagation(); onCancel(p.id); }} title="Annuler">
+                                                <FaTimes />
+                                            </button>
+                                        ) : null}
+                                    </SwiperSlide>
+
+                                    {/* Navigation */}
+                                    <div
+                                        className={`swiper-nav-btn swiper-prev swiper-prev-${p.id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <FaChevronLeft />
+                                    </div>
+                                    <div
+                                        className={`swiper-nav-btn swiper-next swiper-next-${p.id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <FaChevronRight />
+                                    </div>
+                                </Swiper>
                             </div>
+
                         </div>
                     ))}
                 </div>
@@ -371,108 +417,27 @@ const PayrollSection = ({
 
                                     <td className="actions-cell">
                                         <div className="actions-container">
-                                            <div className="main-actions">
-                                                <button
-                                                    className="action-btn view"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onPreview(p);
-                                                    }}
-                                                    title="Aperçu"
-                                                >
-                                                    <FaEye />
-                                                </button>
 
-                                                <button
-                                                    className="action-btn download"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDownload(p);
-                                                    }}
-                                                    title="Télécharger"
-                                                >
-                                                    <FaDownload />
-                                                </button>
-
-                                                <button
-                                                    className="action-btn delete"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDelete(p.id);
-                                                    }}
-                                                    title="Supprimer"
-                                                >
-                                                    <FaTrash />
-                                                </button>
+                                            {/* Groupe 1 */}
+                                            <div className="action-group">
+                                                <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(p); }} title="Aperçu"><FaEye /></button>
+                                                <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger"><FaDownload /></button>
+                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer"><FaTrash /></button>
                                             </div>
 
-                                            <div className="secondary-actions">
-                                                <button
-                                                    className="action-btn edit"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigate("/payroll", {
-                                                            state: {
-                                                                payroll: p,
-                                                                employee: selectedEmployee || {
-                                                                    id: p.employeeId,
-                                                                    nom: p.employeeName?.split(' ')[0],
-                                                                    prenom: p.employeeName?.split(' ').slice(1).join(' ')
-                                                                }
-                                                            }
-                                                        });
-                                                    }}
-                                                    title="Modifier"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-
-                                                <button
-                                                    className="action-btn duplicate"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDuplicate(p);
-                                                    }}
-                                                    title="Dupliquer"
-                                                >
-                                                    <FaCopy />
-                                                </button>
-
+                                            {/* Groupe 2 */}
+                                            <div className="action-group">
+                                                <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/payroll", { state: { payroll: p, employee: selectedEmployee || { id: p.employeeId, nom: p.employeeName?.split(' ')[0], prenom: p.employeeName?.split(' ').slice(1).join(' ') } } }); }} title="Modifier"><FaEdit /></button>
+                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
                                                 {p.statut === "draft" ? (
-                                                    <button
-                                                        className="action-btn validate"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onValidate(p.id);
-                                                        }}
-                                                        title="Valider"
-                                                    >
-                                                        <FaCheckCircle />
-                                                    </button>
+                                                    <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider"><FaCheckCircle /></button>
                                                 ) : p.statut === "validated" ? (
-                                                    <button
-                                                        className="action-btn pay"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onMarkAsPaid(p.id);
-                                                        }}
-                                                        title="Marquer comme payé"
-                                                    >
-                                                        <FaCreditCard />
-                                                    </button>
+                                                    <button className="action-btn pay" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(p.id); }} title="Marquer comme payé"><FaCreditCard /></button>
                                                 ) : p.statut === "paid" ? (
-                                                    <button
-                                                        className="action-btn cancel"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onCancel(p.id);
-                                                        }}
-                                                        title="Annuler"
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
+                                                    <button className="action-btn cancel" onClick={(e) => { e.stopPropagation(); onCancel(p.id); }} title="Annuler"><FaTimes /></button>
                                                 ) : null}
                                             </div>
+
                                         </div>
                                     </td>
                                 </tr>
