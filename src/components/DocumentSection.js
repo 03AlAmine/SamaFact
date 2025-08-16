@@ -466,6 +466,9 @@ const DocumentSection = ({
                                                 >
                                                     <FaPaperPlane />
                                                 </button>
+                                                <button className="action-btn send" title="Ajouter">
+                                                    <FaPlus />
+                                                </button>
                                             </div>
                                         </div>
                                     </td>

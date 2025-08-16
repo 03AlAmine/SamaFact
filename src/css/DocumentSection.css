@@ -530,11 +530,7 @@
     justify-content: center;
   }
 }
-/* Style pour les cartes */
-.document-card {
-  position: relative;
-  transition: all 0.3s ease;
-}
+
 
 .paid-card {
   background-color: #f0fdf4;
@@ -544,10 +540,7 @@
   background-color: #fdfdf0;
   box-shadow: 0 4px 6px rgba(185, 185, 16, 0.1);
 }
-/* En-tête de carte */
-.card-header {
-  position: relative;
-}
+
 
 .header-status {
   position: absolute;
@@ -674,12 +667,7 @@
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-  color: #4a5568;
-}
+
 
 .card-header h4 {
   margin: 0;
