@@ -12,7 +12,7 @@ import NotFound from './components/NotFound';
 import Admin from './samafact/SamaFact';
 import AccessDenied from './components/AccessDenied';
 import ForgotPassword from './auth/ForgotPassword';
-import { UiProvider  } from './contexts/uiContext'; // Ajoutez cette importation
+import { UiProvider } from './contexts/uiContext'; // Ajoutez cette importation
 
 function App() {
   return (
@@ -33,8 +33,22 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-            <Route path="/bill" element={<PrivateRoute><Facture /></PrivateRoute>} />
-            <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
+            <Route
+              path="/bill"
+              element={
+                <PrivateRoute requiredPermission="manageDocuments">
+                  <Facture />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/payroll"
+              element={
+                <PrivateRoute requiredPermission="managePayroll">
+                  <Payroll />
+                </PrivateRoute>
+              }
+            />
             <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
             <Route path="/samafact" element={<PrivateRoute allowedRoles={['superadmin']}><Admin /></PrivateRoute>} />
 

@@ -668,8 +668,13 @@ const Mentafact = () => {
             e.target.value = '';
         }
     };
-    const { activeModule, setActiveModule } = useAppContext();
+    const { activeModule, setActiveModule, resetModuleBasedOnRole  } = useAppContext();
 
+    useEffect(() => {
+        if (currentUser?.role) {
+            resetModuleBasedOnRole(currentUser.role);
+        }
+    }, [currentUser?.role]); // Se déclenche quand le rôle change
 
     useEffect(() => {
         // Synchronise le module actif avec les permissions au chargement

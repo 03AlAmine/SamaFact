@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect,useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const AppContext = createContext();
 
@@ -17,9 +17,18 @@ export const AppProvider = ({ children }) => {
   const toggleModule = () => {
     setActiveModule(prev => prev === 'mentafact' ? 'payroll' : 'mentafact');
   };
+  // Ajoutez cette fonction pour forcer la réinitialisation
+  const resetModuleBasedOnRole = (role) => {
+    const defaultModule = ['rh_daf', 'comptable'].includes(role)
+      ? 'payroll'
+      : 'mentafact';
+    setActiveModule(defaultModule);
+  };
 
   return (
-    <AppContext.Provider value={{ activeModule, setActiveModule, toggleModule }}>
+    <AppContext.Provider value={{
+      activeModule, setActiveModule, toggleModule, resetModuleBasedOnRole
+    }}>
       {children}
     </AppContext.Provider>
   );
