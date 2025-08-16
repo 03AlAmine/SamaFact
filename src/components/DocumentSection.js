@@ -22,12 +22,19 @@ import {
     FaStickyNote,
     FaUserEdit,
     FaCheckCircle,
-    FaPaperPlane
+    FaPaperPlane,
+    FaChevronRight,
+    FaChevronLeft,
+
 } from 'react-icons/fa';
 import { Modal, Button } from 'antd';
 import empty from '../assets/empty.png';
 import '../css/DocumentSection.css';
 import UserNameLookup from './UserNameLookup';
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import { Autoplay, Navigation } from 'swiper/modules';
+import 'swiper/css/navigation';
 
 
 const DocumentSection = ({
@@ -184,7 +191,9 @@ const DocumentSection = ({
                     </button>
                 </div>
             ) : viewMode === 'card' ? (
+
                 <div className="cards-grid">
+
                     {filteredItems.map((f) => (
                         <div
                             key={f.id}
@@ -237,47 +246,68 @@ const DocumentSection = ({
                             </div>
 
                             <div className={`card-actions ${hoveredItem === f.id ? 'visible' : ''}`}>
-                                <div className="action-group">
-                                    <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu">
-                                        <FaEye />
-                                    </button>
-                                    <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger">
-                                        <FaDownload />
-                                    </button>
-                                    <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer">
-                                        <FaTrash />
-                                    </button>
-                                </div>
+                                <Swiper
+                                    loop={true}
+                                    spaceBetween={10}
+                                    slidesPerView={1}
+                                    grabCursor={true}
+                                    modules={[Autoplay, Navigation]}
+                                    autoplay={{
+                                        delay: 3000,
+                                        pauseOnMouseEnter: true,
+                                        disableOnInteraction: false,
+                                    }}
+                                    navigation={{
+                                        nextEl: `.swiper-next-${f.id}`,
+                                        prevEl: `.swiper-prev-${f.id}`,
+                                        disabledClass: 'swiper-button-disabled'
+                                    }}
+                                    className="custom-swiper"
+                                    onSlideChange={(swiper) => {
+                                        // Réactive l'autoplay après une interaction manuelle
+                                        swiper.autoplay.start();
+                                    }}
+                                >
+                                    <SwiperSlide>
+                                        <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu"><FaEye /></button>
+                                        <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger"><FaDownload /></button>
+                                        <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer"><FaTrash /></button>
+                                    </SwiperSlide>
 
-                                <div className="action-group">
-                                    <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier">
-                                        <FaEdit />
-                                    </button>
-                                    <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer">
-                                        <FaCopy />
-                                    </button>
-                                    {f.statut === "payé" ? (
-                                        <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement">
-                                            <FaTimes />
-                                        </button>
-                                    ) : (
-                                        <button className="action-btn paid" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(f.id, type); }} title="Marquer comme payé">
-                                            <FaCheck />
-                                        </button>
-                                    )}
+                                    <SwiperSlide>
+                                        <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier"><FaEdit /></button>
+                                        <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer"><FaCopy /></button>
+                                        {f.statut === "payé" ? (
+                                            <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement"><FaTimes /></button>
+                                        ) : (
+                                            <button className="action-btn paid" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(f.id, type); }} title="Marquer comme payé"><FaCheck /></button>
+                                        )}
+                                    </SwiperSlide>
 
+                                    <SwiperSlide>
+                                        <button className="action-btn info_view" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails"><FaInfoCircle /></button>
+                                        <button className="action-btn send" title="Envoyer par email"><FaPaperPlane /></button>
+                                        <button className="action-btn add" title="Ajouter"><FaPlus /></button>
+                                    </SwiperSlide>
+  
 
-                                </div>
-
-                                <div className="action-group">
-                                    <button className="action-btn info" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails">
-                                        <FaInfoCircle />
-                                    </button>
-                                    <button className="action-btn send" title="Envoyer par email">
-                                        <FaPaperPlane />
-                                    </button>
-                                </div>
+                                    {/* Boutons de navigation */}
+                                    <div
+                                        className={`swiper-nav-btn swiper-prev swiper-prev-${f.id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <FaChevronLeft />
+                                    </div>
+                                    <div
+                                        className={`swiper-nav-btn swiper-next swiper-next-${f.id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <FaChevronRight />
+                                    </div>
+                                </Swiper>
                             </div>
+
+
                         </div>
                     ))}
                 </div>
@@ -353,125 +383,35 @@ const DocumentSection = ({
 
                                     <td className="actions-cell">
                                         <div className="actions-container">
-                                            {/* Actions principales */}
-                                            <div className="main-actions">
-                                                <button
-                                                    className="action-btn view"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onPreview(f);
-                                                    }}
-                                                    title="Aperçu"
-                                                >
-                                                    <FaEye />
-                                                </button>
 
-                                                <button
-                                                    className="action-btn download"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDownload(f);
-                                                    }}
-                                                    title="Télécharger"
-                                                >
-                                                    <FaDownload />
-                                                </button>
-
-                                                <button
-                                                    className="action-btn delete"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDelete(f.id, type);
-                                                    }}
-                                                    title="Supprimer"
-                                                >
-                                                    <FaTrash />
-                                                </button>
+                                            {/* Groupe 1 */}
+                                            <div className="action-group">
+                                                <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu"><FaEye /></button>
+                                                <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger"><FaDownload /></button>
+                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer"><FaTrash /></button>
                                             </div>
 
-                                            {/* Actions secondaires */}
-                                            <div className="secondary-actions">
-                                                <button
-                                                    className="action-btn edit"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigate("/bill", {
-                                                            state: {
-                                                                facture: f,
-                                                                client: selectedClient,
-                                                                type: f.type,
-                                                                objet: f.objet,
-                                                                ribs: f.ribs,
-                                                                showSignature: f.showSignature
-                                                            }
-                                                        });
-                                                    }}
-                                                    title="Modifier"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-
-                                                <button
-                                                    className="action-btn duplicate"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDuplicate(f);
-                                                    }}
-                                                    title="Dupliquer"
-                                                >
-                                                    <FaCopy />
-                                                </button>
-
+                                            {/* Groupe 2 */}
+                                            <div className="action-group">
+                                                <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier"><FaEdit /></button>
+                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer"><FaCopy /></button>
                                                 {f.statut === 'payé' ? (
-                                                    <button
-                                                        className="action-btn unpaid"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onMarkAsPending(f.id, type);
-                                                        }}
-                                                        title="Annuler le paiement"
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
+                                                    <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement"><FaTimes /></button>
                                                 ) : (
-                                                    <button
-                                                        className="action-btn paid"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onMarkAsPaid(f.id, type);
-                                                        }}
-                                                        title="Marquer comme payé"
-                                                    >
-                                                        <FaCheck />
-                                                    </button>
+                                                    <button className="action-btn paid" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(f.id, type); }} title="Marquer comme payé"><FaCheck /></button>
                                                 )}
                                             </div>
 
-                                            {/* Autres actions */}
-                                            <div className="secondary-actions">
-                                                <button
-                                                    className="action-btn info"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        showInfoModal(f);
-                                                    }}
-                                                    title="Détails"
-                                                >
-                                                    <FaInfoCircle />
-                                                </button>
-
-                                                <button
-                                                    className="action-btn send"
-                                                    title="Envoyer par email"
-                                                >
-                                                    <FaPaperPlane />
-                                                </button>
-                                                <button className="action-btn send" title="Ajouter">
-                                                    <FaPlus />
-                                                </button>
+                                            {/* Groupe 3 */}
+                                            <div className="action-group">
+                                                <button className="action-btn info_view" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails"><FaInfoCircle /></button>
+                                                <button className="action-btn send" title="Envoyer par email"><FaPaperPlane /></button>
+                                                <button className="action-btn add" title="Ajouter"><FaPlus /></button>
                                             </div>
+
                                         </div>
                                     </td>
+
                                 </tr>
                             ))}
                         </tbody>

@@ -283,19 +283,92 @@
   text-align: center;
 }
 
+/* Boutons de navigation */
+.swiper-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    color: #4f46e5; /* Couleur principale */
+    border: 1px solid #e2e8f0;
+}
+
+.swiper-nav-btn:hover {
+    background: #4f46e5;
+    color: white;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.swiper-prev {
+    left: 5%;
+}
+
+.swiper-next {
+    right: 5%;
+}
+
+/* Icônes */
+.swiper-nav-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Animation discrète au survol */
+.swiper-nav-btn::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.swiper-nav-btn:hover::after {
+    transform: scale(1.2);
+    opacity: 0.2;
+}
+
+/* Style pour le swiper actif */
+.custom-swiper:hover .swiper-nav-btn {
+    opacity: 1;
+    visibility: visible;
+}
 .card-actions {
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 15px;
+  display: block; /* laisse Swiper gérer le layout horizontal */
+  padding: 10px 0;
   background-color: white;
   opacity: 0;
   transition: opacity 0.2s ease;
+  overflow: hidden; /* masque le scroll natif */
 }
 
 .card-actions.visible {
   opacity: 1;
 }
 
+/* Swiper container pour s'assurer que les slides s'affichent horizontalement */
+.card-actions .swiper {
+  width: 100%;
+}
+
+.card-actions .swiper-slide {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* Boutons */
 .action-btn {
   background: none;
   border: none;
@@ -309,6 +382,8 @@
   transition: all 0.2s ease;
   color: var(--text-light);
 }
+
+
 
 .action-btn:hover {
   background-color: var(--hover-bg);
@@ -330,7 +405,7 @@
 .action-btn.delete:hover {
   color: #dc3545;
 }
-.action-btn.info:hover {
+.action-btn.info_view:hover {
   color: #8f13af;
 }
 .action-btn.paid:hover {
@@ -379,21 +454,28 @@
 }
 
 /* Organisation des boutons */
+/* Conteneur principal */
 .actions-container {
   display: flex;
-  gap: 4px;
+  justify-content: flex-start; /* aligne les groupes sur la gauche */
+  align-items: center;
+  gap: 10px; /* espace entre les groupes */
 }
 
-.main-actions,
-.secondary-actions {
+/* Chaque groupe de boutons */
+.action-group {
   display: flex;
-  gap: 4px;
+  gap: 5px; /* espace entre les boutons dans le groupe */
+  padding: 0 10px;
+  border-left: 2px solid #e5e7eb; /* diviseur entre groupes */
 }
 
-.secondary-actions {
-  border-left: 1px solid #e5e7eb;
-  padding-left: 8px;
+.action-group:first-child {
+  border-left: none; /* pas de diviseur avant le premier groupe */
 }
+
+
+
 
 /* Table view */
 .table-container {
@@ -468,18 +550,6 @@
   width: auto; /* Laisse le tableau décider */
 }
 
-.actions-container {
-  display: flex;
-  justify-content: space-between; /* Répartit les groupes d’actions */
-  align-items: center;
-  width: 100%;
-}
-
-.actions-container > div {
-  display: flex;
-  gap: 5px; /* Espace entre les boutons dans chaque groupe */
-}
-
 /* Responsive */
 @media (max-width: 1024px) {
   .section-header {
@@ -531,7 +601,6 @@
   }
 }
 
-
 .paid-card {
   background-color: #f0fdf4;
   box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);
@@ -540,7 +609,6 @@
   background-color: #fdfdf0;
   box-shadow: 0 4px 6px rgba(185, 185, 16, 0.1);
 }
-
 
 .header-status {
   position: absolute;
@@ -572,17 +640,6 @@
   color: #92400e;
 }
 
-/* Groupes d'actions */
-.card-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.action-group {
-  display: flex;
-  gap: 4px;
-}
 
 /* Styles globaux de la modal */
 .document-details-modal-container .ant-modal-content {
@@ -666,8 +723,6 @@
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
-
-
 
 .card-header h4 {
   margin: 0;
@@ -1119,3 +1174,4 @@
     padding: 20px 16px;
   }
 }
+
