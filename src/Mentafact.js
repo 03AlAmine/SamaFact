@@ -669,15 +669,14 @@ const Mentafact = () => {
         }
     };
     const { activeModule, setActiveModule } = useAppContext();
-    const [initialModule] = useState(() => {
-        return shouldDefaultToPayroll() ? 'payroll' : 'mentafact';
-    });
 
 
     useEffect(() => {
-        // D'abord on initialise le module
-        setActiveModule(initialModule);
-    }, [initialModule, setActiveModule]);
+        // Synchronise le module actif avec les permissions au chargement
+        if (shouldDefaultToPayroll() && activeModule !== 'payroll') {
+            setActiveModule('payroll');
+        }
+    }, [currentUser]); // Se déclenche quand currentUser change
 
     useEffect(() => {
         // Puis on gère la synchronisation des tabs
