@@ -1,33 +1,28 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 
 const AppContext = createContext();
 
+// Dans AppContext.js
 export const AppProvider = ({ children }) => {
-  // Récupère la valeur depuis localStorage ou utilise 'mentafact' par défaut
-  const [activeModule, setActiveModule] = useState(() => {
-    const savedModule = localStorage.getItem('activeModule');
-    return savedModule || 'mentafact';
-  });
+  const [activeModule, setActiveModule] = useState('mentafact');
 
-  // Sauvegarde dans localStorage à chaque changement
-  useEffect(() => {
-    localStorage.setItem('activeModule', activeModule);
-  }, [activeModule]);
-
-  const toggleModule = () => {
-    setActiveModule(prev => prev === 'mentafact' ? 'payroll' : 'mentafact');
-  };
-  // Ajoutez cette fonction pour forcer la réinitialisation
-  const resetModuleBasedOnRole = (role) => {
-    const defaultModule = ['rh_daf', 'comptable'].includes(role)
-      ? 'payroll'
-      : 'mentafact';
-    setActiveModule(defaultModule);
+  // Nouvelle fonction pour gérer les changements de manière intelligente
+  const setModuleBasedOnRole = (module, userRole) => {
+    const allowedRoles = ['admin', 'comptable'];
+    if (allowedRoles.includes(userRole)) {
+      setActiveModule(module);
+      localStorage.setItem('activeModule', module);
+    } else {
+      const forcedModule = userRole === 'rh_daf' ? 'payroll' : 'mentafact';
+      setActiveModule(forcedModule);
+      localStorage.setItem('activeModule', forcedModule);
+    }
   };
 
   return (
     <AppContext.Provider value={{
-      activeModule, setActiveModule, toggleModule, resetModuleBasedOnRole
+      activeModule,
+      setModuleBasedOnRole // Remplace setActiveModule
     }}>
       {children}
     </AppContext.Provider>

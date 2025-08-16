@@ -35,7 +35,6 @@ const Mentafact = () => {
     const {
         currentUser,
         logout,
-        canToggleModules, // Ajoutez cette ligne
         shouldDefaultToPayroll
     } = useAuth();
     const navigate = useNavigate();
@@ -668,20 +667,19 @@ const Mentafact = () => {
             e.target.value = '';
         }
     };
-    const { activeModule, setActiveModule, resetModuleBasedOnRole  } = useAppContext();
-
+    const { canToggleModules } = useAuth();
+    const { activeModule, setModuleBasedOnRole } = useAppContext();
+    // Initialisation au chargement
     useEffect(() => {
-        if (currentUser?.role) {
-            resetModuleBasedOnRole(currentUser.role);
-        }
-    }, [currentUser?.role]); // Se déclenche quand le rôle change
+        const savedModule = localStorage.getItem('activeModule');
+        const defaultModule = shouldDefaultToPayroll() ? 'payroll' : 'mentafact';
 
-    useEffect(() => {
-        // Synchronise le module actif avec les permissions au chargement
-        if (shouldDefaultToPayroll() && activeModule !== 'payroll') {
-            setActiveModule('payroll');
+        if (canToggleModules() && savedModule) {
+            setModuleBasedOnRole(savedModule, currentUser.role);
+        } else {
+            setModuleBasedOnRole(defaultModule, currentUser.role);
         }
-    }, [currentUser]); // Se déclenche quand currentUser change
+    }, [currentUser?.role]); // Déclenché au changement de rôle
 
     useEffect(() => {
         // Puis on gère la synchronisation des tabs
@@ -853,8 +851,10 @@ const Mentafact = () => {
                         <div className="module-toggle">
                             <button
                                 className={`toggle-btn ${activeModule === 'mentafact' ? 'mentafact' : 'payroll'} clignote`}
-                                onClick={() => setActiveModule(activeModule === 'mentafact' ? 'payroll' : 'mentafact')}
-                                disabled={!canToggleModules()} // Utilisez la nouvelle fonction ici
+                                onClick={() => {
+                                    const newModule = activeModule === 'mentafact' ? 'payroll' : 'mentafact';
+                                    setModuleBasedOnRole(newModule, currentUser.role);
+                                }} disabled={!canToggleModules()} // Utilisez la nouvelle fonction ici
                                 title={!canToggleModules() ? "Changement de module réservé aux administrateurs et comptables" : ""}
                             >
                                 {activeModule === 'mentafact' ? (
