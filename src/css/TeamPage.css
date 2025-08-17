@@ -310,24 +310,43 @@ textarea.form-input {
   font-weight: 500;
 }
 
-.role-admin {
-  background: rgba(67, 97, 238, 0.1);
-  color: var(--primary-color);
-}
+/* Styles pour les icônes de rôle */
+.role-icon.admin {
+  color: #d32f2f;
+} /* Rouge pour admin */
+.role-icon.rhdaf {
+  color: #1976d2;
+} /* Bleu pour RH_DAF */
+.role-icon.comptable {
+  color: #388e3c;
+} /* Vert pour comptable */
+.role-icon.charge-compte {
+  color: #ffa000;
+} /* Orange pour chargé de compte */
+.role-icon.lecteur {
+  color: #7b1fa2;
+} /* Violet pour lecteur */
 
-.role-manager {
-  background: rgba(255, 193, 7, 0.1);
-  color: var(--warning-color);
+/* Styles pour les badges de rôle */
+.badge.role-admin {
+  background-color: #d32f2f;
+  color: white;
 }
-
-.role-editor {
-  background: rgba(40, 167, 69, 0.1);
-  color: var(--success-color);
+.badge.role-rh_daf {
+  background-color: #1976d2;
+  color: white;
 }
-
-.role-viewer {
-  background: rgba(108, 117, 125, 0.1);
-  color: var(--gray-dark);
+.badge.role-comptable {
+  background-color: #388e3c;
+  color: white;
+}
+.badge.role-charge_compte {
+  background-color: #ffa000;
+  color: white;
+}
+.badge.role-lecteur {
+  background-color: #7b1fa2;
+  color: white;
 }
 
 .status-active {
@@ -379,27 +398,6 @@ textarea.form-input {
   color: var(--text-light);
 }
 
-/* Icônes de rôle */
-.role-icon {
-  font-size: 1rem;
-}
-
-.role-icon.admin {
-  color: var(--primary-color);
-}
-
-.role-icon.manager {
-  color: var(--warning-color);
-}
-
-.role-icon.editor {
-  color: var(--success-color);
-}
-
-.role-icon.viewer {
-  color: var(--gray-dark);
-}
-
 /* Champ de mot de passe */
 .password-input {
   display: flex;
@@ -438,21 +436,21 @@ textarea.form-input {
     flex-direction: column;
     gap: 0;
   }
-  
+
   .section-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .search-box {
     width: 100%;
   }
-  
+
   .grid-view {
     grid-template-columns: 1fr;
   }
-  
+
   .data-table {
     display: block;
     overflow-x: auto;
@@ -472,7 +470,7 @@ textarea.form-input {
   padding: 15px;
   margin-bottom: 15px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease-out;
   color: white;
   transition: all 0.3s ease;
@@ -517,82 +515,94 @@ textarea.form-input {
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Modals */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
 .modal {
-    background: white;
-    border-radius: 8px;
-    width: 500px;
-    max-width: 90%;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .modal-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: #666;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #666;
 }
 
 .modal-body {
-    padding: 20px;
+  padding: 20px;
 }
 
 .modal-footer {
-    padding: 15px 20px;
-    border-top: 1px solid #eee;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* Action buttons */
 .action-buttons {
-    display: flex;
-    gap: 5px;
+  display: flex;
+  gap: 5px;
 }
 
 .icon-btn.reset {
-    color: #ff9800;
-    background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
 }
 
 .icon-btn.reset:hover {
-    background-color: rgba(255, 152, 0, 0.2);
+  background-color: rgba(255, 152, 0, 0.2);
 }

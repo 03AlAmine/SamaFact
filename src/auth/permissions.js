@@ -4,6 +4,7 @@
 export const ROLES = {
   SUPERADMIN: 'superadmin',      // Créateur / plateforme
   ADMIN: 'admin',                // Admin entreprise
+  RH_DAF: 'rh_daf',             // Directeur Administratif et Financier
   COMPTABLE: 'comptable',        // Peut gérer devis/factures/avoirs
   CHARGE_COMPTE: 'charge_compte',// Assistant / Secrétaire
   LECTEUR: 'lecteur'             // Lecture seule
@@ -23,6 +24,12 @@ export const PERMISSIONS = {
     manageUsers: true,
     manageDocuments: true,
     viewAll: true,
+    isSuperAdmin: false
+  },
+  [ROLES.RH_DAF]: {
+    managePayroll: true,        // Gestion complète de la paie
+    viewAllPayroll: true,       // Voir toutes les fiches de paie
+    manageEmployees: true,      // Gérer les employés
     isSuperAdmin: false
   },
   [ROLES.COMPTABLE]: {

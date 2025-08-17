@@ -284,6 +284,8 @@ const TeamsPage = ({ checkPermission }) => {
         switch (role) {
             case ROLES.ADMIN:
                 return <FaUserTie className="role-icon admin" />;
+            case ROLES.RH_DAF:
+                return <FaUserTie className="role-icon rhdaf" />;
             case ROLES.COMPTABLE:
                 return <FaUserCog className="role-icon comptable" />;
             case ROLES.CHARGE_COMPTE:
@@ -471,6 +473,7 @@ const TeamsPage = ({ checkPermission }) => {
                                     required
                                 >
                                     <option value={ROLES.ADMIN}>Administrateur</option>
+                                    <option value={ROLES.RH_DAF}>RH_DAF</option>
                                     <option value={ROLES.COMPTABLE}>Comptable</option>
                                     <option value={ROLES.CHARGE_COMPTE}>Chargé de compte</option>
                                     <option value={ROLES.LECTEUR}>Lecteur</option>
@@ -666,6 +669,7 @@ const TeamsPage = ({ checkPermission }) => {
                                                 required
                                             >
                                                 <option value={ROLES.ADMIN}>Administrateur</option>
+                                                <option value={ROLES.RH_DAF}>RH_DAF</option>
                                                 <option value={ROLES.COMPTABLE}>Comptable</option>
                                                 <option value={ROLES.CHARGE_COMPTE}>Chargé de compte</option>
                                                 <option value={ROLES.LECTEUR}>Lecteur</option>
