@@ -1,4 +1,4 @@
-/* styles.css - Fichier fusionné */
+/* styles.css - Fusion des deux :root */
 :root {
   /* Couleurs principales */
   --primary-color: #4361ee;
@@ -6,12 +6,14 @@
   --primary-dark: #2a4868;
   --primary-hover: #3a56d4;
 
-  /* Couleurs secondaires */
+  /* Couleurs secondaires / accent */
   --secondary-colore: #ff7e5f;
   --secondary-color: #eee;
   --secondary-light: #ff9e88;
   --secondary-dark: #e65f3e;
   --secondary-bg: #f8f9fa;
+  --secondary: #3f37c9;
+  --accent: #4cc9f0;
 
   /* Couleurs d'état */
   --success-color: #28a745;
@@ -19,19 +21,40 @@
   --warning-color: #ffc107;
   --danger-color: #dc3545;
   --error-color: #ff4d6d;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
 
-  /* Nuances de gris et couleurs neutres */
+  /* Nuances de gris et textes */
   --light-color: #f8f9fa;
   --dark-color: #343a40;
-  --text-dark: #1a1a2e;
-  --text-medium: #2b2d42;
-  --text-light: #8d99ae;
+  --text-dark: #1a1a2e; /* conservé du premier */
+  --text-medium: #2b2d42; /* conservé du premier */
+  --text-light: #8d99ae; /* conservé du premier */
+  --text-dark-alt: #1e293b; /* ajout du second */
+  --text-medium-alt: #334155;
+  --text-light-alt: #64748b;
   --gray-light: #e9ecef;
   --gray-medium: #adb5bd;
   --gray-dark: #495057;
-  --white: #ffffff;
-  --white-transparent: rgba(255, 255, 255, 0.9);
-  --border-color: #e9ecef;
+  --white: #ffffffa1;
+  --white-transparent: rgba(255, 255, 255, 0.7);
+
+  /* Arrière-plans */
+  --bg-color: #ffffff82;
+  --bg-light: #f8fafc93;
+  --card-bg: #ffffffd0;
+  --bg-card: #ffffffc3;
+  --hover-bg: #f5f7fa;
+  --bg-sidebar: #1e293b;
+
+  /* Bordures */
+  --border-radius: 12px;
+  --border-radius-sm: 6px; /* conserver du premier */
+  --border-radius-sm-alt: 8px; /* ajout du second */
+  --border-color: #e0e0e0; /* conserver du premier */
+  --border-color-alt: #e2e8f0;
 
   /* Dégradés */
   --primary-gradient: linear-gradient(135deg, #4a6fa5 0%, #6b8cae 100%);
@@ -40,32 +63,29 @@
   --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ffd966 100%);
   --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
 
-  /* Bordures */
-  --border-radius: 12px;
-  --border-radius-sm: 6px;
-
   /* Ombres */
   --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   --box-shadow-md: 0 6px 12px rgba(0, 0, 0, 0.15);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08); /* du premier */
+  --shadow-sm-alt: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* second */
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-md-alt: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --shadow-lg-alt: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --box-shadow-soft: 0 10px 20px rgba(0, 0, 0, 0.08);
   --box-shadow-card: 0 5px 15px rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.1);
 
   /* Transitions et effets */
-  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* conservé du premier */
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
+  --transition-alt: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* du second */
   --hover-effect: translateY(-3px);
-
-  --border-color: #e0e0e0;
-  --bg-color: #f8fafc;
-  --card-bg: #ffffff;
-  --hover-bg: #f5f7fa;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 * {

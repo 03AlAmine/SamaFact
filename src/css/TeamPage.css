@@ -3,7 +3,12 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  background-color: var(--bg-color);
+  background: linear-gradient(rgba(51, 49, 171, 0.5), rgba(213, 201, 30, 0.5)),
+    url("../assets/bg/bg-team.jpg");
+  background-attachment: fixed; /* ✅ l’image reste fixe */
+  background-size: cover; /* ✅ l’image couvre tout */
+  background-position: center; /* ✅ centrée */
+  border-radius: var(--border-radius);
 }
 
 /* Formulaires */

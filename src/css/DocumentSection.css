@@ -3,7 +3,10 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text-color);
   padding: 20px;
-  background-color: var(--bg-color);
+  background-image: url("../assets/bg/bg-fact.jpg");
+  background-attachment: fixed; /* ✅ l’image reste fixe */
+  background-size: cover; /* ✅ l’image couvre tout */
+  background-position: center; /* ✅ centrée */
   border-radius: 10px;
 }
 
@@ -285,64 +288,64 @@
 
 /* Boutons de navigation */
 .swiper-nav-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.3s ease;
-    color: #4f46e5; /* Couleur principale */
-    border: 1px solid #e2e8f0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  color: #4f46e5; /* Couleur principale */
+  border: 1px solid #e2e8f0;
 }
 
 .swiper-nav-btn:hover {
-    background: #4f46e5;
-    color: white;
-    transform: translateY(-50%) scale(1.1);
+  background: #4f46e5;
+  color: white;
+  transform: translateY(-50%) scale(1.1);
 }
 
 .swiper-prev {
-    left: 5%;
+  left: 5%;
 }
 
 .swiper-next {
-    right: 5%;
+  right: 5%;
 }
 
 /* Icônes */
 .swiper-nav-btn svg {
-    width: 16px;
-    height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Animation discrète au survol */
 .swiper-nav-btn::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: transparent;
-    transition: all 0.3s ease;
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.3s ease;
 }
 
 .swiper-nav-btn:hover::after {
-    transform: scale(1.2);
-    opacity: 0.2;
+  transform: scale(1.2);
+  opacity: 0.2;
 }
 
 /* Style pour le swiper actif */
 .custom-swiper:hover .swiper-nav-btn {
-    opacity: 1;
-    visibility: visible;
+  opacity: 1;
+  visibility: visible;
 }
 .card-actions {
   display: block; /* laisse Swiper gérer le layout horizontal */
@@ -382,8 +385,6 @@
   transition: all 0.2s ease;
   color: var(--text-light);
 }
-
-
 
 .action-btn:hover {
   background-color: var(--hover-bg);
@@ -474,14 +475,11 @@
   border-left: none; /* pas de diviseur avant le premier groupe */
 }
 
-
-
-
 /* Table view */
 .table-container {
   margin-top: 20px;
   overflow-x: auto;
-  background-color: white;
+  background: var(--bg-card);
   border-radius: 8px;
   box-shadow: var(--shadow);
 }
@@ -639,7 +637,6 @@
   background-color: #fef3c7;
   color: #92400e;
 }
-
 
 /* Styles globaux de la modal */
 .document-details-modal-container .ant-modal-content {
@@ -1174,4 +1171,3 @@
     padding: 20px 16px;
   }
 }
-
