@@ -8,13 +8,6 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-image: url("../assets/bg/bg-bill-1.svg");
-  /*background: linear-gradient(rgba(51, 49, 171, 0.5), rgba(213, 201, 30, 0.5)),
-    url("../assets/bg/bille.png"); */
-  background-attachment: fixed; /* ✅ l’image reste fixe */
-  background-size: cover; /* ✅ l’image couvre tout */
-  background-repeat: no-repeat;
-  background-position: center; /* ✅ centrée */
   margin-left: 280px;
   margin-right: 15px !important;
 }

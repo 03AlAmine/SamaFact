@@ -101,7 +101,31 @@ body {
   color: var(--dark-color);
   background-color: #f5faf7;
 }
+body::before {
+  content: "";
+  position: fixed; /* 🔑 fixé au viewport */
+  top: 0;
+  left: 0;
+  width: 100vw; /* largeur viewport */
+  height: 100vh; /* hauteur viewport */
+  background-image: url("./assets/bg/bg-bill-1.svg");
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  transform: scale(1);
+  animation: zoombg 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
 
+
+@keyframes zoombg {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

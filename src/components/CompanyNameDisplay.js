@@ -46,7 +46,7 @@ const CompanyNameDisplay = ({ companyId }) => {
                         width: '40px',
                         height: '40px',
                         opacity: 0.6,
-                        marginRight: '10px'
+                        marginRight: '10px',
                     }}
                 />
                 <div className="company-details">
@@ -68,7 +68,8 @@ const CompanyNameDisplay = ({ companyId }) => {
                     borderRadius: '50%',
                     objectFit: 'cover',
                     marginRight: '10px',
-                    border: companyData.logoUrl ? 'none' : '1px solid #eee'
+                    border: companyData.logoUrl ? 'none' : '1px solid #2e3fbe12',
+                    
                 }}
             />
             <div className="company-details">

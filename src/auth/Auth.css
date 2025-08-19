@@ -1,11 +1,4 @@
-.auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #f5f7fa;
-  padding: 20px;
-}
+
 
 .auth-card {
   background: white;
