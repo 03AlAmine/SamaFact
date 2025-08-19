@@ -10,12 +10,17 @@ import {
 import logo from './assets/Logo_Mf.png';
 import { Link } from "react-router-dom";
 import { useAppContext } from "./contexts/AppContext";
+import bgSide from "./assets/bg/bg-side.jpg";
+
 
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
     const { activeModule } = useAppContext();
 
     return (
-        <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div
+            className={`sidebar ${sidebarOpen ? "open" : "closed"}`}
+            style={{ "--sidebar-bg": `url(${bgSide})` }}
+        >
             <Link
                 to="/"
                 onClick={() => setActiveTab("dashboard")}

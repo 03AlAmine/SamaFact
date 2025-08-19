@@ -756,7 +756,7 @@
 /* employees Section */
 .clients-section,
 .employees-section {
-  background-image: url("../assets/bg/bg-client.jpg");
+  background-image: var(--bg-client);
   background-attachment: fixed; /* ✅ l’image reste fixe */
   background-size: cover; /* ✅ l’image couvre tout */
   background-position: center; /* ✅ centrée */
@@ -1178,7 +1178,7 @@
 
 /* Styles pour les statistiques */
 .stats-section {
-  background-image: url("../assets/bg/bg-stat.jpg");
+  background-image: var(--bg-stat);
   background-attachment: fixed; /* ✅ l’image reste fixe */
   background-size: cover; /* ✅ l’image couvre tout */
   background-position: center; /* ✅ centrée */

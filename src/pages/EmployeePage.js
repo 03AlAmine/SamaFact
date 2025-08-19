@@ -8,6 +8,7 @@ import empty_employee from '../assets/empty_employe.png';
 import '../css/EmployeePage.css';
 import { EmployeeDetailsModal } from '../components/EmployeeModal';
 import { Modal, Button } from "antd";
+import bgClient from "../assets/bg/bg-client.jpg";
 
 
 const EmployeesPage = ({
@@ -675,7 +676,10 @@ const EmployeesPage = ({
         )
       )}
 
-      <div className="employees-section">
+      <div
+        className="employees-section"
+        style={{ "--bg-client": `url(${bgClient})` }}
+      >
         <div className="section-header">
           <div className="header-left">
             <h2 className="section-title">

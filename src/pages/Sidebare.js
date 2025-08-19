@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 import '../css/side.css';
+import bgSide from "../assets/bg/bg-side.jpg";
+
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
   const { activeModule } = useAppContext();
@@ -61,7 +63,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
   ];
 
   return (
-    <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+    <div
+      className={`sidebar ${sidebarOpen ? "open" : "closed"}`}
+      style={{ "--sidebar-bg": `url(${bgSide})` }}
+    >
       <Link
         to="/"
         onClick={() => setActiveTab("dashboard")}

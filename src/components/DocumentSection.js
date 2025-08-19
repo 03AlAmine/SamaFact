@@ -35,6 +35,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
+import bgFact from "../assets/bg/bg-fact.jpg";
 
 
 const DocumentSection = ({
@@ -109,7 +110,10 @@ const DocumentSection = ({
     };
 
     return (
-        <div className="document-section-container">
+        <div
+            className="document-section-container"
+            style={{ "--bg-fact": `url(${bgFact})` }}
+        >
             <div className="section-header">
                 <div className="header-left">
                     <h2 className="section-title">
@@ -289,7 +293,7 @@ const DocumentSection = ({
                                         <button className="action-btn send" title="Envoyer par email"><FaPaperPlane /></button>
                                         <button className="action-btn add" title="Ajouter"><FaPlus /></button>
                                     </SwiperSlide>
-  
+
 
                                     {/* Boutons de navigation */}
                                     <div

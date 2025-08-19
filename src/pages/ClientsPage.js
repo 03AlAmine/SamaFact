@@ -7,6 +7,8 @@ import {
 } from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
 import '../css/ClientPage.css'; // Assurez-vous d'avoir ce fichier CSS pour le style
+import bgClient from "../assets/bg/bg-client.jpg";
+
 
 const ClientsPage = ({
     clients,
@@ -315,7 +317,10 @@ const ClientsPage = ({
                         </button>
                     </form>
                 ))}
-            <div className="clients-section">
+            <div
+                className="clients-section"
+                style={{ "--bg-client": `url(${bgClient})` }}
+            >
                 <div className="section-header">
                     <div className="header-left">
                         <h2 className="section-title">

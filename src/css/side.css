@@ -26,7 +26,7 @@
       rgba(39, 51, 185, 0.5),
       rgba(188, 159, 53, 0.5)
     ),
-    url("../assets/bg/bg-side.jpg");
+    var(--sidebar-bg); /* ✅ injectée depuis React */
   background-size: cover;
   background-position: start;
   z-index: -1;
@@ -45,15 +45,22 @@
 }
 
 @keyframes zoom-bg {
-  from { transform: scale(1); }
-  to   { transform: scale(1.3); }
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.3);
+  }
 }
 
 @keyframes pulse-overlay {
-  from { background: rgba(39, 51, 185, 0.1); }
-  to   { background: rgba(188, 159, 53, 0.1); }
+  from {
+    background: rgba(39, 51, 185, 0.1);
+  }
+  to {
+    background: rgba(188, 159, 53, 0.1);
+  }
 }
-
 
 .sidebar.closed {
   width: 80px;
@@ -73,7 +80,6 @@
 .closing .sidebar {
   transition: width 1s ease;
 }
-
 
 .sidebar-header {
   padding: 1.5rem;

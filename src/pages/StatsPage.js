@@ -8,6 +8,8 @@ import {
 import {
   DocumentSliderCard, PaymentStatusSliderCard, TotalAmountSliderCard
 } from '../components/DocumentSliderCard';
+import bgStat from "../assets/bg/bg-stat.jpg";
+
 
 const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls, employees }) => {
   const { activeModule } = useAppContext();
@@ -80,7 +82,10 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
   const conf = moduleConfig[activeModule];
 
   return (
-    <div className="stats-section">
+    <div
+      className="stats-section"
+      style={{ "--bg-stat": `url(${bgStat})` }}
+    >
       <h2 className="section-title">
         <FaChartBar style={{ marginRight: "10px" }} />
         Statistiques

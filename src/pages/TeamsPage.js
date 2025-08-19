@@ -21,6 +21,8 @@ import { teamService } from '../services/teamService';
 import "../css/TeamPage.css";
 import { useAuth } from '../auth/AuthContext';
 import { userService } from '../services/userService';
+import bgTeam from "../assets/bg/bg-team.jpg";
+
 
 const TeamsPage = ({ checkPermission }) => {
     const { currentUser } = useAuth();
@@ -389,8 +391,11 @@ const TeamsPage = ({ checkPermission }) => {
 
 
     return (
-        <div className="teams-container">
-            {/* Notifications */}
+        <div
+            className="teams-container"
+            style={{ "--bg-team": `url(${bgTeam})` }}
+        >
+                        {/* Notifications */}
             <div className="notifications-container">
                 {subUserSuccess && (
                     <div className="notification success">
