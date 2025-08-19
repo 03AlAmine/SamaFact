@@ -257,12 +257,6 @@
   margin-bottom: 2rem;
 }
 
-.chart-card {
-  background-color: var(--bg-card);
-  border-radius: var(--border-radius);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-}
 
 .chart-header {
   display: flex;
