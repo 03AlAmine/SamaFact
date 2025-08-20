@@ -32,6 +32,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
+import bgFact from "../assets/bg/bg-fact.jpg";
+
 
 const PayrollSection = ({
     title,
@@ -109,8 +111,12 @@ const PayrollSection = ({
     const navigate = useNavigate();
 
     return (
-        <div className="document-section-container">
-            <div className="section-header">
+        <div
+            className="document-section-container"
+            style={{
+                backgroundImage: `url(${bgFact})`
+            }}
+        >            <div className="section-header">
                 <div className="header-left">
                     <h2 className="section-title">
                         <FaFileSignature className="section-icon" style={{ color: '#3b82f6' }} />
