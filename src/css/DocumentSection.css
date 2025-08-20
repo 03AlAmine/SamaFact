@@ -3,7 +3,6 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text-color);
   padding: 20px;
-  background-image: var(--bg-fact);
   background-attachment: fixed; /* ✅ l’image reste fixe */
   background-size: cover; /* ✅ l’image couvre tout */
   background-position: center; /* ✅ centrée */

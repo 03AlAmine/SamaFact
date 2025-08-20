@@ -63,10 +63,36 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
   ];
 
   return (
-    <div
-      className={`sidebar ${sidebarOpen ? "open" : "closed"}`}
-      style={{ "--sidebar-bg": `url(${bgSide})` }}
-    >
+    <div className={`sidebar ${sidebarOpen ? "open" : "closed"}`}>
+      {/* ✅ équivalent du ::before */}
+      <div
+        className="sidebar-bg"
+        style={{
+          backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url(${bgSide})`,
+          backgroundSize: "cover",
+          backgroundPosition: "left",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: -1,
+          animation: "zoom-bg 20s ease-in-out infinite alternate",
+        }}
+      ></div>
+
+      {/* ✅ équivalent du ::after */}
+      <div
+        className="sidebar-overlay"
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(39, 51, 185, 0.2)",
+          animation: "pulse-overlay 5s infinite alternate",
+          pointerEvents: "none",
+          zIndex: -1,
+        }}
+      ></div>
       <Link
         to="/"
         onClick={() => setActiveTab("dashboard")}

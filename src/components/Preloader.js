@@ -6,32 +6,29 @@ const Preloader = ({ message = "Chargement en cours...", onComplete }) => {
     const [showLoader, setShowLoader] = useState(true);
 
     useEffect(() => {
-        const images = [
-            "/assets/bg/bg-fact.jpg",
-            "/assets/bg/bg-client.jpg",
-            "/assets/bg/bg-stat.jpg",
-            "/assets/bg/bg-team.jpg"
-        ];
-
-        let loaded = 0;
-
-        images.forEach((src) => {
-            const img = new Image();
-            img.src = src;
-
-            img.onload = img.onerror = () => {
-                loaded++;
-                setProgress(Math.round((loaded / images.length) * 100));
-
-                if (loaded === images.length) {
-                    // Quand tout est chargé
-                    setTimeout(() => {
-                        setShowLoader(false);
-                        if (onComplete) onComplete();
-                    }, 500); // petit délai pour l’animation
+        // Animation de la progress bar
+        const progressInterval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(progressInterval);
+                    return 100;
                 }
-            };
-        });
+                return prev + 1;
+            });
+        }, 30);
+
+        // Fin du chargement
+        const completionTimer = setTimeout(() => {
+            if (onComplete) {
+                setShowLoader(false);
+                onComplete();
+            }
+        }, 3000); // Durée totale du preloader
+
+        return () => {
+            clearInterval(progressInterval);
+            clearTimeout(completionTimer);
+        };
     }, [onComplete]);
 
     if (!showLoader) return null;
@@ -46,7 +43,6 @@ const Preloader = ({ message = "Chargement en cours...", onComplete }) => {
                         <div className="moon"></div>
                     </div>
                 </div>
-
                 <div className="preloader-text">
                     {message.split('').map((letter, index) => (
                         <span
@@ -61,7 +57,6 @@ const Preloader = ({ message = "Chargement en cours...", onComplete }) => {
                         </span>
                     ))}
                 </div>
-
                 <div className="preloader-progress">
                     <div
                         className="progress-bar"

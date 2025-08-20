@@ -15,35 +15,6 @@
   overflow: hidden;
 }
 
-.sidebar::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: linear-gradient(
-      rgba(39, 51, 185, 0.5),
-      rgba(188, 159, 53, 0.5)
-    ),
-    var(--sidebar-bg); /* ✅ injectée depuis React */
-  background-size: cover;
-  background-position: start;
-  z-index: -1;
-  transform: scale(1);
-  animation: zoom-bg 20s ease-in-out infinite alternate;
-  pointer-events: none; /* ✅ n’intercepte pas les clics */
-}
-
-.sidebar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(39, 51, 185, 0.2);
-  animation: pulse-overlay 5s infinite alternate;
-  pointer-events: none; /* ✅ n’intercepte pas les clics */
-}
-
 @keyframes zoom-bg {
   from {
     transform: scale(1);

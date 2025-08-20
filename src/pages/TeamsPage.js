@@ -393,9 +393,11 @@ const TeamsPage = ({ checkPermission }) => {
     return (
         <div
             className="teams-container"
-            style={{ "--bg-team": `url(${bgTeam})` }}
+            style={{
+                backgroundImage: `linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3)), url(${bgTeam})`
+            }}
         >
-                        {/* Notifications */}
+            {/* Notifications */}
             <div className="notifications-container">
                 {subUserSuccess && (
                     <div className="notification success">

@@ -84,7 +84,9 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
   return (
     <div
       className="stats-section"
-      style={{ "--bg-stat": `url(${bgStat})` }}
+      style={{
+        backgroundImage: `url(${bgStat})`
+      }}
     >
       <h2 className="section-title">
         <FaChartBar style={{ marginRight: "10px" }} />

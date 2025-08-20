@@ -112,7 +112,9 @@ const DocumentSection = ({
     return (
         <div
             className="document-section-container"
-            style={{ "--bg-fact": `url(${bgFact})` }}
+            style={{
+                backgroundImage: `url(${bgFact})`
+            }}
         >
             <div className="section-header">
                 <div className="header-left">

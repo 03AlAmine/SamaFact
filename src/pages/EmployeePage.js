@@ -678,7 +678,9 @@ const EmployeesPage = ({
 
       <div
         className="employees-section"
-        style={{ "--bg-client": `url(${bgClient})` }}
+        style={{
+          backgroundImage: `url(${bgClient})`,
+        }}
       >
         <div className="section-header">
           <div className="header-left">
