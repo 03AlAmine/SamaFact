@@ -65,7 +65,6 @@ const PayrollForm = () => {
         retenues: {
             salaire: '0',
             qpartipm: '0',
-            ipm: '0',
             avances: '0',
             trimf: '300',
             cfce: '0',
@@ -76,6 +75,8 @@ const PayrollForm = () => {
     const [calculations, setCalculations] = useState({
         brutSocial: 0,
         brutFiscal: 0,
+        cotisatisationsEmp: 0,
+        cotisatisationsEmployeur: 0,
         cotisationsSalariales: 0,
         cotisationsPatronales: 0,
         salaireNet: 0,
@@ -125,7 +126,6 @@ const PayrollForm = () => {
                         retenues: {
                             salaire: payroll.retenues?.salaire || '0',
                             qpartipm: payroll.retenues?.qpartipm || '0',
-                            ipm: payroll.retenues?.ipm || '0',
                             avances: payroll.retenues?.avances || '0',
                             trimf: payroll.retenues?.trimf || '300',
                             cfce: payroll.retenues?.cfce || '0',
@@ -136,6 +136,8 @@ const PayrollForm = () => {
                     setCalculations(payroll.calculations || {
                         brutSocial: 0,
                         brutFiscal: 0,
+                        cotisatisationsEmp: 0,
+                        cotisatisationsEmployeur: 0,
                         cotisationsSalariales: 0,
                         cotisationsPatronales: 0,
                         salaireNet: 0,
@@ -226,7 +228,6 @@ const PayrollForm = () => {
                     },
                     retenues: {
                         ...prev.retenues,
-                        ipm: selectedEmployee.retenueIpm || '0',
                         avances: selectedEmployee.avances || '0'
                     }
                 }));
@@ -237,14 +238,12 @@ const PayrollForm = () => {
     // Calculs automatiques
     // Déplacez la fonction de calcul en dehors des effets
     const calculatePayroll = useCallback(() => {
-
         // Rémunération
         const salaireBase = parseFloat(formData.remuneration.salaireBase) || 0;
         const sursalaire = parseFloat(formData.remuneration.sursalaire) || 0;
         const indemniteDeplacement = parseFloat(formData.remuneration.indemniteDeplacement) || 0;
         const autresIndemnites = parseFloat(formData.remuneration.autresIndemnites) || 0;
         const avantagesNature = parseFloat(formData.remuneration.avantagesNature) || 0;
-
 
         // Primes
         const transport = parseFloat(formData.primes.transport) || 0;
@@ -257,7 +256,6 @@ const PayrollForm = () => {
         // Retenues
         const retenueSalaire = parseFloat(formData.retenues.salaire) || 0;
         const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
-        const ipm = parseFloat(formData.retenues.ipm) || 0;
         const avances = parseFloat(formData.retenues.avances) || 0;
         const trimf = parseFloat(formData.retenues.trimf) || 0;
 
@@ -265,59 +263,40 @@ const PayrollForm = () => {
         const brutSocial = salaireBase + sursalaire + indemniteDeplacement + autresIndemnites;
         const brutFiscal = brutSocial + avantagesNature;
 
-        // Cotisations (exemple)
-        const totalRetenues = retenueSalaire + qpartipm + ipm + avances; // + trimf;
-
         // Cotisations salariales (IPRES)
         const ipresRG = brutSocial * 0.056;
         const ipresRC = 0; //brutSocial * 0.024;
         const cfce = brutFiscal * 0.03;
-
-        /* Calcul de l'IR
-        const baseImposable = brutFiscal * 0.7;
-        let ir = 0;
-        if (baseImposable > 630000) {
-            ir = (baseImposable - 630000) * 0.40 + 151200;
-        } else if (baseImposable > 420000) {
-            ir = (baseImposable - 420000) * 0.30 + 63000;
-        } else if (baseImposable > 210000) {
-            ir = (baseImposable - 210000) * 0.20 + 21000;
-        } else if (baseImposable > 130000) {
-            ir = (baseImposable - 130000) * 0.15 + 8000;
-        } else if (baseImposable > 50000) {
-            ir = (baseImposable - 50000) * 0.10 + 3000;
-        } else if (baseImposable > 0) {
-            ir = baseImposable * 0.05;
-        }*/
         const ir = 0;
+        
 
         // Cotisations patronales
         const ipresRGP = brutSocial * 0.084;
-        const ipresRCP = brutSocial * 0.036;
-        const allocationFamiliale = Math.min(brutSocial, 63000) * 0.07;
-        const accidentTravail = Math.min(brutSocial, 63000) * 0.01;
+        const ipresRCP = 0 * 0.036;
+        const allocationFamiliale = 63000 * 0.07;
+        const accidentTravail = 63000 * 0.01;
 
         // Totaux
-        const totalCotisationsSalariales = ipresRG + ipresRC + cfce + trimf + ir;
-        const totalCotisationsPatronales = ipresRGP + ipresRCP + allocationFamiliale + accidentTravail + ipm;
-        const salaireNet = brutSocial - retenueSalaire - qpartipm;
+        const totalRetenues = retenueSalaire + qpartipm + avances; // Supprimé la duplication de qpartipm
 
+        const totalCotisationsEmp = ipresRG + ipresRC + trimf + ir;
+        const totalCotisationsEmployeur = ipresRGP + ipresRCP + allocationFamiliale + accidentTravail + qpartipm + cfce; // Utilisez qpartipm directement
+        const totalCotisationsSalariales = ipresRG + ipresRC;
+        const totalCotisationsPatronales = ipresRGP + ipresRCP;
 
         // Salaire Net
         const remunerationNette = brutSocial - totalRetenues;
-
-        // Total Primes
         const totalPrimes = transport + panier + repas + anciennete + responsabilite + autresPrimes;
-
-        // Salaire Net à Payer
         const salaireNetAPayer = remunerationNette + totalPrimes;
 
         return {
             brutSocial,
             brutFiscal,
+            cotisatisationsEmp: totalCotisationsEmp,
+            cotisatisationsEmployeur: totalCotisationsEmployeur,
             cotisationsSalariales: totalCotisationsSalariales,
             cotisationsPatronales: totalCotisationsPatronales,
-            salaireNet,
+            salaireNet: remunerationNette, // Correction: utilisation de remunerationNette
             salaireNetAPayer,
             detailsCotisations: {
                 ipresRG,
@@ -327,6 +306,7 @@ const PayrollForm = () => {
                 allocationFamiliale,
                 accidentTravail,
                 trimf,
+                qpartipm,
                 cfce,
                 ir
             }
@@ -344,8 +324,7 @@ const PayrollForm = () => {
         formData.primes.responsabilite,
         formData.primes.autresPrimes,
         formData.retenues.salaire,
-        formData.retenues.qpartipm,
-        formData.retenues.ipm,
+        formData.retenues.qpartipm, // Gardez cette dépendance
         formData.retenues.avances,
         formData.retenues.trimf
     ]);
@@ -689,16 +668,6 @@ const PayrollForm = () => {
                                 type="number"
                                 name="retenues.qpartipm"
                                 value={formData.retenues.qpartipm}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Retenue IPM</label>
-                            <input
-                                type="number"
-                                name="retenues.ipm"
-                                value={formData.retenues.ipm}
                                 onChange={handleChange}
                                 className="input"
                             />

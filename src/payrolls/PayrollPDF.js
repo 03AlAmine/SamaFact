@@ -335,11 +335,11 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     <View style={[styles.tableRow, styles.splitRow]}>
                         <View style={styles.splitColumn}>
                             <Text style={styles.splitHeader}>EMPLOYÉ</Text>
-                            <Text style={styles.splitValue}>4 520 FCFA</Text>
+                            <Text style={styles.splitValue}>{formatCurrency(calculations.cotisatisationsEmp)}</Text>
                         </View>
                         <View style={styles.splitColumn}>
                             <Text style={styles.splitHeader}>EMPLOYEUR</Text>
-                            <Text style={styles.splitValue}>13 631 FCFA</Text>
+                            <Text style={styles.splitValue}>{formatCurrency(calculations.cotisatisationsEmployeur)}</Text>
                         </View>
                     </View>
 
