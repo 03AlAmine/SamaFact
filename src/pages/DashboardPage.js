@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAppContext } from "../contexts/AppContext";
 import {
   FaUsers, FaFileInvoiceDollar, FaPlus, FaBolt, FaUserPlus,
@@ -10,10 +10,143 @@ import {
 import {
   DocumentSliderCard, MonthlyAmountSliderCard, PaymentStatusSliderCard
 } from '../components/DocumentSliderCard';
+import Chart from "react-apexcharts";
 
 const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, employees, payrolls, clients }) => {
   const [activeSlide, setActiveSlide] = useState("factures");
   const { activeModule } = useAppContext();
+
+  // Configuration du graphique de performance des étudiants
+  const studentPerformanceOptions = useMemo(() => ({
+    series: [
+      {
+        name: 'percent',
+        data: [5, 8, 10, 14, 9, 7, 11, 5, 9, 16, 7, 5],
+      },
+    ],
+    chart: {
+      height: 320,
+      type: 'bar',
+      toolbar: {
+        show: false,
+      },
+      foreColor: '#9aa0ac',
+    },
+    plotOptions: {
+      bar: {
+        dataLabels: {
+          position: 'top',
+        },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val + '%';
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '12px',
+        colors: ['#9aa0ac'],
+      },
+    },
+    grid: {
+      show: true,
+      borderColor: '#9aa0ac',
+      strokeDashArray: 1,
+    },
+    xaxis: {
+      categories: [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ],
+      position: 'bottom',
+      labels: {
+        offsetY: 0,
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      crosshairs: {
+        fill: {
+          type: 'gradient',
+          gradient: {
+            colorFrom: '#D8E3F0',
+            colorTo: '#BED1E6',
+            stops: [0, 100],
+            opacityFrom: 0.4,
+            opacityTo: 0.5,
+          },
+        },
+      },
+      tooltip: {
+        enabled: true,
+        offsetY: -35,
+      },
+    },
+    fill: {
+      type: 'gradient',
+      colors: ['#4F86F8', '#4F86F8'],
+      gradient: {
+        shade: 'light',
+        type: 'horizontal',
+        shadeIntensity: 0.25,
+        gradientToColors: undefined,
+        inverseColors: true,
+        opacityFrom: 1,
+        opacityTo: 1,
+      },
+    },
+    yaxis: {
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      labels: {
+        show: false,
+        formatter: function (val) {
+          return val + '%';
+        },
+      },
+    },
+    tooltip: {
+      theme: 'dark',
+      marker: {
+        show: true,
+      },
+      x: {
+        show: true,
+      },
+    },
+  }), []);
+
+  const lineChartOptions = {
+    series: [
+      { name: "Teacher 1", data: [15, 13, 30, 23, 13, 32, 27] },
+      { name: "Teacher 2", data: [12, 25, 14, 18, 27, 13, 21] },
+      { name: "Teacher 3", data: [20, 18, 25, 22, 30, 28, 35] },
+    ],
+    chart: {
+      height: 270,
+      type: "line",
+      foreColor: "#9aa0ac",
+      dropShadow: { enabled: true, color: "#000", top: 18, left: 7, blur: 10, opacity: 0.2 },
+      toolbar: { show: false },
+    },
+    colors: ["#9F78FF", "#858585", "#34c38f"],
+    stroke: { curve: "smooth" },
+    grid: { show: true, borderColor: "#9aa0ac", strokeDashArray: 1 },
+    markers: { size: 3 },
+    xaxis: { categories: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"], title: { text: "Month" } },
+    yaxis: { min: 5, max: 40 },
+    legend: { position: "top", horizontalAlign: "right", floating: true, offsetY: -25, offsetX: -5 },
+    tooltip: { theme: "dark", marker: { show: true }, x: { show: true } },
+  };
 
   // Récupère les 3 derniers éléments
   const getLastThreeItems = (items) =>
@@ -192,6 +325,48 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
           )}
         </div>
       )}
+
+      {/* Graphiques de performance */}
+      <div className="performance-charts-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '20px' }}>
+        {/* Graphique de performance des enseignants */}
+        <div className="chart-wrapper" style={{ flex: '1 1 60%', minWidth: '300px' }}>
+          <div className="card">
+            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2>Teacher Performance</h2>
+            </div>
+            <div className="body">
+              <Chart
+                options={lineChartOptions}
+                series={lineChartOptions.series}
+                type="line"
+                height={270}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Graphique de performance des étudiants */}
+        <div className="chart-wrapper" style={{ flex: '1 1 35%', minWidth: '300px' }}>
+          <div className="card">
+            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2>Student Performance</h2>
+              <div className="dropdown">
+                <button className="dropdown-toggle" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <span className="material-icons">more_vert</span>
+                </button>
+              </div>
+            </div>
+            <div className="body">
+              <Chart
+                options={studentPerformanceOptions}
+                series={studentPerformanceOptions.series}
+                type="bar"
+                height={270}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 };
