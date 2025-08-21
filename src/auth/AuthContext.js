@@ -26,6 +26,7 @@ const PERMISSIONS = {
   [ROLES.SUPERADMIN]: {
     manageCompany: true,         // Gérer l’entreprise (logo, mentions, etc.)
     manageUsers: true,           // Gérer les utilisateurs
+    managePayroll: true,
     manageDocuments: true,       // Gérer devis/factures/avoirs
     viewAll: true,               // Tout voir
     isSuperAdmin: true
@@ -34,6 +35,7 @@ const PERMISSIONS = {
     manageCompany: true,
     manageUsers: true,
     manageDocuments: true,
+    managePayroll: true,
     viewAll: true,
     isSuperAdmin: false
   },
@@ -356,7 +358,7 @@ export function AuthProvider({ children }) {
   function canToggleModules() {
     if (!currentUser) return false;
     // Seuls admin et comptable peuvent basculer entre les modules
-    return ['admin', 'comptable', 'superadmin' ].includes(currentUser.role);
+    return ['admin', 'comptable', 'superadmin'].includes(currentUser.role);
   }
 
 
