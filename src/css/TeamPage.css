@@ -2,12 +2,68 @@
 .teams-container {
   padding: 2rem;
   margin: 0 auto;
-  background-attachment: fixed; /* ✅ l’image reste fixe */
-  background-size: cover; /* ✅ l’image couvre tout */
-  background-position: center; /* ✅ centrée */
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
   border-radius: var(--border-radius);
+  min-height: 100vh;
+  position: relative;
+  transition: opacity 2.5s ease-in-out;
+  opacity: 0;
 }
 
+.teams-container.background-loaded {
+  opacity: 1;
+}
+
+/* Optimisation pour éviter les scintillements */
+.teams-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3));
+  z-index: -1;
+}
+
+/* Animation d'apparition en douceur */
+@keyframes fadeInBackground {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.teams-container.background-loaded > * {
+  animation: fadeInBackground 0.8s ease-out forwards;
+}
+
+/* Amélioration des performances */
+.teams-container * {
+  will-change: transform, opacity;
+}
+
+/* Pour les écrans larges */
+@media (min-width: 1200px) {
+  .teams-container {
+    background-size: 100% auto;
+  }
+}
+
+/* Pour éviter le flash de contenu non stylisé (FOUT) */
+.teams-container:not(.background-loaded) {
+  visibility: hidden;
+}
+
+.teams-container.background-loaded {
+  visibility: visible;
+}
 /* Formulaires */
 .form-card {
   background: var(--card-bg);

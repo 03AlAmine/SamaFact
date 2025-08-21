@@ -23,9 +23,9 @@ import { useAuth } from '../auth/AuthContext';
 import { userService } from '../services/userService';
 import bgTeam from "../assets/bg/bg-team.jpg";
 
-
 const TeamsPage = ({ checkPermission }) => {
     const { currentUser } = useAuth();
+    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
     // États pour la gestion des équipes
     const [equipes, setEquipes] = useState([]);
@@ -53,10 +53,24 @@ const TeamsPage = ({ checkPermission }) => {
     const [subUserError, setSubUserError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-
     const [editingUser, setEditingUser] = useState(null);
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [userToReset, setUserToReset] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // Précharger l'image de fond
+    useEffect(() => {
+        const img = new Image();
+        img.src = bgTeam;
+        img.onload = () => {
+            setBackgroundLoaded(true);
+        };
+        img.onerror = () => {
+            console.error("Erreur de chargement de l'image de fond");
+            setBackgroundLoaded(true); // Continuer même si l'image échoue
+        };
+    }, []);
+
     // Charger les équipes au montage
     useEffect(() => {
         const fetchTeams = async () => {
@@ -109,6 +123,20 @@ const TeamsPage = ({ checkPermission }) => {
         );
         setFilteredEquipes(filtered);
     }, [searchTerm, equipes]);
+
+    // Simuler un temps de chargement
+    useEffect(() => {
+        // Attendre que l'image de fond et les données soient chargées
+        const allDataLoaded = backgroundLoaded && !loadingUsers;
+
+        if (allDataLoaded) {
+            const timer = setTimeout(() => {
+                setLoading(false);
+            }, 500); // Réduit à 0.5s pour plus de fluidité
+
+            return () => clearTimeout(timer);
+        }
+    }, [backgroundLoaded, loadingUsers]);
 
     // Générer un mot de passe aléatoire
     function generateRandomPassword() {
@@ -305,7 +333,6 @@ const TeamsPage = ({ checkPermission }) => {
         return date.toLocaleDateString('fr-FR');
     };
 
-
     const handleEditUser = (user) => {
         setEditingUser(user);
         setSubUserForm({
@@ -367,7 +394,6 @@ const TeamsPage = ({ checkPermission }) => {
         }
     };
 
-
     const handleResetPassword = async (user) => {
         setUserToReset(user);
         setShowResetPassword(true);
@@ -389,10 +415,51 @@ const TeamsPage = ({ checkPermission }) => {
         }
     };
 
+    if (loading) {
+        return (
+            <div
+                style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#2c3e50',
+                    fontSize: '18px',
+                    fontWeight: '500',
+                    fontFamily: 'Inter, sans-serif',
+                    backgroundColor: '#ecf0f1',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    margin: '40px auto',
+                    marginTop: '5%',
+                    maxWidth: '400px'
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: '30px',
+                        marginBottom: '10px',
+                        animation: 'spin 1.5s linear infinite',
+                        display: 'inline-block'
+                    }}
+                >
+                    ⏳
+                </div>
+                <div>Chargement...</div>
+
+                <style>
+                    {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+                </style>
+            </div>
+        );
+    }
 
     return (
         <div
-            className="teams-container"
+            className={`teams-container ${backgroundLoaded ? 'background-loaded' : ''}`}
             style={{
                 backgroundImage: `linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3)), url(${bgTeam})`
             }}

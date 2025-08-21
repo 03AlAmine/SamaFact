@@ -764,6 +764,61 @@
   box-shadow: var(--box-shadow-card);
   transition: var(--transition);
   margin-bottom: 2rem;
+  position: relative;
+  transition: opacity 1.5s ease-in-out;
+  opacity: 0;
+}
+
+.clients-section.background-loaded, .employees-section.background-loaded {
+  opacity: 1;
+}
+
+/* Optimisation pour éviter les scintillements */
+.clients-section::before, .employees-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+/* Animation d'apparition en douceur */
+@keyframes fadeInBackground {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.clients-section.background-loaded > *, .employees-section.background-loaded > * {
+  animation: fadeInBackground 0.8s ease-out forwards;
+}
+
+/* Amélioration des performances */
+.clients-section *, .employees-section *  {
+  will-change: transform, opacity;
+}
+
+/* Pour les écrans larges */
+@media (min-width: 1200px) {
+  .clients-section {
+    background-size: 100% auto;
+  }
+}
+
+/* Pour éviter le flash de contenu non stylisé (FOUT) */
+.clients-section:not(.background-loaded), .employees-section:not(.background-loaded)  {
+  visibility: hidden;
+}
+
+.clients-section.background-loaded, .employees-section.background-loaded {
+  visibility: visible;
 }
 
 .clients-section:hover,

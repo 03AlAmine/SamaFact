@@ -13,8 +13,15 @@ import Admin from './samafact/SamaFact';
 import AccessDenied from './components/AccessDenied';
 import ForgotPassword from './auth/ForgotPassword';
 import { UiProvider } from './contexts/uiContext'; // Ajoutez cette importation
+import bgStat from "./assets/bg/bg-stat.jpg";
+import bgFact from "./assets/bg/bg-fact.jpg";
+import bgTeam from "./assets/bg/bg-team.jpg";
+import bgClient from "./assets/bg/bg-client.jpg";
+
+import usePreloadImages from "./contexts/hook";
 
 function App() {
+  usePreloadImages([bgStat, bgClient, bgFact, bgTeam]);
   return (
     <Router
       future={{

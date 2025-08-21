@@ -10,7 +10,6 @@ import { EmployeeDetailsModal } from '../components/EmployeeModal';
 import { Modal, Button } from "antd";
 import bgClient from "../assets/bg/bg-client.jpg";
 
-
 const EmployeesPage = ({
   filteredEmployees,
   searchTerm,
@@ -38,6 +37,34 @@ const EmployeesPage = ({
   const [sortOrder, setSortOrder] = useState('asc');
   const payrollsSectionRef = useRef(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+
+  // Précharger l'image de fond
+  useEffect(() => {
+    const img = new Image();
+    img.src = bgClient;
+    img.onload = () => {
+      setBackgroundLoaded(true);
+    };
+    img.onerror = () => {
+      console.error("Erreur de chargement de l'image de fond");
+      setBackgroundLoaded(true); // Continuer même si l'image échoue
+    };
+  }, []);
+
+  // Gérer le chargement global
+  useEffect(() => {
+    // Attendre que l'image de fond soit chargée
+    if (backgroundLoaded) {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 500); // Réduit à 0.5s pour plus de fluidité
+
+      return () => clearTimeout(timer);
+    }
+  }, [backgroundLoaded]);
 
   const handleFileUpload = (e) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -132,6 +159,48 @@ const EmployeesPage = ({
       [name]: Number(value)
     }));
   };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: '#2c3e50',
+          fontSize: '18px',
+          fontWeight: '500',
+          fontFamily: 'Inter, sans-serif',
+          backgroundColor: '#ecf0f1',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          margin: '40px auto',
+          marginTop: '5%',
+          maxWidth: '400px'
+        }}
+      >
+        <div
+          style={{
+            fontSize: '30px',
+            marginBottom: '10px',
+            animation: 'spin 1.5s linear infinite',
+            display: 'inline-block'
+          }}
+        >
+          ⏳
+        </div>
+        <div>Chargement...</div>
+
+        <style>
+          {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+        </style>
+      </div>
+    );
+  }
 
   const TrackingModal = React.memo(({
     visible,
@@ -677,7 +746,7 @@ const EmployeesPage = ({
       )}
 
       <div
-        className="employees-section"
+                className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}
         style={{
           backgroundImage: `url(${bgClient})`,
         }}

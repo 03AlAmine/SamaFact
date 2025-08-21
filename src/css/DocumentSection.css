@@ -6,7 +6,62 @@
   background-attachment: fixed; /* ✅ l’image reste fixe */
   background-size: cover; /* ✅ l’image couvre tout */
   background-position: center; /* ✅ centrée */
-  border-radius: 10px;
+  position: relative;
+  border-radius: var(--border-radius);
+  transition: opacity 1.5s ease-in-out;
+  opacity: 0;
+}
+
+.document-section-container.background-loaded {
+  opacity: 1;
+}
+
+/* Optimisation pour éviter les scintillements */
+.document-section-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+/* Animation d'apparition en douceur */
+@keyframes fadeInBackground {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.document-section-container.background-loaded > * {
+  animation: fadeInBackground 0.8s ease-out forwards;
+}
+
+/* Amélioration des performances */
+.document-section-container * {
+  will-change: transform, opacity;
+}
+
+/* Pour les écrans larges */
+@media (min-width: 1200px) {
+  .document-section-container {
+    background-size: 100% auto;
+  }
+}
+
+/* Pour éviter le flash de contenu non stylisé (FOUT) */
+.document-section-container:not(.background-loaded) {
+  visibility: hidden;
+}
+
+.document-section-container.background-loaded {
+  visibility: visible;
 }
 
 .section-header {

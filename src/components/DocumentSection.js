@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     FaFileInvoiceDollar,
     FaSearch,
@@ -25,7 +25,6 @@ import {
     FaPaperPlane,
     FaChevronRight,
     FaChevronLeft,
-
 } from 'react-icons/fa';
 import { Modal, Button } from 'antd';
 import empty from '../assets/empty.png';
@@ -36,7 +35,6 @@ import "swiper/css";
 import { Autoplay, Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
 import bgFact from "../assets/bg/bg-fact.jpg";
-
 
 const DocumentSection = ({
     title,
@@ -60,6 +58,33 @@ const DocumentSection = ({
     const [hoveredItem, setHoveredItem] = useState(null);
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Précharger l'image de fond
+    useEffect(() => {
+        const img = new Image();
+        img.src = bgFact;
+        img.onload = () => {
+            setBackgroundLoaded(true);
+        };
+        img.onerror = () => {
+            console.error("Erreur de chargement de l'image de fond");
+            setBackgroundLoaded(true); // Continuer même si l'image échoue
+        };
+    }, []);
+
+    // Gérer le chargement global
+    useEffect(() => {
+        // Attendre que l'image de fond soit chargée
+        if (backgroundLoaded) {
+            const timer = setTimeout(() => {
+                setLoading(false);
+            }, 500); // Réduit à 0.5s pour plus de fluidité
+
+            return () => clearTimeout(timer);
+        }
+    }, [backgroundLoaded, items]);
 
     const showInfoModal = (document) => {
         setSelectedDocument(document);
@@ -109,9 +134,51 @@ const DocumentSection = ({
         }
     };
 
+    if (loading) {
+        return (
+            <div
+                style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#2c3e50',
+                    fontSize: '18px',
+                    fontWeight: '500',
+                    fontFamily: 'Inter, sans-serif',
+                    backgroundColor: '#ecf0f1',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    margin: '40px auto',
+                    marginTop: '5%',
+                    maxWidth: '400px'
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: '30px',
+                        marginBottom: '10px',
+                        animation: 'spin 1.5s linear infinite',
+                        display: 'inline-block'
+                    }}
+                >
+                    ⏳
+                </div>
+                <div>Chargement...</div>
+
+                <style>
+                    {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+                </style>
+            </div>
+        );
+    }
+
     return (
         <div
-            className="document-section-container"
+            className={`document-section-container ${backgroundLoaded ? 'background-loaded' : ''}`}
             style={{
                 backgroundImage: `url(${bgFact})`
             }}

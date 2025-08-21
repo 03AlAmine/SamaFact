@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAppContext } from "../contexts/AppContext";
 import {
   FaUsers, FaFileInvoiceDollar, FaPlus, FaBolt, FaUserPlus,
@@ -15,6 +15,16 @@ import Chart from "react-apexcharts";
 const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, employees, payrolls, clients }) => {
   const [activeSlide, setActiveSlide] = useState("factures");
   const { activeModule } = useAppContext();
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Animation d'entrée fluide
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Configuration du graphique de performance des étudiants
   const studentPerformanceOptions = useMemo(() => ({
@@ -31,6 +41,11 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
         show: false,
       },
       foreColor: '#9aa0ac',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+      },
     },
     plotOptions: {
       bar: {
@@ -137,6 +152,11 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
       foreColor: "#9aa0ac",
       dropShadow: { enabled: true, color: "#000", top: 18, left: 7, blur: 10, opacity: 0.2 },
       toolbar: { show: false },
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+      },
     },
     colors: ["#9F78FF", "#858585", "#34c38f"],
     stroke: { curve: "smooth" },
@@ -217,14 +237,29 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
   const conf = moduleConfig[activeModule];
 
   return (
-    <>
+    <div className={`dashboard-container ${isLoaded ? 'loaded' : ''}`}>
       {/* Bloc stats */}
       <div className="stats-grid">
         {conf.stats.map((stat, idx) =>
           React.isValidElement(stat) ? (
-            stat
+            React.cloneElement(stat, { 
+              key: idx,
+              style: { 
+                animationDelay: `${idx * 0.1}s`,
+                opacity: isLoaded ? 1 : 0,
+                transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+              }
+            })
           ) : (
-            <div key={idx} className="stat-card">
+            <div 
+              key={idx} 
+              className="stat-card"
+              style={{ 
+                animationDelay: `${idx * 0.1}s`,
+                opacity: isLoaded ? 1 : 0,
+                transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+              }}
+            >
               <div className={`stat-icon ${stat.iconClass}`}>{stat.icon}</div>
               <div className="stat-info">
                 <h3>{stat.value}</h3>
@@ -238,12 +273,29 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
       {/* Actions rapides */}
       <div className="quick-actions-grid">
         {conf.quickActions.map((action, idx) => (
-          <button key={idx} onClick={() => navigate(action.route)} className="quick-action">
+          <button 
+            key={idx} 
+            onClick={() => navigate(action.route)} 
+            className="quick-action"
+            style={{ 
+              animationDelay: `${0.4 + idx * 0.1}s`,
+              opacity: isLoaded ? 1 : 0,
+              transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+            }}
+          >
             {action.icon}
             <span>{action.text}</span>
           </button>
         ))}
-        <button onClick={() => navigate("/import")} className="quick-action">
+        <button 
+          onClick={() => navigate("/import")} 
+          className="quick-action"
+          style={{ 
+            animationDelay: `${0.4 + conf.quickActions.length * 0.1}s`,
+            opacity: isLoaded ? 1 : 0,
+            transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+          }}
+        >
           <FaFileImport className="action-icon" />
           <span>Importer</span>
         </button>
@@ -252,7 +304,15 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
       {/* Graphiques */}
       <div className="charts-row">
         {conf.charts.map((chart, idx) => (
-          <div key={idx} className="chart-card">
+          <div 
+            key={idx} 
+            className="chart-card"
+            style={{ 
+              animationDelay: `${0.6 + idx * 0.15}s`,
+              opacity: isLoaded ? 1 : 0,
+              transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+            }}
+          >
             <h3>{chart.title}</h3>
             <div className="chart-container">{chart.comp}</div>
           </div>
@@ -261,7 +321,14 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
 
       {/* Derniers documents pour mentafact */}
       {activeModule === 'mentafact' && (
-        <div className="recent-invoices">
+        <div 
+          className="recent-invoices"
+          style={{ 
+            animationDelay: `0.8s`,
+            opacity: isLoaded ? 1 : 0,
+            transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+          }}
+        >
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <h2 className="section-title" style={{ display: "flex", alignItems: "center", margin: 0 }}>
               <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
@@ -277,7 +344,7 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
 
           {/* Onglets */}
           <div className="slider-tabs" style={{ display: "flex", gap: "20px", marginBottom: "10px" }}>
-            {["factures", "devis", "avoirs"].map(tab => (
+            {["factures", "devis", "avoirs"].map((tab, idx) => (
               <button
                 key={tab}
                 onClick={() => setActiveSlide(tab)}
@@ -287,7 +354,11 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
                   color: activeSlide === tab ? "#fff" : "#000",
                   border: "none",
                   borderRadius: "6px",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  animationDelay: `${0.9 + idx * 0.1}s`,
+                  opacity: isLoaded ? 1 : 0,
+                  transform: isLoaded ? 'translateY(0)' : 'translateY(10px)'
                 }}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -298,8 +369,16 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
           {/* Liste */}
           {currentItems[activeSlide].length > 0 ? (
             <div className="invoices-list">
-              {currentItems[activeSlide].map(item => (
-                <div key={item.id} className="invoice-card">
+              {currentItems[activeSlide].map((item, idx) => (
+                <div 
+                  key={item.id} 
+                  className="invoice-card"
+                  style={{ 
+                    animationDelay: `${1.0 + idx * 0.1}s`,
+                    opacity: isLoaded ? 1 : 0,
+                    transform: isLoaded ? 'translateY(0)' : 'translateY(10px)'
+                  }}
+                >
                   <div className="invoice-header">
                     <span className="invoice-number">{item.numero}</span>
                     <span className={`invoice-status ${item.statut}`}>{item.statut}</span>
@@ -319,7 +398,14 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
               ))}
             </div>
           ) : (
-            <div className="empty-state">
+            <div 
+              className="empty-state"
+              style={{ 
+                animationDelay: `1.0s`,
+                opacity: isLoaded ? 1 : 0,
+                transform: isLoaded ? 'translateY(0)' : 'translateY(10px)'
+              }}
+            >
               <p>Aucun {activeSlide} trouvé</p>
             </div>
           )}
@@ -327,7 +413,18 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
       )}
 
       {/* Graphiques de performance */}
-      <div className="performance-charts-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '20px' }}>
+      <div 
+        className="performance-charts-row" 
+        style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '20px', 
+          marginTop: '20px',
+          animationDelay: `1.1s`,
+          opacity: isLoaded ? 1 : 0,
+          transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+        }}
+      >
         {/* Graphique de performance des enseignants */}
         <div className="chart-wrapper" style={{ flex: '1 1 60%', minWidth: '300px' }}>
           <div className="card">
@@ -367,7 +464,7 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

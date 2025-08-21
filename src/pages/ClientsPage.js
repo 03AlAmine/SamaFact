@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone,
     FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch,
@@ -8,7 +8,6 @@ import {
 import empty_client from '../assets/empty_client.png';
 import '../css/ClientPage.css'; // Assurez-vous d'avoir ce fichier CSS pour le style
 import bgClient from "../assets/bg/bg-client.jpg";
-
 
 const ClientsPage = ({
     clients,
@@ -41,7 +40,33 @@ const ClientsPage = ({
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc' ou 'desc'
     const invoicesSectionRef = useRef(null);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+    const [loading, setLoading] = useState(true);
 
+    // Précharger l'image de fond
+    useEffect(() => {
+        const img = new Image();
+        img.src = bgClient;
+        img.onload = () => {
+            setBackgroundLoaded(true);
+        };
+        img.onerror = () => {
+            console.error("Erreur de chargement de l'image de fond");
+            setBackgroundLoaded(true); // Continuer même si l'image échoue
+        };
+    }, []);
+
+    // Gérer le chargement global
+    useEffect(() => {
+        // Attendre que l'image de fond soit chargée
+        if (backgroundLoaded) {
+            const timer = setTimeout(() => {
+                setLoading(false);
+            }, 500); // Réduit à 0.5s pour plus de fluidité
+
+            return () => clearTimeout(timer);
+        }
+    }, [backgroundLoaded]);
 
     const handleFileUpload = (e) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -70,6 +95,7 @@ const ClientsPage = ({
         }
         return sortOrder === 'asc' ? compareValue : -compareValue;
     });
+
     // Fonction modifiée pour inclure le défilement
     const handleClientClick = (clientId) => {
         loadClientInvoices(clientId);
@@ -82,6 +108,49 @@ const ClientsPage = ({
             });
         }, 100);
     };
+
+    if (loading) {
+        return (
+            <div
+                style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#2c3e50',
+                    fontSize: '18px',
+                    fontWeight: '500',
+                    fontFamily: 'Inter, sans-serif',
+                    backgroundColor: '#ecf0f1',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    margin: '40px auto',
+                    marginTop: '5%',
+                    maxWidth: '400px'
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: '30px',
+                        marginBottom: '10px',
+                        animation: 'spin 1.5s linear infinite',
+                        display: 'inline-block'
+                    }}
+                >
+                    ⏳
+                </div>
+                <div>Chargement...</div>
+
+                <style>
+                    {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+                </style>
+            </div>
+        );
+    }
+
 
     return (
         <>
@@ -318,7 +387,7 @@ const ClientsPage = ({
                     </form>
                 ))}
             <div
-                className="clients-section"
+                className={`clients-section ${backgroundLoaded ? 'background-loaded' : ''}`}
                 style={{
                     backgroundImage: `url(${bgClient})`,
                 }}
@@ -500,102 +569,100 @@ const ClientsPage = ({
                         ))}
                     </div>
                 ) : (
-                    <div className="clients-table-container">
-                        <table className="clients-table">
-                            <thead>
-                                <tr>
-                                    <th
-                                        onClick={() => toggleSort('nom')}
-                                        className={sortBy === 'nom' ? 'active' : ''}
-                                    >
-                                        <div className="th-content">
-                                            Nom
-                                            {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                        </div>
-                                    </th>
-                                    <th
-                                        onClick={() => toggleSort('type')}
-                                        className={sortBy === 'type' ? 'active' : ''}
-                                    >
-                                        <div className="th-content">
-                                            Type
-                                            {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                        </div>
-                                    </th>
+                    <table className="clients-table">
+                        <thead>
+                            <tr>
+                                <th
+                                    onClick={() => toggleSort('nom')}
+                                    className={sortBy === 'nom' ? 'active' : ''}
+                                >
+                                    <div className="th-content">
+                                        Nom
+                                        {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                                    </div>
+                                </th>
+                                <th
+                                    onClick={() => toggleSort('type')}
+                                    className={sortBy === 'type' ? 'active' : ''}
+                                >
+                                    <div className="th-content">
+                                        Type
+                                        {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                                    </div>
+                                </th>
 
-                                    <th>Contact</th>
-                                    <th>Adresse</th>
-                                    <th>Actions</th>
+                                <th>Contact</th>
+                                <th>Adresse</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedClients.map((c) => (
+                                <tr
+                                    key={c.id}
+                                    className={selectedClient?.id === c.id ? 'active' : ''}
+                                    onClick={() => handleClientClick(c.id)}  // Ajoutez cette ligne
+                                    style={{ cursor: 'pointer' }}  // Change le curseur pour indiquer que c'est cliquable
+                                >
+                                    <td>
+                                        <div className="cell-content">
+                                            <div className="client-avatar-small">
+                                                {c.nom.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="client-name">{c.nom}</div>
+                                                {c.societe && <div className="client-company">{c.societe}</div>}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className={`client-badge ${c.type}`}>
+                                            {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
+                                        </div>
+
+                                    </td>
+                                    <td>
+                                        <div className="client-contact">
+                                            {c.email && <div><FaEnvelope /> {c.email}</div>}
+                                            {c.telephone && <div><FaPhone /> {c.telephone}</div>}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {c.adresse && (
+                                            <div className="client-address">
+                                                <FaMapMarkerAlt /> {c.adresse}
+                                                {c.ville && `, ${c.ville}`}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <div className="table-actions">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEdit(c);
+                                                }}
+                                                className="action-btn edit-btn"
+                                                title="Modifier"
+                                            >
+                                                <FaEdit />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(c.id);
+                                                }}
+                                                className="action-btn delete-btn"
+                                                title="Supprimer"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {sortedClients.map((c) => (
-                                    <tr
-                                        key={c.id}
-                                        className={selectedClient?.id === c.id ? 'active' : ''}
-                                        onClick={() => handleClientClick(c.id)}  // Ajoutez cette ligne
-                                        style={{ cursor: 'pointer' }}  // Change le curseur pour indiquer que c'est cliquable
-                                    >
-                                        <td>
-                                            <div className="cell-content">
-                                                <div className="client-avatar-small">
-                                                    {c.nom.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="client-name">{c.nom}</div>
-                                                    {c.societe && <div className="client-company">{c.societe}</div>}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className={`client-badge ${c.type}`}>
-                                                {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
-                                            </div>
-
-                                        </td>
-                                        <td>
-                                            <div className="client-contact">
-                                                {c.email && <div><FaEnvelope /> {c.email}</div>}
-                                                {c.telephone && <div><FaPhone /> {c.telephone}</div>}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {c.adresse && (
-                                                <div className="client-address">
-                                                    <FaMapMarkerAlt /> {c.adresse}
-                                                    {c.ville && `, ${c.ville}`}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <div className="table-actions">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEdit(c);
-                                                    }}
-                                                    className="action-btn edit-btn"
-                                                    title="Modifier"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(c.id);
-                                                    }}
-                                                    className="action-btn delete-btn"
-                                                    title="Supprimer"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                        </tbody>
+                    </table>
                 )}
             </div>
 
