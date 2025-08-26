@@ -7,7 +7,6 @@ import {
 } from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
 import '../css/ClientPage.css'; // Assurez-vous d'avoir ce fichier CSS pour le style
-import bgClient from "../assets/bg/bg-client.jpg";
 
 const ClientsPage = ({
     clients,
@@ -46,7 +45,7 @@ const ClientsPage = ({
     // Précharger l'image de fond
     useEffect(() => {
         const img = new Image();
-        img.src = bgClient;
+        img.src = "/bg-client.jpg";
         img.onload = () => {
             setBackgroundLoaded(true);
         };
@@ -389,7 +388,7 @@ const ClientsPage = ({
             <div
                 className={`clients-section ${backgroundLoaded ? 'background-loaded' : ''}`}
                 style={{
-                    backgroundImage: `url(${bgClient})`,
+                    backgroundImage: `url(/bg-client.jpg)`,
                 }}
             >
                 <div className="section-header">

@@ -8,7 +8,6 @@ import {
 import {
   DocumentSliderCard, PaymentStatusSliderCard, TotalAmountSliderCard
 } from '../components/DocumentSliderCard';
-import bgStat from "../assets/bg/bg-stat.jpg";
 
 
 const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls, employees }) => {
@@ -85,7 +84,7 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
     <div
       className="stats-section"
       style={{
-        backgroundImage: `url(${bgStat})`
+        backgroundImage: `url(/bg-stat.jpg)`
       }}
     >
       <h2 className="section-title">

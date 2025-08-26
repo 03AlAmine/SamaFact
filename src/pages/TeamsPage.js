@@ -461,7 +461,7 @@ const TeamsPage = ({ checkPermission }) => {
         <div
             className={`teams-container ${backgroundLoaded ? 'background-loaded' : ''}`}
             style={{
-                backgroundImage: `linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3)), url(${bgTeam})`
+                backgroundImage: `linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3)), url(/bg-team.jpg)`
             }}
         >
             {/* Notifications */}

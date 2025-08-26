@@ -9,7 +9,6 @@ import {
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 import '../css/side.css';
-import bgSide from "../assets/bg/bg-side.jpg";
 
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
@@ -68,7 +67,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
       <div
         className="sidebar-bg"
         style={{
-          backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url(${bgSide})`,
+          backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url("/bg-side.jpg")`,
           backgroundSize: "cover",
           backgroundPosition: "left",
           position: "absolute",

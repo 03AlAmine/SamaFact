@@ -20,7 +20,7 @@ import PayrollsPage from "./pages/PayrollsPage";
 import StatsPage from "./pages/StatsPage";
 import TeamsPage from "./pages/TeamsPage";
 import Sidebar from "./pages/Sidebare";
-import Preloader from './components/Preloader';
+//import Preloader from './components/Preloader';
 import CompanyNameDisplay from './components/CompanyNameDisplay';
 
 import { useAppContext } from './contexts/AppContext';
@@ -808,7 +808,45 @@ const Mentafact = () => {
     };
     // Ajoutez cette vérification au début du return
     if (isLoading || !initialLoadComplete) {
-        return <Preloader message="Sam@Fact ..." />;
+        return (
+            <div
+                style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#2c3e50',
+                    fontSize: '18px',
+                    fontWeight: '500',
+                    fontFamily: 'Inter, sans-serif',
+                    backgroundColor: '#ecf0f1',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    margin: '40px auto',
+                    marginTop: '20%',
+                    maxWidth: '400px'
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: '30px',
+                        marginBottom: '10px',
+                        animation: 'spin 1.5s linear infinite',
+                        display: 'inline-block'
+                    }}
+                >
+                    ⏳
+                </div>
+                <div>Chargement...</div>
+
+                <style>
+                    {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+                </style>
+            </div>
+        );
     }
     return (
         <div className="dashboard-layout">

@@ -32,7 +32,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
-import bgFact from "../assets/bg/bg-fact.jpg";
 
 const PayrollSection = ({
     title,
@@ -63,7 +62,7 @@ const PayrollSection = ({
     // Précharger l'image de fond
     useEffect(() => {
         const img = new Image();
-        img.src = bgFact;
+        img.src = "/bg-fact.jpg";
         img.onload = () => {
             setBackgroundLoaded(true);
         };
@@ -181,7 +180,7 @@ const PayrollSection = ({
         <div
             className={`document-section-container ${backgroundLoaded ? 'background-loaded' : ''}`}
             style={{
-                backgroundImage: `url(${bgFact})`
+                backgroundImage: `url(/bg-fact.jpg)`
             }}
         >
             <div className="section-header">

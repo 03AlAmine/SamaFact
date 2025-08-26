@@ -8,7 +8,6 @@ import empty_employee from '../assets/empty_employe.png';
 import '../css/EmployeePage.css';
 import { EmployeeDetailsModal } from '../components/EmployeeModal';
 import { Modal, Button } from "antd";
-import bgClient from "../assets/bg/bg-client.jpg";
 
 const EmployeesPage = ({
   filteredEmployees,
@@ -41,10 +40,11 @@ const EmployeesPage = ({
   const [loading, setLoading] = useState(true);
 
 
+
   // Précharger l'image de fond
   useEffect(() => {
     const img = new Image();
-    img.src = bgClient;
+    img.src = "/bg-client.jpg";
     img.onload = () => {
       setBackgroundLoaded(true);
     };
@@ -748,7 +748,7 @@ const EmployeesPage = ({
       <div
                 className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}
         style={{
-          backgroundImage: `url(${bgClient})`,
+          backgroundImage: `url(/bg-client.jpg)`,
         }}
       >
         <div className="section-header">

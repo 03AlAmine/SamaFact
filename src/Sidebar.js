@@ -10,7 +10,6 @@ import {
 import logo from './assets/Logo_Mf.png';
 import { Link } from "react-router-dom";
 import { useAppContext } from "./contexts/AppContext";
-import bgSide from "./assets/bg/bg-side.jpg";
 
 
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
@@ -22,7 +21,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
             <div
                 className="sidebar-bg"
                 style={{
-                    backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url(${bgSide})`,
+                    backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url("/bg-side.jpg")`,
                     backgroundSize: "cover",
                     backgroundPosition: "left", // 👈 à la place de "start"
                     position: "absolute",
