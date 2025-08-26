@@ -10,6 +10,7 @@
   flex-direction: column;
   margin-left: 280px;
   margin-right: 15px !important;
+  width: 100vw;
 }
 
 .sidebar.closed ~ .main-content {
@@ -769,12 +770,14 @@
   opacity: 0;
 }
 
-.clients-section.background-loaded, .employees-section.background-loaded {
+.clients-section.background-loaded,
+.employees-section.background-loaded {
   opacity: 1;
 }
 
 /* Optimisation pour éviter les scintillements */
-.clients-section::before, .employees-section::before {
+.clients-section::before,
+.employees-section::before {
   content: "";
   position: absolute;
   top: 0;
@@ -796,12 +799,14 @@
   }
 }
 
-.clients-section.background-loaded > *, .employees-section.background-loaded > * {
+.clients-section.background-loaded > *,
+.employees-section.background-loaded > * {
   animation: fadeInBackground 0.8s ease-out forwards;
 }
 
 /* Amélioration des performances */
-.clients-section *, .employees-section *  {
+.clients-section *,
+.employees-section * {
   will-change: transform, opacity;
 }
 
@@ -813,11 +818,13 @@
 }
 
 /* Pour éviter le flash de contenu non stylisé (FOUT) */
-.clients-section:not(.background-loaded), .employees-section:not(.background-loaded)  {
+.clients-section:not(.background-loaded),
+.employees-section:not(.background-loaded) {
   visibility: hidden;
 }
 
-.clients-section.background-loaded, .employees-section.background-loaded {
+.clients-section.background-loaded,
+.employees-section.background-loaded {
   visibility: visible;
 }
 
@@ -1127,6 +1134,9 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
+  .main-content{
+    margin-left: 80px;
+  }
   .sidebar {
     width: 80px;
   }
@@ -1157,6 +1167,7 @@
   .employees-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
+
 }
 
 @media (max-width: 768px) {
@@ -1275,12 +1286,7 @@
   margin-top: 2rem;
 }
 
-.chart-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-}
+
 
 .chart-placeholder {
   height: 300px;
@@ -1301,7 +1307,7 @@
 }
 
 .chart-container {
-  height: 300px;
+  height: 250px;
   max-width: 100%;
   width: 100%;
   margin-top: 1rem;

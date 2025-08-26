@@ -142,9 +142,9 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
 
   const lineChartOptions = {
     series: [
-      { name: "Teacher 1", data: [15, 13, 30, 23, 13, 32, 27] },
-      { name: "Teacher 2", data: [12, 25, 14, 18, 27, 13, 21] },
-      { name: "Teacher 3", data: [20, 18, 25, 22, 30, 28, 35] },
+      { name: "Perform 1", data: [15, 13, 30, 23, 13, 32, 27] },
+      { name: "Perform 2", data: [12, 25, 14, 18, 27, 13, 21] },
+      { name: "Perform 3", data: [20, 18, 25, 22, 30, 28, 35] },
     ],
     chart: {
       height: 270,
@@ -158,7 +158,7 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
         speed: 800,
       },
     },
-    colors: ["#9F78FF", "#858585", "#34c38f"],
+    colors: ["#9F78FF", "#ff7e5f", "#34c38f"],
     stroke: { curve: "smooth" },
     grid: { show: true, borderColor: "#9aa0ac", strokeDashArray: 1 },
     markers: { size: 3 },
@@ -428,8 +428,8 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
         {/* Graphique de performance des enseignants */}
         <div className="chart-wrapper" style={{ flex: '1 1 60%', minWidth: '300px' }}>
           <div className="card">
-            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2>Teacher Performance</h2>
+            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", margin: "0 10px" }}>
+              <h2>Performance</h2>
             </div>
             <div className="body">
               <Chart
@@ -445,12 +445,9 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
         {/* Graphique de performance des étudiants */}
         <div className="chart-wrapper" style={{ flex: '1 1 35%', minWidth: '300px' }}>
           <div className="card">
-            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2>Student Performance</h2>
+            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", margin: "0 10px" }}>
+              <h2>Graphe</h2>
               <div className="dropdown">
-                <button className="dropdown-toggle" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                  <span className="material-icons">more_vert</span>
-                </button>
               </div>
             </div>
             <div className="body">
