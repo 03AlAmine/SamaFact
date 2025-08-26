@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { PrivateRoute } from './auth/PrivateRoute';
@@ -23,6 +23,31 @@ import bgClient from "./assets/bg/bg-client.jpg";
 import usePreloadImages from "./contexts/hook";*/
 
 function App() {
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      // Bloquer le clic droit
+      const handleContextMenu = (e) => e.preventDefault();
+      document.addEventListener("contextmenu", handleContextMenu);
+
+      // Bloquer certaines touches (F12, Ctrl+Shift+I, Ctrl+U…)
+      const handleKeyDown = (e) => {
+        if (
+          e.key === "F12" ||
+          (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "i") ||
+          (e.ctrlKey && e.key.toLowerCase() === "u")
+        ) {
+          e.preventDefault();
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+
+      // Nettoyage quand le composant est démonté
+      return () => {
+        document.removeEventListener("contextmenu", handleContextMenu);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, []);
   //usePreloadImages([bgStat, bgClient, bgFact, bgTeam]);
   return (
     <Router
