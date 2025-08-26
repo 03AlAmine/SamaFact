@@ -305,18 +305,19 @@ export const ClientChart = ({ clients }) => {
   return (
     <div style={{
       display: 'flex',
+      flexDirection: window.innerWidth < 768 ? 'column' : 'row', // Colonne sur mobile
       gap: '1rem',
       alignItems: 'center',
-      flexWrap: 'wrap', // ✅ pour responsivité
+      justifyContent: 'center',
       maxWidth: '100%',
       margin: '0 auto',
-      padding: '0,5rem',
+      padding: '0.5rem',
       boxSizing: 'border-box'
     }}>
       {/* Graphique */}
       <div style={{
-        height: '250px',
-        width: '250px',
+        height: window.innerWidth < 480 ? '200px' : '250px', // Plus petit sur mobile
+        width: window.innerWidth < 480 ? '200px' : '250px',
         position: 'relative',
         flexShrink: 0
       }}>
@@ -329,14 +330,14 @@ export const ClientChart = ({ clients }) => {
           textAlign: 'center'
         }}>
           <div style={{
-            fontSize: '20px',
+            fontSize: window.innerWidth < 480 ? '16px' : '20px', // Ajustement taille texte
             fontWeight: 'bold',
             color: '#1e293b'
           }}>
             {values.reduce((a, b) => a + b, 0)}
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: window.innerWidth < 480 ? '12px' : '14px',
             color: '#64748b'
           }}>
             Clients
@@ -349,8 +350,9 @@ export const ClientChart = ({ clients }) => {
         onMouseEnter={pauseAutoSlide}
         onMouseLeave={resumeAutoSlide}
         style={{
-          flex: 1,
-          minWidth: '260px',
+          flex: window.innerWidth < 768 ? 'none' : 1, // Pas de flex sur mobile
+          width: window.innerWidth < 768 ? '100%' : 'auto', // Pleine largeur sur mobile
+          minWidth: window.innerWidth < 480 ? '220px' : '260px', // Ajustement min-width
           padding: '1rem',
           borderRadius: '12px',
           background: '#f8fafc',
@@ -360,7 +362,6 @@ export const ClientChart = ({ clients }) => {
           boxSizing: 'border-box'
         }}
       >
-
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -395,16 +396,17 @@ export const ClientChart = ({ clients }) => {
                 textOverflow: 'ellipsis',
                 color: '#334155',
                 fontWeight: '500',
-                maxWidth: '80%',
+                maxWidth: window.innerWidth < 480 ? '60%' : '70%', // Ajustement largeur texte
                 flexGrow: 1,
-                display: 'inline-block'
+                display: 'inline-block',
+                fontSize: window.innerWidth < 480 ? '13px' : 'inherit' // Taille police réduite
               }}>
                 {label}
               </span>
               <span style={{
                 marginLeft: 'auto',
                 color: '#64748b',
-                fontSize: '13px',
+                fontSize: window.innerWidth < 480 ? '12px' : '13px', // Taille police réduite
                 fontWeight: '600',
                 whiteSpace: 'nowrap',
                 flexShrink: 0
@@ -428,7 +430,9 @@ export const ClientChart = ({ clients }) => {
             style={{
               ...navButtonStyle,
               background: currentPage === 0 ? '#e2e8f0' : '#6366f1',
-              color: currentPage === 0 ? '#94a3b8' : 'white'
+              color: currentPage === 0 ? '#94a3b8' : 'white',
+              width: window.innerWidth < 480 ? '32px' : '36px', // Boutons plus petits
+              height: window.innerWidth < 480 ? '32px' : '36px'
             }}
           >
             ◀
@@ -442,8 +446,8 @@ export const ClientChart = ({ clients }) => {
               <div
                 key={idx}
                 style={{
-                  width: '8px',
-                  height: '8px',
+                  width: window.innerWidth < 480 ? '6px' : '8px', // Points plus petits
+                  height: window.innerWidth < 480 ? '6px' : '8px',
                   borderRadius: '50%',
                   background: currentPage === idx ? '#6366f1' : '#cbd5e1',
                   transition: 'all 0.2s ease'
@@ -458,7 +462,9 @@ export const ClientChart = ({ clients }) => {
             style={{
               ...navButtonStyle,
               background: currentPage === totalPages - 1 ? '#e2e8f0' : '#6366f1',
-              color: currentPage === totalPages - 1 ? '#94a3b8' : 'white'
+              color: currentPage === totalPages - 1 ? '#94a3b8' : 'white',
+              width: window.innerWidth < 480 ? '32px' : '36px',
+              height: window.innerWidth < 480 ? '32px' : '36px'
             }}
           >
             ▶

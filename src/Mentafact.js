@@ -866,12 +866,34 @@ const Mentafact = () => {
                 {/* Navbar Premium */}
                 <header className="navbar-premium">
                     <div className="navbar-left">
+                        {/* Menu Hamburger pour mobile */}
+                        <div className="hamburger-menu" onClick={() => {
+                            const navbarRight = document.querySelector('.navbar-right');
+                            const hamburger = document.querySelector('.hamburger-menu');
+                            const mobileSearch = document.querySelector('.mobile-search-container');
+
+                            navbarRight.classList.toggle('active');
+                            hamburger.classList.toggle('active');
+
+                            // Afficher/masquer la recherche mobile quand le menu est ouvert
+                            if (navbarRight.classList.contains('active')) {
+                                mobileSearch.style.display = 'flex';
+                            } else {
+                                mobileSearch.style.display = 'none';
+                            }
+                        }}>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+
                         <div className="company-brand">
                             <div className="navbar-left">
                                 <CompanyNameDisplay companyId={companyId} currentUser={currentUser} />
                             </div>
                         </div>
 
+                        {/* Recherche desktop */}
                         <div className="search-container">
                             <FaSearch className="search-icon" />
                             <input
@@ -882,6 +904,20 @@ const Mentafact = () => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                             <div className="search-shortcut">⌘K</div>
+                        </div>
+                    </div>
+
+                    {/* Recherche mobile (cachée par défaut) */}
+                    <div className="mobile-search-container" style={{ display: 'none' }}>
+                        <div className="search-container">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher..."
+                                className="search-input"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                         </div>
                     </div>
 
