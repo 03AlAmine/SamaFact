@@ -12,11 +12,11 @@ import '../css/side.css';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
   const { activeModule } = useAppContext();
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth <= 768;
+      const mobile = window.innerWidth <= 992;
       setIsMobile(mobile);
       
       // Si on passe en mode desktop et que la sidebar est fermée, on l'ouvre

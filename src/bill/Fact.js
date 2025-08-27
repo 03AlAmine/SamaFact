@@ -1117,7 +1117,7 @@ const Fact = () => {
   }
 
   return (
-    <div style={{ backgroundColor: 'var(--light-color)', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
       <InvoiceForm
         data={data}
         setData={setData}

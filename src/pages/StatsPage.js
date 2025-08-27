@@ -113,7 +113,7 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
       {/* Graphiques */}
       <div className="charts-container">
         {conf.charts.map((chart, idx) => (
-          <div key={idx} className="chart-card">
+          <div key={idx} className="chart-card-stat">
             <h3>{chart.title}</h3>
             <div className="chart-container">{chart.comp}</div>
           </div>

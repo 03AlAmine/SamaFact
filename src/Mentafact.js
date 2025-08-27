@@ -857,7 +857,6 @@ const Mentafact = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 logo={logo}
-
             />
 
 

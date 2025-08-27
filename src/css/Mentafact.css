@@ -13,8 +13,6 @@
   width: 80vw;
 }
 
-
-
 .opening .main-content {
   transition: margin-left 1s ease;
 }
@@ -387,7 +385,6 @@
   border-radius: 3px;
   transition: var(--transition);
   background-color: #4a6cf7;
-
 }
 
 /* Media Queries */
@@ -1304,8 +1301,6 @@
 
 /* Invoices Table */
 
-
-
 @media (max-width: 992px) {
   .form-row {
     flex-direction: column;
@@ -1460,20 +1455,21 @@
   position: relative;
 }
 
-.chart-card {
+.chart-card, .chart-card-stat {
   background-color: var(--card-bg);
   padding: 1.5rem;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow-card);
   transition: var(--transition);
   width: 100%;
+  overflow: hidden;
 }
 
-.chart-card:hover {
+.chart-card:hover, .chart-card-stat:hover {
   box-shadow: var(--box-shadow-soft);
 }
 
-.chart-card h3 {
+.chart-card h3, .chart-card-stat h3 {
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
   color: var(--text-dark);
@@ -1566,13 +1562,6 @@
 .employee-card:hover,
 .client-card:hover {
   transform: translateY(-4px);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
 }
 
 .search-box {
@@ -1981,16 +1970,17 @@ button:hover svg {
     glow-green 5s ease-in-out infinite;
 }
 
-
 .legend-container {
   flex: 1;
   width: auto;
   max-width: 260px;
+  background-color: var(--bg-card);
+  border-radius: var(--border-radius);
 }
 
 @media (min-width: 1700px) {
   .legend-container {
-     max-width: 600px;
+    max-width: 600px;
   }
 }
 @media (max-width: 768px) {
@@ -2005,51 +1995,29 @@ button:hover svg {
     min-width: 220px;
   }
 }
-.chart-container {
-  display: flex;
-  gap: 1rem; /* espace entre légende et graph */
-}
 
+@media (max-width: 1199px) {
+  .chart-card:nth-child(1), .chart-card-stat:nth-child(1) {
+    width: 100%;
+  }
+}
 /* ✅ En mobile : on empile en colonne */
+
 @media (max-width: 768px) {
   .chart-container {
     flex-direction: column;
     align-items: center; /* centre la légende et le graph */
   }
-}
-.charts-row {
-  display: flex;
-  flex-wrap: wrap; /* ✅ permet de passer en bloc quand c’est étroit */
-  gap: 1.5rem;
-}
-
-.chart-card {
-  flex: 1 1 45%; /* ✅ deux graphiques par ligne sur desktop */
-  min-width: 300px; /* ✅ largeur minimale pour éviter que ça casse trop tôt */
-  display: flex;
-  flex-direction: column; /* ✅ garde le titre, le graph et la légende en bloc */
-  align-items: center; /* centre tout à l’intérieur */
-  padding: 1rem;
-}
-.chart-card:nth-child(2) {
-    height: 500px;
-}
-
-.chart-card:hover {
-  transform: translateY(-4px);
-}
-
-.chart-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column; /* ✅ graph et légende en bloc vertical */
-  align-items: center;
-}
-
-/* Responsive : un graphique par ligne sous 768px */
-@media (max-width: 768px) {
-  .chart-card {
+  .chart-card, .chart-card-stat {
     flex: 1 1 100%;
+    min-width: 300px; /* ✅ largeur minimale pour éviter que ça casse trop tôt */
+    display: flex;
+    flex-direction: column; /* ✅ garde le titre, le graph et la légende en bloc */
+    align-items: center; /* centre tout à l’intérieur */
+  }
+
+  .chart-card:nth-child(2),
+  .chart-card-stat:nth-child(3) {
+    height: 500px;
   }
 }
-

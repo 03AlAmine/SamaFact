@@ -1,153 +1,230 @@
-// Sidebar.js
-import React from "react";
-import { MdDashboard } from "react-icons/md";
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAppContext } from './contexts/AppContext';
 import {
-    FaFileInvoiceDollar,
-    FaUsers,
-    FaChartBar,
-    FaMoneyBillWave
+  FaUsers,
+  FaFileInvoiceDollar,
+  FaChartBar,
+  FaMoneyBillWave,
 } from 'react-icons/fa';
+import { MdDashboard } from 'react-icons/md';
+import './css/side.css';
+// Importez votre logo - remplacez par le chemin correct
 import logo from './assets/Logo_Mf.png';
-import { Link } from "react-router-dom";
-import { useAppContext } from "./contexts/AppContext";
 
+const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
+  const { activeModule } = useAppContext();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
+  const location = useLocation();
 
-const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) => {
-    const { activeModule } = useAppContext();
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 992;
+      setIsMobile(mobile);
+      
+      // Si on passe en mode desktop et que la sidebar est fermée, on l'ouvre
+      if (!mobile && !sidebarOpen) {
+        setSidebarOpen(true);
+      }
+      
+      // Si on passe en mode mobile et que la sidebar est ouverte, on la ferme
+      if (mobile && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
 
-    return (
-        <div className={`sidebar ${sidebarOpen ? "open" : "closed"}`}>
-            {/* ✅ équivalent du ::before */}
-            <div
-                className="sidebar-bg"
-                style={{
-                    backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url("/bg-side.jpg")`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "left", // 👈 à la place de "start"
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    zIndex: -1,
-                    animation: "zoom-bg 20s ease-in-out infinite alternate",
-                }}
-            ></div>
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen, setSidebarOpen]);
 
-            {/* ✅ équivalent du ::after */}
-            <div
-                className="sidebar-overlay"
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(39, 51, 185, 0.2)",
-                    animation: "pulse-overlay 5s infinite alternate",
-                    pointerEvents: "none",
-                    zIndex: -1,
-                }}
-            ></div>
-            <Link
-                to="/"
-                onClick={() => setActiveTab("dashboard")}
-                className="sidebar-header"
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
-            >
-                <img src={logo} alt={activeModule === "mentafact" ? "Logo SamaFact" : "Logo SamaSalaire"} style={{ height: '50px' }} />
-                {sidebarOpen && (
-                    <h2 style={{ margin: 0 }}>
-                        {activeModule === "mentafact" ? "SamaFact" : "SamaSalaire"}
-                    </h2>
-                )}
-            </Link>
+  // Mettre à jour l'onglet actif basé sur l'URL
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/') setActiveTab('dashboard');
+    else if (path === '/clients') setActiveTab('clients');
+    else if (path === '/factures') setActiveTab('factures');
+    else if (path === '/employees') setActiveTab('employees');
+    else if (path === '/payrolls') setActiveTab('payrolls');
+    else if (path === '/stats') setActiveTab('stats');
+    else if (path === '/equipes') setActiveTab('equipes');
+  }, [location, setActiveTab]);
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
-            <nav className="sidebar-nav">
-                <ul>
-                    {/* Tableau de bord */}
-                    <Link
-                        to="/"
-                        onClick={() => setActiveTab("dashboard")}
-                        className="nav-link"
-                    >
-                        <li className={activeTab === "dashboard" ? "active" : ""}>
-                            <MdDashboard className="nav-icon" />
-                            {sidebarOpen && <span>Tableau de bord</span>}
-                        </li>
-                    </Link>
+  const dashboardItem = [
+    { 
+      icon: <MdDashboard className="nav-icon" />, 
+      label: "Tableau de bord", 
+      tab: "dashboard",
+      path: "/"
+    }
+  ];
 
-                    {/* Onglets spécifiques au module actif */}
-                    {activeModule === "mentafact" && (
-                        <>
+  const bottomItems = [
+    { 
+      icon: <FaChartBar className="nav-icon" />, 
+      label: "Statistiques", 
+      tab: "stats",
+      path: "/"
+    },
+    { 
+      icon: <FaUsers className="nav-icon" />, 
+      label: "Équipes", 
+      tab: "equipes",
+      path: "/"
+    }
+  ];
 
-                            <li
-                                className={activeTab === "clients" ? "active" : ""}
-                                onClick={() => setActiveTab("clients")}
-                            >
-                                <FaUsers className="nav-icon" />
-                                {sidebarOpen && <span>Clients</span>}
-                            </li>
-                            <li
-                                className={activeTab === "factures" ? "active" : ""}
-                                onClick={() => setActiveTab("factures")}
-                            >
-                                <FaFileInvoiceDollar className="nav-icon" />
-                                {sidebarOpen && <span>Ment@Fact</span>}
-                            </li>
-                        </>
-                    )}
+  const moduleSpecificItems = {
+    mentafact: [
+      { 
+        icon: <FaUsers className="nav-icon" />, 
+        label: "Clients", 
+        tab: "clients",
+        path: "/"
+      },
+      { 
+        icon: <FaFileInvoiceDollar className="nav-icon" />, 
+        label: "Ment@Fact", 
+        tab: "factures",
+        path: "/"
+      },
+    ],
+    payroll: [
+      { 
+        icon: <FaUsers className="nav-icon" />, 
+        label: "Employés", 
+        tab: "employees",
+        path: "/"
+      },
+      { 
+        icon: <FaMoneyBillWave className="nav-icon" />, 
+        label: "Ment@Roll", 
+        tab: "payrolls",
+        path: "/"
+      },
+    ]
+  };
 
-                    {activeModule === "payroll" && (
-                        <>
-                            <li
-                                className={activeTab === "employees" ? "active" : ""}
-                                onClick={() => setActiveTab("employees")}
-                            >
-                                <FaUsers className="nav-icon" />
-                                {sidebarOpen && <span>Employés</span>}
-                            </li>
-                            <li
-                                className={activeTab === "payrolls" ? "active" : ""}
-                                onClick={() => setActiveTab("payrolls")}
-                            >
-                                <FaMoneyBillWave className="nav-icon" />
-                                {sidebarOpen && <span>Ment@Roll</span>}
-                            </li>
+  const menuItems = [
+    ...dashboardItem,
+    ...moduleSpecificItems[activeModule],
+    ...bottomItems
+  ];
 
+  const handleItemClick = (tab) => {
+    setActiveTab(tab);
+    if (isMobile) {
+      // Fermer le menu après avoir cliqué sur un élément en mode mobile
+      setSidebarOpen(false);
+    }
+  };
 
-                        </>
-                    )}
+  return (
+    <>
+      {/* Bouton d'ouverture en mode mobile */}
+      {isMobile && (
+        <button
+          className="mobile-menu-button"
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? "Réduire le menu" : "Agrandir le menu"}
+        >
+          {sidebarOpen ? '◀' : '▶'}
+        </button>
+      )}
 
-                    {/* Statistiques */}
-                    <li
-                        className={activeTab === "stats" ? "active" : ""}
-                        onClick={() => setActiveTab("stats")}
-                    >
-                        <FaChartBar className="nav-icon" />
-                        {sidebarOpen && <span>Statistiques</span>}
-                    </li>
+      {/* Sidebar */}
+      <div className={`sidebar ${sidebarOpen ? '' : 'closed'} ${isMobile ? 'mobile' : ''}`}>
+        <div
+          className="sidebar-bg"
+          style={{
+            backgroundImage: `linear-gradient(rgba(39, 51, 185, 0.5), rgba(188, 159, 53, 0.5)), url("/bg-side.jpg")`,
+            backgroundSize: "cover",
+            backgroundPosition: "left",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: -1,
+          }}
+        ></div>
 
-                    {/* Équipes */}
-                    <li
-                        className={activeTab === "equipes" ? "active" : ""}
-                        onClick={() => setActiveTab("equipes")}
-                    >
-                        <FaUsers className="nav-icon" />
-                        {sidebarOpen && <span>Équipes</span>}
-                    </li>
-                </ul>
-            </nav>
+        <div
+          className="sidebar-overlay"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(39, 51, 185, 0.2)",
+            pointerEvents: "none",
+            zIndex: -1,
+          }}
+        ></div>
 
-            <div className="sidebar-footer">
-                <button
-                    className="toggle-sidebar"
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    aria-label={sidebarOpen ? "Réduire le menu" : "Agrandir le menu"}
+        <Link
+          to="/dashboard"
+          onClick={() => handleItemClick("dashboard")}
+          className="sidebar-header"
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
+        >
+          <img src={logo} alt={activeModule === "mentafact" ? "Logo SamaFact" : "Logo SamaSalaire"} style={{ height: '50px' }} />
+          <h2 style={{ margin: 0 }}>
+            {activeModule === "mentafact" ? "SamaFact" : "SamaSalaire"}
+          </h2>
+        </Link>
+
+        <nav className="sidebar-nav sidebar-nav-fact">
+          <ul>
+            {menuItems.map((item) => (
+              <li
+                key={item.tab}
+                className={activeTab === item.tab ? "active" : ""}
+              >
+                <Link
+                  to={item.path}
+                  onClick={() => handleItemClick(item.tab)}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    textDecoration: 'none', 
+                    color: 'inherit',
+                    padding: '12px 15px',
+                    width: '100%'
+                  }}
                 >
-                    {sidebarOpen ? '◄' : '►'}
-                </button>
-            </div>
-        </div>
-    );
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {!isMobile && (
+          <div className="sidebar-footer">
+            <button
+              className="toggle-sidebar"
+              onClick={toggleSidebar}
+              aria-label={sidebarOpen ? "Réduire le menu" : "Agrandir le menu"}
+            >
+              {sidebarOpen ? '◀' : '▶'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Overlay pour mobile quand la sidebar est ouverte */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="sidebar-overlay-mobile"
+          onClick={toggleSidebar}
+        ></div>
+      )}
+    </>
+  );
 };
 
 export default Sidebar;

@@ -133,6 +133,29 @@ const DocumentSection = ({
         }
     };
 
+    // Ajoutez cet état et useEffect au début de votre composant
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Détection automatique du mobile
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth <= 992);
+        };
+
+        // Vérifier au chargement
+        checkIsMobile();
+
+        // Écouter les changements de taille
+        window.addEventListener('resize', checkIsMobile);
+
+        return () => {
+            window.removeEventListener('resize', checkIsMobile);
+        };
+    }, []);
+
+    // Déterminez le mode d'affichage
+    const displayMode = isMobile ? 'card' : viewMode;
+
     if (loading) {
         return (
             <div
@@ -262,8 +285,7 @@ const DocumentSection = ({
                         Créer {type === "facture" ? "une Facture" : type === "devis" ? "un Devis" : "un Avoir"}
                     </button>
                 </div>
-            ) : viewMode === 'card' ? (
-
+            ) : displayMode === 'card' ? (
                 <div className="cards-grid">
 
                     {filteredItems.map((f) => (

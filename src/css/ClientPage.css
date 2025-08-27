@@ -360,3 +360,67 @@
 .client-badge.fournisseur {
   background: #ff9800;
 }
+
+
+
+/* Responsive pour la grille de cartes */
+@media (max-width: 992px) {
+  .clients-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .client-card {
+    padding: 1rem;
+  }
+  
+  .client-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .clients-grid {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .client-header {
+    flex-wrap: wrap;
+  }
+  
+  .client-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .client-card {
+    padding: 0.75rem;
+  }
+  
+  .client-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .client-name {
+    font-size: 0.95rem;
+  }
+  
+  .client-company {
+    font-size: 0.75rem;
+  }
+  
+  .client-detail {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+}

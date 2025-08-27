@@ -108,6 +108,29 @@ const ClientsPage = ({
         }, 100);
     };
 
+    // Ajoutez cet état et useEffect au début de votre composant
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Détection automatique du mobile
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth <= 992);
+        };
+
+        // Vérifier au chargement
+        checkIsMobile();
+
+        // Écouter les changements de taille
+        window.addEventListener('resize', checkIsMobile);
+
+        return () => {
+            window.removeEventListener('resize', checkIsMobile);
+        };
+    }, []);
+
+    // Déterminez le mode d'affichage
+    const displayMode = isMobile ? 'card' : viewMode;
+
     if (loading) {
         return (
             <div
@@ -403,15 +426,19 @@ const ClientsPage = ({
                                 onClick={() => setViewMode('card')}
                                 className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
                                 title="Vue cartes"
+                                disabled={isMobile} // Désactiver sur mobile si en mode automatique
                             >
                                 <FaTh />
+                                {isMobile && <span className="auto-badge">Auto</span>}
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
                                 title="Vue liste"
+                                disabled={isMobile} // Désactiver sur mobile si en mode automatique
                             >
                                 <FaList />
+                                {isMobile && <span className="auto-badge">Auto</span>}
                             </button>
                         </div>
                     </div>
@@ -489,13 +516,14 @@ const ClientsPage = ({
                             <FaPlus /> Ajouter un client
                         </button>
                     </div>
-                ) : viewMode === 'card' ? (
+                ) : (displayMode === 'card' ? (
+                    // Vue card
                     <div className="clients-grid">
                         {sortedClients.map((c) => (
                             <div
                                 key={c.id}
                                 className={`client-card ${selectedClient?.id === c.id ? 'active' : ''}`}
-                                onClick={() => handleClientClick(c.id)}  // Utilisation de la nouvelle fonction
+                                onClick={() => handleClientClick(c.id)}
                             >
                                 <div className={`client-type-badge ${c.type}`}>
                                     {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
@@ -568,6 +596,7 @@ const ClientsPage = ({
                         ))}
                     </div>
                 ) : (
+                    // Vue tableau
                     <table className="clients-table">
                         <thead>
                             <tr>
@@ -589,7 +618,6 @@ const ClientsPage = ({
                                         {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                                     </div>
                                 </th>
-
                                 <th>Contact</th>
                                 <th>Adresse</th>
                                 <th>Actions</th>
@@ -600,8 +628,8 @@ const ClientsPage = ({
                                 <tr
                                     key={c.id}
                                     className={selectedClient?.id === c.id ? 'active' : ''}
-                                    onClick={() => handleClientClick(c.id)}  // Ajoutez cette ligne
-                                    style={{ cursor: 'pointer' }}  // Change le curseur pour indiquer que c'est cliquable
+                                    onClick={() => handleClientClick(c.id)}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     <td>
                                         <div className="cell-content">
@@ -618,7 +646,6 @@ const ClientsPage = ({
                                         <div className={`client-badge ${c.type}`}>
                                             {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
                                         </div>
-
                                     </td>
                                     <td>
                                         <div className="client-contact">
@@ -662,7 +689,7 @@ const ClientsPage = ({
                             ))}
                         </tbody>
                     </table>
-                )}
+                ))}
             </div>
 
             {selectedClient && (() => {

@@ -192,29 +192,6 @@
   color: var(--text-light);
 }
 
-/* Boutons */
-.primary-btn {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.primary-btn:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
 /* Cartes de statistiques */
 .stats-grid {
   display: grid;
@@ -295,12 +272,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
+
 
 .section-header h3 {
   font-size: 1.25rem;
@@ -755,21 +727,7 @@
   color: black;
 }
 
-.primary-btn {
-  padding: 0.75rem 1.5rem;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: var(--box-shadow);
-}
+
 
 .primary-btn:hover {
   background: var(--secondary-color);

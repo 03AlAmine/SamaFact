@@ -64,14 +64,6 @@
   visibility: visible;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
-  gap: 15px;
-}
 
 .header-left,
 .header-right {
@@ -633,6 +625,11 @@
     width: 100%;
     overflow-x: auto;
   }
+    .create-btn {
+    padding: 10px;
+    height: 40px;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
@@ -644,13 +641,6 @@
     display: none;
   }
 
-  .create-btn {
-    padding: 10px;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    justify-content: center;
-  }
 }
 
 .paid-card {
@@ -1225,3 +1215,5 @@
     padding: 20px 16px;
   }
 }
+
+

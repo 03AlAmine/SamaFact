@@ -196,4 +196,9 @@
     margin: 0;
     padding: 8px;
   }
+  .modern-date-range-picker{
+    display: flex;
+    flex-direction: column;
+    z-index:2
+  }
 }
