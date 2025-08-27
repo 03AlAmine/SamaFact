@@ -229,10 +229,11 @@ export const ClientChart = ({ clients }) => {
   // Palette de couleurs modernes
   const backgroundColors = [
     // Couleurs existantes
-    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#ef4444',
-    '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
-    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
-    '#64748b', '#94a3b8', '#cbd5e1',
+    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
+    '#f97316', '#f59e0b', '#eab308', '#84cc16',
+    '#10b981', '#14b8a6', '#06b6d4', '#22c55e',
+    '#0ea5e9', '#3b82f6', '#64748b', '#34d399',
+    '#94a3b8', '#cbd5e1', '#4ade80', '#ef4444',
 
     // Couleurs ajoutées
     '#a855f7', '#9333ea', '#7c3aed', '#6d28d9', // violet
@@ -242,7 +243,19 @@ export const ClientChart = ({ clients }) => {
     '#0d9488', '#0891b2', '#0284c7', '#2563eb', // bleu
     '#1d4ed8', '#1e40af', '#1e3a8a', '#172554', // bleu foncé
     '#f43f5e', '#fb7185', '#fca5a5', '#fecaca', // rouge/rose
-    '#e2e8f0', '#f1f5f9', '#f8fafc', '#e5e7eb'  // gris/pastel
+    '#e2e8f0', '#f1f5f9', '#f8fafc', '#e5e7eb',  // gris/pastel
+
+
+    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+    '#64748b', '#94a3b8', '#cbd5e1', '#3b82f6',
+    '#facc15', '#fde68a', '#fef08a', '#fcd34d', // jaune
+    '#4ade80', '#34d399', '#2dd4bf', '#5eead4', // vert-menthe
+    '#0d9488', '#0891b2', '#0284c7', '#2563eb', // bleu 
+
+    '#a855f7', '#9333ea', '#7c3aed', '#6d28d9', // violet
+    '#d946ef', '#c026d3', '#a21caf', '#86198f', // rose/violet
+    '#facc15', '#fde68a', '#6366f1', '#8b5cf6',
+    '#ec4899', '#f43f5e', '#ef4444', '#f97316',
   ];
 
 
@@ -313,11 +326,13 @@ export const ClientChart = ({ clients }) => {
       margin: '0 auto',
       padding: '0.5rem',
       boxSizing: 'border-box'
-    }}>
+    }}
+      className="chart-card-legend"
+    >
       {/* Graphique */}
       <div style={{
-        height: window.innerWidth < 480 ? '200px' : '250px', // Plus petit sur mobile
-        width: window.innerWidth < 480 ? '200px' : '250px',
+        height: window.innerWidth < 480 ? '180px' : '220px', // Plus petit sur mobile
+        width: window.innerWidth < 480 ? '180px' : '220px',
         position: 'relative',
         flexShrink: 0
       }}>
@@ -349,18 +364,7 @@ export const ClientChart = ({ clients }) => {
       <div
         onMouseEnter={pauseAutoSlide}
         onMouseLeave={resumeAutoSlide}
-        style={{
-          flex: window.innerWidth < 768 ? 'none' : 1, // Pas de flex sur mobile
-          width: window.innerWidth < 768 ? '100%' : 'auto', // Pleine largeur sur mobile
-          minWidth: window.innerWidth < 480 ? '220px' : '260px', // Ajustement min-width
-          padding: '1rem',
-          borderRadius: '12px',
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          maxWidth: '100%',
-          boxSizing: 'border-box'
-        }}
+        className="legend-container"
       >
         <div style={{
           display: 'flex',

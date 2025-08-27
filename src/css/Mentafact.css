@@ -1458,7 +1458,6 @@
   width: 100%;
   margin-top: 1rem;
   position: relative;
-  overflow: hidden;
 }
 
 .chart-card {
@@ -1467,6 +1466,7 @@
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow-card);
   transition: var(--transition);
+  width: 100%;
 }
 
 .chart-card:hover {
@@ -1980,3 +1980,76 @@ button:hover svg {
   animation: pulse-scale 5s ease-in-out infinite,
     glow-green 5s ease-in-out infinite;
 }
+
+
+.legend-container {
+  flex: 1;
+  width: auto;
+  max-width: 260px;
+}
+
+@media (min-width: 1700px) {
+  .legend-container {
+     max-width: 600px;
+  }
+}
+@media (max-width: 768px) {
+  .legend-container {
+    flex: none;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .legend-container {
+    min-width: 220px;
+  }
+}
+.chart-container {
+  display: flex;
+  gap: 1rem; /* espace entre légende et graph */
+}
+
+/* ✅ En mobile : on empile en colonne */
+@media (max-width: 768px) {
+  .chart-container {
+    flex-direction: column;
+    align-items: center; /* centre la légende et le graph */
+  }
+}
+.charts-row {
+  display: flex;
+  flex-wrap: wrap; /* ✅ permet de passer en bloc quand c’est étroit */
+  gap: 1.5rem;
+}
+
+.chart-card {
+  flex: 1 1 45%; /* ✅ deux graphiques par ligne sur desktop */
+  min-width: 300px; /* ✅ largeur minimale pour éviter que ça casse trop tôt */
+  display: flex;
+  flex-direction: column; /* ✅ garde le titre, le graph et la légende en bloc */
+  align-items: center; /* centre tout à l’intérieur */
+  padding: 1rem;
+}
+.chart-card:nth-child(2) {
+    height: 500px;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+}
+
+.chart-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column; /* ✅ graph et légende en bloc vertical */
+  align-items: center;
+}
+
+/* Responsive : un graphique par ligne sous 768px */
+@media (max-width: 768px) {
+  .chart-card {
+    flex: 1 1 100%;
+  }
+}
+
