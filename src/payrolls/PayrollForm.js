@@ -258,6 +258,7 @@ const PayrollForm = () => {
         const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
         const avances = parseFloat(formData.retenues.avances) || 0;
         const trimf = parseFloat(formData.retenues.trimf) || 0;
+        const ir = parseFloat(formData.retenues.ir) || 0;
 
         // Calculs
         const brutSocial = salaireBase + sursalaire + indemniteDeplacement + autresIndemnites;
@@ -267,7 +268,6 @@ const PayrollForm = () => {
         const ipresRG = brutSocial * 0.056;
         const ipresRC = 0; //brutSocial * 0.024;
         const cfce = brutFiscal * 0.03;
-        const ir = 0;
         
 
         // Cotisations patronales
@@ -283,6 +283,7 @@ const PayrollForm = () => {
         const totalCotisationsEmployeur = ipresRGP + ipresRCP + allocationFamiliale + accidentTravail + qpartipm + cfce; // Utilisez qpartipm directement
         const totalCotisationsSalariales = ipresRG + ipresRC;
         const totalCotisationsPatronales = ipresRGP + ipresRCP;
+        const totalCotisantions = totalCotisationsEmp + totalCotisationsEmployeur;
 
         // Salaire Net
         const remunerationNette = brutSocial - totalRetenues;
@@ -296,6 +297,7 @@ const PayrollForm = () => {
             cotisatisationsEmployeur: totalCotisationsEmployeur,
             cotisationsSalariales: totalCotisationsSalariales,
             cotisationsPatronales: totalCotisationsPatronales,
+            cotisationsTotales: totalCotisantions,
             salaireNet: remunerationNette, // Correction: utilisation de remunerationNette
             salaireNetAPayer,
             detailsCotisations: {
@@ -326,7 +328,8 @@ const PayrollForm = () => {
         formData.retenues.salaire,
         formData.retenues.qpartipm, // Gardez cette dépendance
         formData.retenues.avances,
-        formData.retenues.trimf
+        formData.retenues.trimf,
+        formData.retenues.ir
     ]);
 
     // Effet pour les calculs
@@ -585,7 +588,7 @@ const PayrollForm = () => {
                         Rémunération
                     </h2>
                     <div className="form-grid">
-                        <div className="form-group">
+                      {/*  <div className="form-group">
                             <label className="label">Taux horaire</label>
                             <input
                                 type="number"
@@ -595,7 +598,7 @@ const PayrollForm = () => {
                                 step="0.01"
                                 className="input"
                             />
-                        </div>
+                        </div> */}
                         <div className="form-group">
                             <label className="label">Salaire de base</label>
                             <input

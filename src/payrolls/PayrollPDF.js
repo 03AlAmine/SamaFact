@@ -346,7 +346,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     {/* Total - Version mise en valeur */}
                     <View style={[styles.tableRow, styles.grandTotalRow]}>
                         <Text style={styles.grandTotalLabel}>TOTAL COTISATIONS</Text>
-                        <Text style={styles.grandTotalValue}>18 151 FCFA</Text>
+                        <Text style={styles.grandTotalValue}>{formatCurrency(calculations.cotisationsTotales)} </Text>
                     </View>
                 </View>
 
