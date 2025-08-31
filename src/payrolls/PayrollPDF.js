@@ -199,10 +199,11 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
 
                         {/* Valeurs */}
                         <View style={styles.tableRow}>
-                            {["432 000", "1 296 000", "300", "0", "", "", ""].map((val, i) => (
+                            {["432 000", "1 296 000", formData.retenues.trimf || "0", formData.retenues.ir || "0", "", "", ""].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
+
 
                         {/* Pourcentages */}
                         <View style={styles.tableRow}>
@@ -213,7 +214,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
 
                         {/* Montants */}
                         <View style={styles.tableRow}>
-                            {["4 220", "", "", "", "16 200", "20 000", ""].map((val, i) => (
+                            {["4 220", "-", "-", "-", formData.retenues.salaire || "0", formData.retenues.avances || "2", "-"].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
@@ -221,7 +222,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                         {/* Total - fusionner les colonnes */}
                         <View style={[styles.tableRow, styles.totalRow]}>
                             <Text style={[styles.tableCell, { flex: 6, textAlign: 'left' }]}>TOTAL RETENUES</Text>
-                            <Text style={[styles.tableCell, { flex: 1 }]}>20 720</Text>
+                            <Text style={[styles.tableCell, { flex: 1 }]}>{formatCurrency(calculations.totalRetenues)}</Text>
                         </View>
                     </View>
                 </View>
@@ -316,17 +317,19 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     {/* IPM - Version compacte */}
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>IPM</Text>
-                        <Text style={styles.tableCell}>0</Text>
-                        <Text style={styles.tableCell}>0</Text>
-                        <Text style={styles.tableCell}>0</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.qpartipm)}</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.qpartipm)}</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(calculations.tooqpartipm)}</Text>
+
                     </View>
 
                     {/* Retenues fiscales - Version compacte */}
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>Fiscales</Text>
-                        <Text style={styles.tableCell}>300 (TRIMF)</Text>
-                        <Text style={styles.tableCell}>2 261 (CFCE)</Text>
-                        <Text style={styles.tableCell}>2 561</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.trimf)} (TRIMF)</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.trimf)} (TRIMF)</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.ir)} (IR)</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(calculations.totalfiscales)}</Text>
                     </View>
 
                     {/* Séparateur visuel */}

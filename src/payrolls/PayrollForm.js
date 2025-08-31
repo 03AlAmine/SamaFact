@@ -1,23 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from '../firebase';
 import { collection, getDocs, query } from 'firebase/firestore';
 import PayrollPDF from './PayrollPDF';
 import './Payroll.css';
 import { useAuth } from '../auth/AuthContext';
-import { FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaArrowLeft, FaEye, FaEyeSlash, FaSave, FaDownload, FaSpinner } from "react-icons/fa";
 import { payrollService } from '../services/payrollService';
 import PDFPreviewDynamic from '../components/PDFPreviewDynamic';
 import Sidebar from "../Sidebar";
-
+import Notification from '../components/Notification';
 
 const PayrollForm = () => {
     const { currentUser } = useAuth();
-    const location = useLocation(); // Correctement importé depuis react-router-dom
+    const location = useLocation();
+    const navigate = useNavigate();
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [, setLoadingData] = useState(true);
+    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
     const [showPreview, setShowPreview] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
@@ -25,12 +26,17 @@ const PayrollForm = () => {
     const [payrollNumber, setPayrollNumber] = useState("");
     const [showEmployeInfo, setShowEmployeInfo] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [lastSavedCalculations, setLastSavedCalculations] = useState(null);
+
+    const showNotification = (message, type = 'info') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: '' }), 3000);
+    };
 
     const togglePreview = () => {
         const newState = !showPreview;
         setShowPreview(newState);
 
-        // Défilement vers le bas seulement quand on affiche l'aperçu
         if (newState) {
             setTimeout(() => {
                 window.scrollTo({
@@ -40,6 +46,49 @@ const PayrollForm = () => {
             }, 300);
         }
     };
+
+    // Fonction pour calculer automatiquement l'IR selon le barème 2013
+    const calculateIR = useCallback((brutFiscal, nbreofParts) => {
+        const revenu = brutFiscal / nbreofParts;
+        let ir = 0;
+
+        // Barème corrigé basé sur les valeurs réelles du PDF
+        if (revenu > 500000) {
+            ir = revenu * 0.40 - 118750;
+        } else if (revenu > 400000) {
+            ir = revenu * 0.35 - 88750;
+        } else if (revenu > 300000) {
+            ir = revenu * 0.35 - 78750;
+        } else if (revenu > 200000) {
+            ir = revenu * 0.30 - 48750;
+        } else if (revenu > 150000) {
+            ir = revenu * 0.25 - 28750;
+        } else if (revenu > 110000) {
+            ir = revenu * 0.20 - 18750;
+        } else if (revenu > 80000) {
+            ir = revenu * 0.15 - 11000;
+        } else if (revenu > 60000) {
+            ir = revenu * 0.10 - 6000;
+        } else if (revenu > 50000) {
+            ir = revenu * 0.05 - 2500;
+        } else {
+            ir = 0;
+        }
+
+        ir = Math.max(0, ir);
+        return Math.round(ir * nbreofParts);
+    }, []);
+
+    // Fonction pour calculer automatiquement le TRIMF
+    const calculateTRIMF = useCallback((brutFiscal) => {
+        const brut = parseFloat(brutFiscal) || 0;
+
+        if (brut <= 85000) return 300;
+        if (brut <= 133000) return 400;
+        if (brut < 1000000) return 500;
+        return 1500;
+    }, []);
+
     // États pour le formulaire de paie
     const [formData, setFormData] = useState({
         periode: {
@@ -72,27 +121,116 @@ const PayrollForm = () => {
         }
     });
 
-    const [calculations, setCalculations] = useState({
-        brutSocial: 0,
-        brutFiscal: 0,
-        cotisatisationsEmp: 0,
-        cotisatisationsEmployeur: 0,
-        cotisationsSalariales: 0,
-        cotisationsPatronales: 0,
-        salaireNet: 0,
-        salaireNetAPayer: 0,
-        detailsCotisations: {
-            ipresRG: 0,
-            ipresRC: 0,
-            ipresRGP: 0,
-            ipresRCP: 0,
-            allocationFamiliale: 0,
-            accidentTravail: 0,
-            trimf: 0,
-            cfce: 0,
-            ir: 0
+    // Calculs dérivés avec useMemo pour éviter les recalculs inutiles
+    const calculations = useMemo(() => {
+        // Rémunération
+        const salaireBase = parseFloat(formData.remuneration.salaireBase) || 0;
+        const sursalaire = parseFloat(formData.remuneration.sursalaire) || 0;
+        const indemniteDeplacement = parseFloat(formData.remuneration.indemniteDeplacement) || 0;
+        const autresIndemnites = parseFloat(formData.remuneration.autresIndemnites) || 0;
+        const avantagesNature = parseFloat(formData.remuneration.avantagesNature) || 0;
+
+        // Primes
+        const transport = parseFloat(formData.primes.transport) || 0;
+        const panier = parseFloat(formData.primes.panier) || 0;
+        const repas = parseFloat(formData.primes.repas) || 0;
+        const anciennete = parseFloat(formData.primes.anciennete) || 0;
+        const responsabilite = parseFloat(formData.primes.responsabilite) || 0;
+        const autresPrimes = parseFloat(formData.primes.autresPrimes) || 0;
+
+        // Retenues
+        const retenueSalaire = parseFloat(formData.retenues.salaire) || 0;
+        const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
+        const avances = parseFloat(formData.retenues.avances) || 0;
+        const trimf = parseFloat(formData.retenues.trimf) || 0;
+
+        // Calculs
+        const brutSocial = salaireBase + sursalaire + indemniteDeplacement + autresIndemnites;
+        const brutFiscal = brutSocial + avantagesNature;
+
+        // Cotisations salariales (IPRES)
+        const ipresRG = brutSocial * 0.056;
+        const ipresRC = 0; // brutSocial * 0.024;
+        const cfce = brutFiscal * 0.03;
+
+        // Cotisations patronales
+        const ipresRGP = brutSocial * 0.084;
+        const ipresRCP = 0 * 0.036;
+        const allocationFamiliale = 63000 * 0.07;
+        const accidentTravail = 63000 * 0.01;
+
+        // Calcul de l'IR
+        const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
+        const nbreofParts = selectedEmployee.nbreofParts || 1;
+        const ir = calculateIR(brutFiscal, nbreofParts);
+
+        // Totaux
+        const totalRetenuesPris = retenueSalaire + qpartipm + avances;
+        const totalRetenues = retenueSalaire + qpartipm + avances + ipresRG + ipresRC + trimf + ir;
+        const totalCotisationsEmp = ipresRG + ipresRC + trimf + ir;
+        const totalCotisationsEmployeur = ipresRGP + ipresRCP + allocationFamiliale + accidentTravail + qpartipm + cfce;
+        const totalCotisationsSalariales = ipresRG + ipresRC;
+        const totalCotisationsPatronales = ipresRGP + ipresRCP;
+        const totalCotisantions = totalCotisationsEmp + totalCotisationsEmployeur;
+
+        // Salaire Net
+        const remunerationNette = brutSocial - totalRetenuesPris;
+        const totalPrimes = transport + panier + repas + anciennete + responsabilite + autresPrimes;
+        const salaireNetAPayer = remunerationNette + totalPrimes;
+        const tooqpartipm = qpartipm * 2
+        const totalfiscales = trimf + cfce + ir;
+
+        return {
+            brutSocial,
+            brutFiscal,
+            cotisatisationsEmp: totalCotisationsEmp,
+            cotisatisationsEmployeur: totalCotisationsEmployeur,
+            cotisationsSalariales: totalCotisationsSalariales,
+            cotisationsPatronales: totalCotisationsPatronales,
+            cotisationsTotales: totalCotisantions,
+            salaireNet: remunerationNette,
+            salaireNetAPayer,
+            totalRetenuesPris,
+            totalRetenues,
+            tooqpartipm,
+            totalfiscales,
+            detailsCotisations: {
+                ipresRG,
+                ipresRC,
+                ipresRGP,
+                ipresRCP,
+                allocationFamiliale,
+                accidentTravail,
+                trimf,
+                qpartipm,
+                cfce,
+                nbreofParts,
+                ir
+            }
+        };
+    }, [formData, selectedEmployeeId, employees, calculateIR]);
+
+    // Mettre à jour les retenues basées sur les calculs - CORRECTION ICI
+    useEffect(() => {
+        // Éviter la boucle infinie en vérifiant si les calculs ont changé
+        if (JSON.stringify(calculations) === JSON.stringify(lastSavedCalculations)) {
+            return;
         }
-    });
+
+        const trimfValue = calculateTRIMF(calculations.brutFiscal);
+
+        setFormData(prev => ({
+            ...prev,
+            retenues: {
+                ...prev.retenues,
+                trimf: trimfValue.toString(),
+                cfce: calculations.detailsCotisations.cfce.toFixed(0) || '0',
+                ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
+            }
+        }));
+
+        setLastSavedCalculations(calculations);
+    }, [calculations, calculateTRIMF, lastSavedCalculations]);
 
     // Initialisation des données
     useEffect(() => {
@@ -101,7 +239,6 @@ const PayrollForm = () => {
                 if (location.state && location.state.payroll) {
                     const payroll = location.state.payroll;
 
-                    // Ensure all fields have values
                     setFormData({
                         periode: {
                             du: payroll.periode?.du || '',
@@ -133,28 +270,6 @@ const PayrollForm = () => {
                         }
                     });
 
-                    setCalculations(payroll.calculations || {
-                        brutSocial: 0,
-                        brutFiscal: 0,
-                        cotisatisationsEmp: 0,
-                        cotisatisationsEmployeur: 0,
-                        cotisationsSalariales: 0,
-                        cotisationsPatronales: 0,
-                        salaireNet: 0,
-                        salaireNetAPayer: 0,
-                        detailsCotisations: {
-                            ipresRG: 0,
-                            ipresRC: 0,
-                            ipresRGP: 0,
-                            ipresRCP: 0,
-                            allocationFamiliale: 0,
-                            accidentTravail: 0,
-                            trimf: 0,
-                            cfce: 0,
-                            ir: 0
-                        }
-                    });
-
                     setSelectedEmployeeId(payroll.employeeId || '');
                     setPayrollNumber(payroll.numero || '');
                     setIsSaved(true);
@@ -167,8 +282,9 @@ const PayrollForm = () => {
                 const now = new Date();
                 const year = now.getFullYear();
                 setPayrollNumber(`PAY-${year}-TEMP`);
+                showNotification("Erreur lors de l'initialisation des données", "error");
             } finally {
-                setLoadingData(false);
+                setLoading(false);
             }
         };
 
@@ -193,16 +309,14 @@ const PayrollForm = () => {
                 }));
 
                 setEmployees(employeesData);
-                setLoading(false);
             } catch (error) {
                 console.error("Error fetching employees: ", error);
-                setLoading(false);
+                showNotification("Erreur lors du chargement des employés", "error");
             }
         };
 
         fetchEmployees();
     }, [currentUser]);
-
 
     // Mettre à jour le salaire de base quand l'employé est sélectionné
     useEffect(() => {
@@ -235,118 +349,6 @@ const PayrollForm = () => {
         }
     }, [selectedEmployeeId, employees]);
 
-    // Calculs automatiques
-    // Déplacez la fonction de calcul en dehors des effets
-    const calculatePayroll = useCallback(() => {
-        // Rémunération
-        const salaireBase = parseFloat(formData.remuneration.salaireBase) || 0;
-        const sursalaire = parseFloat(formData.remuneration.sursalaire) || 0;
-        const indemniteDeplacement = parseFloat(formData.remuneration.indemniteDeplacement) || 0;
-        const autresIndemnites = parseFloat(formData.remuneration.autresIndemnites) || 0;
-        const avantagesNature = parseFloat(formData.remuneration.avantagesNature) || 0;
-
-        // Primes
-        const transport = parseFloat(formData.primes.transport) || 0;
-        const panier = parseFloat(formData.primes.panier) || 0;
-        const repas = parseFloat(formData.primes.repas) || 0;
-        const anciennete = parseFloat(formData.primes.anciennete) || 0;
-        const responsabilite = parseFloat(formData.primes.responsabilite) || 0;
-        const autresPrimes = parseFloat(formData.primes.autresPrimes) || 0;
-
-        // Retenues
-        const retenueSalaire = parseFloat(formData.retenues.salaire) || 0;
-        const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
-        const avances = parseFloat(formData.retenues.avances) || 0;
-        const trimf = parseFloat(formData.retenues.trimf) || 0;
-        const ir = parseFloat(formData.retenues.ir) || 0;
-
-        // Calculs
-        const brutSocial = salaireBase + sursalaire + indemniteDeplacement + autresIndemnites;
-        const brutFiscal = brutSocial + avantagesNature;
-
-        // Cotisations salariales (IPRES)
-        const ipresRG = brutSocial * 0.056;
-        const ipresRC = 0; //brutSocial * 0.024;
-        const cfce = brutFiscal * 0.03;
-        
-
-        // Cotisations patronales
-        const ipresRGP = brutSocial * 0.084;
-        const ipresRCP = 0 * 0.036;
-        const allocationFamiliale = 63000 * 0.07;
-        const accidentTravail = 63000 * 0.01;
-
-        // Totaux
-        const totalRetenues = retenueSalaire + qpartipm + avances; // Supprimé la duplication de qpartipm
-
-        const totalCotisationsEmp = ipresRG + ipresRC + trimf + ir;
-        const totalCotisationsEmployeur = ipresRGP + ipresRCP + allocationFamiliale + accidentTravail + qpartipm + cfce; // Utilisez qpartipm directement
-        const totalCotisationsSalariales = ipresRG + ipresRC;
-        const totalCotisationsPatronales = ipresRGP + ipresRCP;
-        const totalCotisantions = totalCotisationsEmp + totalCotisationsEmployeur;
-
-        // Salaire Net
-        const remunerationNette = brutSocial - totalRetenues;
-        const totalPrimes = transport + panier + repas + anciennete + responsabilite + autresPrimes;
-        const salaireNetAPayer = remunerationNette + totalPrimes;
-
-        return {
-            brutSocial,
-            brutFiscal,
-            cotisatisationsEmp: totalCotisationsEmp,
-            cotisatisationsEmployeur: totalCotisationsEmployeur,
-            cotisationsSalariales: totalCotisationsSalariales,
-            cotisationsPatronales: totalCotisationsPatronales,
-            cotisationsTotales: totalCotisantions,
-            salaireNet: remunerationNette, // Correction: utilisation de remunerationNette
-            salaireNetAPayer,
-            detailsCotisations: {
-                ipresRG,
-                ipresRC,
-                ipresRGP,
-                ipresRCP,
-                allocationFamiliale,
-                accidentTravail,
-                trimf,
-                qpartipm,
-                cfce,
-                ir
-            }
-        };
-    }, [
-        formData.remuneration.salaireBase,
-        formData.remuneration.sursalaire,
-        formData.remuneration.indemniteDeplacement,
-        formData.remuneration.autresIndemnites,
-        formData.remuneration.avantagesNature,
-        formData.primes.transport,
-        formData.primes.panier,
-        formData.primes.repas,
-        formData.primes.anciennete,
-        formData.primes.responsabilite,
-        formData.primes.autresPrimes,
-        formData.retenues.salaire,
-        formData.retenues.qpartipm, // Gardez cette dépendance
-        formData.retenues.avances,
-        formData.retenues.trimf,
-        formData.retenues.ir
-    ]);
-
-    // Effet pour les calculs
-    useEffect(() => {
-        const results = calculatePayroll(); // Exécutez la fonction pour obtenir les résultats
-        setCalculations(results);
-
-        // Mise à jour des retenues
-        setFormData(prev => ({
-            ...prev,
-            retenues: {
-                ...prev.retenues,
-                cfce: results.detailsCotisations.cfce.toFixed(0) || '0',
-                ir: results.detailsCotisations.ir.toFixed(0) || '0'
-            }
-        }));
-    }, [calculatePayroll]);
     // Sauvegarde du bulletin
     const savePayrollToFirestore = async (payrollData, isUpdate = false) => {
         if (!currentUser?.companyId) {
@@ -360,10 +362,9 @@ const PayrollForm = () => {
                 payrollData
             );
         } else {
-            // Ajout d'un nouveau bulletin avec companyId et userId
             return payrollService.addPayroll(
                 currentUser.companyId,
-                currentUser.uid,   // 👈 l'utilisateur qui crée
+                currentUser.uid,
                 payrollData
             );
         }
@@ -371,12 +372,12 @@ const PayrollForm = () => {
 
     const handleSave = async () => {
         if (!selectedEmployeeId) {
-            alert("Veuillez sélectionner un employé");
+            showNotification("Veuillez sélectionner un employé", "warning");
             return;
         }
 
         if (isSaved && !location.state?.payroll?.id) {
-            alert("Ce bulletin est déjà enregistré. Créez un nouveau bulletin si nécessaire.");
+            showNotification("Ce bulletin est déjà enregistré. Créez un nouveau bulletin si nécessaire.", "warning");
             return;
         }
 
@@ -397,19 +398,17 @@ const PayrollForm = () => {
 
             if (success) {
                 setIsSaved(true);
-                alert(message);
+                showNotification(message, "success");
             } else {
-                alert(message);
+                showNotification(message, "error");
             }
         } catch (error) {
             console.error("Erreur d'enregistrement :", error);
-            alert("Erreur lors de l'enregistrement");
+            showNotification("Erreur lors de l'enregistrement", "error");
         } finally {
             setIsSaving(false);
         }
     };
-
-
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -427,17 +426,18 @@ const PayrollForm = () => {
     const handleEmployeeChange = (e) => {
         setSelectedEmployeeId(e.target.value);
     };
+
     const formatCurrency = (value) => {
         const numericValue = parseFloat(value) || 0;
-        // Solution 1: simple replace
         return `${numericValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`;
     };
+
     const formatFirestoreDate = (timestamp) => {
         if (!timestamp) return 'N/A';
         if (timestamp.toDate) {
             return timestamp.toDate().toLocaleDateString();
         }
-        return timestamp; // fallback if it's already a string
+        return timestamp;
     };
 
     if (!currentUser) {
@@ -455,19 +455,24 @@ const PayrollForm = () => {
                 <div>Chargement...</div>
             </div>
         );
-
     }
 
     const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
 
     return (
-
         <div className="dashboard-layoute">
+            {notification.show && (
+                <Notification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification({ show: false, message: '', type: '' })}
+                />
+            )}
 
             <div className="floating-buttons">
                 <button
                     className="floating-show-button"
-                    onClick={togglePreview} // pas besoin de () ici
+                    onClick={togglePreview}
                 >
                     {showPreview ? (
                         <>
@@ -484,27 +489,28 @@ const PayrollForm = () => {
 
                 <button
                     className="floating-back-button"
-                    onClick={() => window.history.back()}
+                    onClick={() => navigate(-1)}
                 >
                     <FaArrowLeft className="button-icon" />
                     <span className="button-text">Quitter</span>
                 </button>
             </div>
+
             <Sidebar
                 sidebarOpen={sidebarOpen}
                 setSidebarOpen={setSidebarOpen}
                 activeTab="payrolls"
                 setActiveTab={() => { }}
             />
-            <div className="container">
 
+            <div className="container">
                 <div className='pre-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h1 className="header">Bulletin de Paie</h1>
                     <button
                         className="button primary-button"
-                        onClick={togglePreview}  // Utilise la nouvelle fonction
+                        onClick={togglePreview}
                     >
-                        <i className="fas fa-eye"></i> {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
+                        {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
                     </button>
                 </div>
 
@@ -546,6 +552,7 @@ const PayrollForm = () => {
                                     <p><strong>Matricule:</strong> {selectedEmployee.matricule}</p>
                                     <p><strong>Date d'embauche:</strong> {formatFirestoreDate(selectedEmployee.dateEmbauche)}</p>
                                     <p><strong>Salaire de base:</strong> {formatCurrency(selectedEmployee.salaireBase)}</p>
+                                    <p><strong>Nombre de parts:</strong> {selectedEmployee.nbreofParts}</p>
                                     <p><strong>Type de contrat:</strong> {selectedEmployee.typeContrat}</p>
                                 </div>
                             )}
@@ -554,9 +561,7 @@ const PayrollForm = () => {
                 </div>
 
                 <div className="section">
-                    <h2>
-                        Période de Paie
-                    </h2>
+                    <h2>Période de Paie</h2>
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="label">Du</label>
@@ -584,21 +589,8 @@ const PayrollForm = () => {
                 </div>
 
                 <div className="section">
-                    <h2>
-                        Rémunération
-                    </h2>
+                    <h2>Rémunération</h2>
                     <div className="form-grid">
-                      {/*  <div className="form-group">
-                            <label className="label">Taux horaire</label>
-                            <input
-                                type="number"
-                                name="remuneration.tauxHoraire"
-                                value={formData.remuneration.tauxHoraire}
-                                onChange={handleChange}
-                                step="0.01"
-                                className="input"
-                            />
-                        </div> */}
                         <div className="form-group">
                             <label className="label">Salaire de base</label>
                             <input
@@ -774,11 +766,9 @@ const PayrollForm = () => {
                     </div>
                 </div>
 
-
-
                 {selectedEmployeeId && (
                     <div className="section">
-                        <h2 >Détails des Cotisations</h2>
+                        <h2>Détails des Cotisations</h2>
                         <div className="table-container">
                             <table className="totals-table">
                                 <tbody>
@@ -809,9 +799,7 @@ const PayrollForm = () => {
                                 </tbody>
                             </table>
                         </div>
-                        <h2 style={{ marginTop: '3rem' }}>
-                            Salaires
-                        </h2>
+                        <h2 style={{ marginTop: '3rem' }}>Salaires</h2>
                         <div className="table-container">
                             <table className="totals-table">
                                 <tbody>
@@ -836,14 +824,13 @@ const PayrollForm = () => {
                         </div>
                     </div>
                 )}
-                <div className="preview-container">
 
+                <div className="preview-container">
                     <div className="button-group">
                         <button
                             className="primary-button"
-                            onClick={togglePreview}  // Utilise la nouvelle fonction
+                            onClick={togglePreview}
                         >
-                            <i className={`fas fa-${showPreview ? 'eye-slash' : 'eye'}`}></i>
                             {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
                         </button>
 
@@ -854,11 +841,11 @@ const PayrollForm = () => {
                         >
                             {isSaving ? (
                                 <>
-                                    <i className="fas fa-spinner fa-spin"></i> Enregistrement...
+                                    <FaSpinner className="spinner" /> Enregistrement...
                                 </>
                             ) : (
                                 <>
-                                    <i className="fas fa-save"></i> {isSaved ? "Mettre à jour" : "Enregistrer"}
+                                    <FaSave /> {isSaved ? "Mettre à jour" : "Enregistrer"}
                                 </>
                             )}
                         </button>
@@ -886,19 +873,19 @@ const PayrollForm = () => {
                                     <button className="info-button" disabled={pdfLoading}>
                                         {pdfLoading ? (
                                             <>
-                                                <i className="fas fa-spinner fa-spin"></i> Génération...
+                                                <FaSpinner className="spinner" /> Génération...
                                             </>
                                         ) : (
                                             <>
-                                                <i className="fas fa-file-download"></i> Télécharger
+                                                <FaDownload /> Télécharger
                                             </>
                                         )}
                                     </button>
                                 )}
                             </PDFDownloadLink>
                         )}
-
                     </div>
+
                     {showPreview && (
                         <PDFPreviewDynamic
                             width="100%"

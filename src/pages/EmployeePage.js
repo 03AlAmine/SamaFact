@@ -346,8 +346,7 @@ const EmployeesPage = ({
                 className="form-input"
               />
             </div>
-          </div>
-          <div className="form-row">
+
             <div className="form-group">
               <label htmlFor="edit-adresse" className="form-label">Adresse <span className="required">*</span></label>
               <input
@@ -359,7 +358,9 @@ const EmployeesPage = ({
                 className="form-input"
               />
             </div>
+          </div>
 
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="edit-categorie" className="form-label">Catégorie <span className="required">*</span></label>
               <input
@@ -371,8 +372,6 @@ const EmployeesPage = ({
                 className="form-input"
               />
             </div>
-          </div>
-          <div className="form-row">
             <div className="form-group">
               <label htmlFor="edit-poste" className="form-label">Poste <span className="required">*</span></label>
               <input
@@ -411,6 +410,22 @@ const EmployeesPage = ({
             </div>
 
             <div className="form-group">
+              <label htmlFor="edit-typeContrat" className="form-label">Type de contrat</label>
+              <select
+                id="edit-typeContrat"
+                name="typeContrat"
+                value={editingEmployee.typeContrat}
+                onChange={handleEditChange}
+                className="form-input"
+              >
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Stage">Stage</option>
+                <option value="Freelance">Freelance</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="edit-dateEmbauche" className="form-label">Date d'embauche <span className="required">*</span></label>
               <input
                 id="edit-dateEmbauche"
@@ -439,20 +454,19 @@ const EmployeesPage = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="edit-typeContrat" className="form-label">Type de contrat</label>
-              <select
-                id="edit-typeContrat"
-                name="typeContrat"
-                value={editingEmployee.typeContrat}
+              <label htmlFor="edit-nbreofParts" className="form-label">Nombre de parts </label>
+              <input
+                id="edit-nbreofParts"
+                name="nbreofParts"
+                type="number"
+                value={editingEmployee.nbreofParts}
                 onChange={handleEditChange}
+                required
                 className="form-input"
-              >
-                <option value="CDI">CDI</option>
-                <option value="CDD">CDD</option>
-                <option value="Stage">Stage</option>
-                <option value="Freelance">Freelance</option>
-              </select>
+              />
             </div>
+
+
           </div>
           <div className="form-section-title">
             <FaMoneyBillWave style={{ marginRight: "10px" }} />
@@ -564,8 +578,7 @@ const EmployeesPage = ({
                   className="form-input"
                 />
               </div>
-            </div>
-            <div className="form-row">
+
               <div className="form-group">
                 <label htmlFor="adresse" className="form-label">Adresse <span className="required">*</span></label>
                 <input
@@ -577,6 +590,9 @@ const EmployeesPage = ({
                   className="form-input"
                 />
               </div>
+            </div>
+
+            <div className="form-row">
 
               <div className="form-group">
                 <label htmlFor="categorie" className="form-label">Catégorie <span className="required">*</span></label>
@@ -589,8 +605,7 @@ const EmployeesPage = ({
                   className="form-input"
                 />
               </div>
-            </div>
-            <div className="form-row">
+
               <div className="form-group">
                 <label htmlFor="poste" className="form-label">Poste <span className="required">*</span></label>
                 <input
@@ -629,6 +644,22 @@ const EmployeesPage = ({
               </div>
 
               <div className="form-group">
+                <label htmlFor="typeContrat" className="form-label">Type de contrat</label>
+                <select
+                  id="typeContrat"
+                  name="typeContrat"
+                  value={employee.typeContrat}
+                  onChange={handleChange}
+                  className="form-input"
+                >
+                  <option value="CDI">CDI</option>
+                  <option value="CDD">CDD</option>
+                  <option value="Stage">Stage</option>
+                  <option value="Freelance">Freelance</option>
+                </select>
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="dateEmbauche" className="form-label">Date d'embauche <span className="required">*</span></label>
                 <input
                   id="dateEmbauche"
@@ -657,19 +688,16 @@ const EmployeesPage = ({
               </div>
 
               <div className="form-group">
-                <label htmlFor="typeContrat" className="form-label">Type de contrat</label>
-                <select
-                  id="typeContrat"
-                  name="typeContrat"
-                  value={employee.typeContrat}
+                <label htmlFor="nbreofParts" className="form-label">Nombre de parts </label>
+                <input
+                  id="nbreofParts"
+                  name="nbreofParts"
+                  type="number"
+                  value={employee.nbreofParts || 1}
                   onChange={handleChange}
+                  required
                   className="form-input"
-                >
-                  <option value="CDI">CDI</option>
-                  <option value="CDD">CDD</option>
-                  <option value="Stage">Stage</option>
-                  <option value="Freelance">Freelance</option>
-                </select>
+                />
               </div>
             </div>
 
@@ -746,7 +774,7 @@ const EmployeesPage = ({
       )}
 
       <div
-                className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}
+        className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}
         style={{
           backgroundImage: `url(/bg-client.jpg)`,
         }}
