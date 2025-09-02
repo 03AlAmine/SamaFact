@@ -194,12 +194,13 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                             <Text style={[styles.tableCell, styles.headerCell, { flex: 1 }]}>I.R</Text>
                             <Text style={[styles.tableCell, styles.headerCell, { flex: 1 }]}>Retenue salaire</Text>
                             <Text style={[styles.tableCell, styles.headerCell, { flex: 1 }]}>Avances</Text>
+                            <Text style={[styles.tableCell, styles.headerCell, { flex: 1 }]}>Qpart IPM</Text>
                             <Text style={[styles.tableCell, styles.headerCell, { flex: 1 }]}>Arrondi</Text>
                         </View>
 
                         {/* Valeurs */}
                         <View style={styles.tableRow}>
-                            {["432 000", "1 296 000", formData.retenues.trimf || "0", formData.retenues.ir || "0", "", "", ""].map((val, i) => (
+                            {["432 000", "1 296 000", formData.retenues.trimf || "0", formData.retenues.ir || "0", "", "", "", ""].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
@@ -207,22 +208,22 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
 
                         {/* Pourcentages */}
                         <View style={styles.tableRow}>
-                            {["5,6", "2,4", "", "", "", "", ""].map((val, i) => (
+                            {["5,6", "2,4", "", "", "", "", "", ""].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
 
                         {/* Montants */}
                         <View style={styles.tableRow}>
-                            {["4 220", "-", "-", "-", formData.retenues.salaire || "0", formData.retenues.avances || "2", "-"].map((val, i) => (
+                            {["4 220", "-", "-", "-", formData.retenues.salaire || "0", formData.retenues.avances || "2", formData.retenues.qpartipm || "2", "-"].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
 
                         {/* Total - fusionner les colonnes */}
-                        <View style={[styles.tableRow, styles.totalRow]}>
-                            <Text style={[styles.tableCell, { flex: 6, textAlign: 'left' }]}>TOTAL RETENUES</Text>
-                            <Text style={[styles.tableCell, { flex: 1 }]}>{formatCurrency(calculations.totalRetenues)}</Text>
+                        <View style={styles.sectionTotalRow}>
+                            <Text style={styles.sectionTotalLabel}>Total Retenues</Text>
+                            <Text style={styles.sectionTotalValue}>{formatCurrency(calculations.totalRetenuesPris)}</Text>
                         </View>
                     </View>
                 </View>
@@ -273,22 +274,15 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     </View>
 
                     {/* Total primes (pleine largeur) */}
-                    <View style={styles.primesTotalRow}>
-                        <Text style={styles.primesTotalLabel}>Total Primes</Text>
-                        <Text style={styles.primesTotalValue}>
-                            {formatCurrency(
-                                parseFloat(formData.primes.transport || 0) +
-                                parseFloat(formData.primes.responsabilite || 0) +
-                                parseFloat(formData.primes.deplacement || 0) +
-                                parseFloat(formData.primes.autresPrimes || 0)
-                            )}
-                        </Text>
+                    <View style={styles.sectionTotalRow}>
+                        <Text style={styles.sectionTotalLabel}>Total Primes</Text>
+                        <Text style={styles.sectionTotalValue}>{formatCurrency(calculations.totalPrimes)}</Text>
                     </View>
                 </View>
 
                 {/* Retenues & Cotisations */}
                 <View style={styles.socialContributionsSection}>
-                    <Text style={styles.sectionTitle}>RETENUES & COTISATIONS SOCIALES</Text>
+                    <Text style={styles.sectionTitle}> COTISATIONS SALARIALES | PATRONALES  </Text>
 
                     {/* Header simplifié */}
                     <View style={[styles.tableRow, styles.headerRow]}>
@@ -337,13 +331,16 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     {/* Section employé/employeur optimisée */}
                     <View style={[styles.tableRow, styles.splitRow]}>
                         <View style={styles.splitColumn}>
-                            <Text style={styles.splitHeader}>EMPLOYÉ</Text>
+                            <Text style={styles.splitHeader}>Cotisations salariales</Text>
                             <Text style={styles.splitValue}>{formatCurrency(calculations.cotisatisationsEmp)}</Text>
                         </View>
+                        <View style={styles.verticalDivider}></View>
+
                         <View style={styles.splitColumn}>
-                            <Text style={styles.splitHeader}>EMPLOYEUR</Text>
+                            <Text style={styles.splitHeader}>Cotisations patronales</Text>
                             <Text style={styles.splitValue}>{formatCurrency(calculations.cotisatisationsEmployeur)}</Text>
                         </View>
+
                     </View>
 
                     {/* Total - Version mise en valeur */}
@@ -359,26 +356,23 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                         <Text style={styles.totalLabel}>Salaire Brut:</Text>
                         <Text style={styles.totalValue}>{formatCurrency(calculations.brutFiscal)}</Text>
                     </View>
-                    <View style={styles.doubleTotalRow}>
-                        {/* Cotisations salariales */}
-                        <View style={styles.halfTotalContainer}>
-                            <Text style={styles.totalLabel}>Cotisations salariales:</Text>
-                            <Text style={styles.totalValue}> {formatCurrency(calculations.cotisationsSalariales)}</Text>
-                        </View>
 
-                        {/* Séparateur vertical */}
-                        <View style={styles.verticalDivider}></View>
-
-                        {/* Cotisations patronales */}
-                        <View style={styles.halfTotalContainer}>
-                            <Text style={styles.totalLabel}>Cotisations patronales:</Text>
-                            <Text style={styles.totalValue}> {formatCurrency(calculations.cotisationsPatronales)}</Text>
-                        </View>
+                    <View style={styles.totalRowtotal}>
+                        <Text style={styles.totalLabel}>Retenues:</Text>
+                        <Text style={styles.totalValue}> {formatCurrency(calculations.totalRetenuesPris)}</Text>
                     </View>
+
                     <View style={styles.totalRowtotal}>
                         <Text style={styles.totalLabel}>Rémunération nette:</Text>
                         <Text style={styles.totalValue}> {formatCurrency(calculations.salaireNet)}</Text>
                     </View>
+
+                    <View style={styles.totalRowtotal}>
+                        <Text style={styles.totalLabel}>Primes et Indemnités:</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(calculations.totalPrimes)}</Text>
+                    </View>
+
+
                     <View style={[styles.totalRowtotal, { marginTop: 10, borderBottomWidth: 0 }]}>
                         <Text style={[styles.totalLabel, styles.netPay]}>NET À PAYER:</Text>
                         <Text style={[styles.totalValue, styles.netPay]}>{formatCurrency(calculations.salaireNetAPayer)}</Text>

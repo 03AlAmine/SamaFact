@@ -13,7 +13,8 @@ import {
     FaExclamationTriangle,
     FaKey,
     FaUserTie,
-    FaUserCog
+    FaUserCog,
+    FaArrowLeft
 } from "react-icons/fa";
 import empty_team from '../assets/empty_team.png';
 import { ROLES } from '../auth/AuthContext';
@@ -53,10 +54,11 @@ const TeamsPage = ({ checkPermission }) => {
     const [subUserError, setSubUserError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [editingUser, setEditingUser] = useState(null);
+    const [editingUser, setEditingUser] = useState(null); // Modifié pour gérer l'édition directe
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [userToReset, setUserToReset] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isCreatingUser, setIsCreatingUser] = useState(true); // Nouvel état pour toggle création/édition
 
     // Précharger l'image de fond
     useEffect(() => {
@@ -67,7 +69,7 @@ const TeamsPage = ({ checkPermission }) => {
         };
         img.onerror = () => {
             console.error("Erreur de chargement de l'image de fond");
-            setBackgroundLoaded(true); // Continuer même si l'image échoue
+            setBackgroundLoaded(true);
         };
     }, []);
 
@@ -126,14 +128,11 @@ const TeamsPage = ({ checkPermission }) => {
 
     // Simuler un temps de chargement
     useEffect(() => {
-        // Attendre que l'image de fond et les données soient chargées
         const allDataLoaded = backgroundLoaded && !loadingUsers;
-
         if (allDataLoaded) {
             const timer = setTimeout(() => {
                 setLoading(false);
-            }, 500); // Réduit à 0.5s pour plus de fluidité
-
+            }, 500);
             return () => clearTimeout(timer);
         }
     }, [backgroundLoaded, loadingUsers]);
@@ -143,7 +142,7 @@ const TeamsPage = ({ checkPermission }) => {
         return Math.random().toString(36).slice(-8) + 'A1!';
     }
 
-    // Gestion des équipes
+    // Gestion des équipes (inchangé)
     const handleEquipeChange = (e) => {
         const { name, value } = e.target;
         setEquipe(prev => ({ ...prev, [name]: value }));
@@ -227,7 +226,7 @@ const TeamsPage = ({ checkPermission }) => {
         }
     };
 
-    // Gestion des utilisateurs
+    // Gestion des utilisateurs - MODIFIÉ
     const handleCreateSubUser = async () => {
         if (!currentUser) {
             setSubUserError({
@@ -260,21 +259,17 @@ const TeamsPage = ({ checkPermission }) => {
                     message: `Utilisateur créé`,
                 });
 
+                // Réinitialiser le formulaire
                 setSubUserForm({ email: '', name: '', username: '', role: ROLES.CHARGE_COMPTE });
-                setSubUserPassword(userService.generateRandomPassword());
+                setSubUserPassword(generateRandomPassword());
+                setIsCreatingUser(true);
 
                 const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
                 setUsers(updatedUsers);
             }
         } catch (error) {
-            console.error('Erreur complète:', {
-                message: error.message,
-                code: error.code,
-                stack: error.stack
-            });
-
+            console.error('Erreur complète:', error);
             let errorMessage = "Échec de la création";
-
             if (error.code === 'auth/email-already-in-use') {
                 errorMessage = "Email déjà utilisé";
             } else if (error.message.includes('already-in-use')) {
@@ -292,6 +287,7 @@ const TeamsPage = ({ checkPermission }) => {
             setIsSubmitting(false);
         }
     };
+
     const toggleUserStatus = async (userId, currentStatus) => {
         try {
             await teamService.toggleUserStatus(currentUser.companyId, userId, currentStatus);
@@ -312,18 +308,12 @@ const TeamsPage = ({ checkPermission }) => {
     // Helper functions
     const getRoleIcon = (role) => {
         switch (role) {
-            case ROLES.ADMIN:
-                return <FaUserTie className="role-icon admin" />;
-            case ROLES.RH_DAF:
-                return <FaUserTie className="role-icon rhdaf" />;
-            case ROLES.COMPTABLE:
-                return <FaUserCog className="role-icon comptable" />;
-            case ROLES.CHARGE_COMPTE:
-                return <FaUserEdit className="role-icon charge-compte" />;
-            case ROLES.LECTEUR:
-                return <FaUser className="role-icon lecteur" />;
-            default:
-                return <FaUser className="role-icon default" />;
+            case ROLES.ADMIN: return <FaUserTie className="role-icon admin" />;
+            case ROLES.RH_DAF: return <FaUserTie className="role-icon rhdaf" />;
+            case ROLES.COMPTABLE: return <FaUserCog className="role-icon comptable" />;
+            case ROLES.CHARGE_COMPTE: return <FaUserEdit className="role-icon charge-compte" />;
+            case ROLES.LECTEUR: return <FaUser className="role-icon lecteur" />;
+            default: return <FaUser className="role-icon default" />;
         }
     };
 
@@ -333,6 +323,7 @@ const TeamsPage = ({ checkPermission }) => {
         return date.toLocaleDateString('fr-FR');
     };
 
+    // MODIFIÉ: Gestion de l'édition d'utilisateur
     const handleEditUser = (user) => {
         setEditingUser(user);
         setSubUserForm({
@@ -341,22 +332,26 @@ const TeamsPage = ({ checkPermission }) => {
             username: user.username || '',
             role: user.role
         });
+        setIsCreatingUser(false); // Passer en mode édition
     };
 
     const handleUpdateUser = async () => {
         try {
             setIsSubmitting(true);
-            await teamService.updateUser(currentUser.companyId, editingUser.id, {
+            await teamService.updateUser(editingUser.id, {
                 email: subUserForm.email,
                 name: subUserForm.name,
                 username: subUserForm.username,
                 role: subUserForm.role,
+                companyId: currentUser.companyId,
                 updatedAt: new Date()
             });
 
             const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
             setUsers(updatedUsers);
             setEditingUser(null);
+            setIsCreatingUser(true); // Revenir en mode création
+            setSubUserForm({ email: '', name: '', username: '', role: ROLES.CHARGE_COMPTE }); // Réinitialiser le formulaire
             setSubUserSuccess({
                 title: "Succès",
                 message: "Utilisateur mis à jour avec succès"
@@ -371,16 +366,18 @@ const TeamsPage = ({ checkPermission }) => {
         }
     };
 
+    const cancelEditUser = () => {
+        setEditingUser(null);
+        setIsCreatingUser(true);
+        setSubUserForm({ email: '', name: '', username: '', role: ROLES.CHARGE_COMPTE });
+    };
+
     const handleDeleteUser = async (userId) => {
         if (window.confirm("Êtes-vous sûr de vouloir **supprimer définitivement** cet utilisateur ?")) {
             try {
-                // Supprime l'utilisateur dans Firestore
                 await teamService.deleteUser(currentUser.companyId, userId);
-
-                // Recharge la liste
                 const updatedUsers = await userService.getCompanyUsers(currentUser.companyId);
                 setUsers(updatedUsers);
-
                 setSubUserSuccess({
                     title: "Succès",
                     message: "Utilisateur supprimé avec succès"
@@ -417,53 +414,16 @@ const TeamsPage = ({ checkPermission }) => {
 
     if (loading) {
         return (
-            <div
-                style={{
-                    padding: '40px',
-                    textAlign: 'center',
-                    color: '#2c3e50',
-                    fontSize: '18px',
-                    fontWeight: '500',
-                    fontFamily: 'Inter, sans-serif',
-                    backgroundColor: '#ecf0f1',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    margin: '40px auto',
-                    marginTop: '5%',
-                    maxWidth: '400px'
-                }}
-            >
-                <div
-                    style={{
-                        fontSize: '30px',
-                        marginBottom: '10px',
-                        animation: 'spin 1.5s linear infinite',
-                        display: 'inline-block'
-                    }}
-                >
-                    ⏳
-                </div>
+            <div style={{ padding: '40px', textAlign: 'center', color: '#2c3e50', fontSize: '18px', fontWeight: '500', fontFamily: 'Inter, sans-serif', backgroundColor: '#ecf0f1', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', margin: '40px auto', marginTop: '5%', maxWidth: '400px' }}>
+                <div style={{ fontSize: '30px', marginBottom: '10px', animation: 'spin 1.5s linear infinite', display: 'inline-block' }}>⏳</div>
                 <div>Chargement...</div>
-
-                <style>
-                    {`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}
-                </style>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
 
     return (
-        <div
-            className={`teams-container ${backgroundLoaded ? 'background-loaded' : ''}`}
-            style={{
-                backgroundImage: `linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3)), url(/bg-team.jpg)`
-            }}
-        >
+        <div className={`teams-container ${backgroundLoaded ? 'background-loaded' : ''}`} style={{ backgroundImage: `linear-gradient(rgba(51, 49, 171, 0.3), rgba(213, 201, 30, 0.3)), url(/bg-team.jpg)` }}>
             {/* Notifications */}
             <div className="notifications-container">
                 {subUserSuccess && (
@@ -474,9 +434,7 @@ const TeamsPage = ({ checkPermission }) => {
                             <p>{subUserSuccess.message}</p>
                             {subUserSuccess.userId && <small>ID: {subUserSuccess.userId}</small>}
                         </div>
-                        <button onClick={() => setSubUserSuccess(null)}>
-                            <FaTimes />
-                        </button>
+                        <button onClick={() => setSubUserSuccess(null)}><FaTimes /></button>
                     </div>
                 )}
 
@@ -487,9 +445,7 @@ const TeamsPage = ({ checkPermission }) => {
                             <h4>{subUserError.title}</h4>
                             <p>{subUserError.message}</p>
                         </div>
-                        <button onClick={() => setSubUserError(null)}>
-                            <FaTimes />
-                        </button>
+                        <button onClick={() => setSubUserError(null)}><FaTimes /></button>
                     </div>
                 )}
             </div>
@@ -502,9 +458,19 @@ const TeamsPage = ({ checkPermission }) => {
                         Gestion des Utilisateurs
                     </h2>
 
-                    {/* Formulaire de création d'utilisateur */}
+                    {/* Formulaire de création/édition d'utilisateur - MODIFIÉ */}
                     <div className="form-card">
-                        <h3 className="form-subtitle">Ajouter un nouvel utilisateur</h3>
+                        <div className="form-header">
+                            <h3 className="form-subtitle">
+                                {isCreatingUser ? 'Ajouter un nouvel utilisateur' : 'Modifier l\'utilisateur'}
+                            </h3>
+                            {!isCreatingUser && (
+                                <button onClick={cancelEditUser} className="btn-secondary">
+                                    <FaArrowLeft /> Annuler l'édition
+                                </button>
+                            )}
+                        </div>
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Email <span className="required">*</span></label>
@@ -515,6 +481,7 @@ const TeamsPage = ({ checkPermission }) => {
                                     placeholder="Email de l'utilisateur"
                                     className="form-input"
                                     required
+                                    disabled={!isCreatingUser} // Désactiver l'email en mode édition
                                 />
                             </div>
                             <div className="form-group">
@@ -530,7 +497,7 @@ const TeamsPage = ({ checkPermission }) => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Utilisateur</label>
+                                <label>Nom d'utilisateur</label>
                                 <input
                                     value={subUserForm.username}
                                     onChange={(e) => setSubUserForm({ ...subUserForm, username: e.target.value })}
@@ -551,43 +518,56 @@ const TeamsPage = ({ checkPermission }) => {
                                     <option value={ROLES.COMPTABLE}>Comptable</option>
                                     <option value={ROLES.CHARGE_COMPTE}>Chargé de compte</option>
                                     <option value={ROLES.LECTEUR}>Lecteur</option>
-
                                 </select>
                             </div>
 
-                            <div className="form-group">
-                                <label>Mot de passe temporaire</label>
-                                <div className="password-input">
-                                    <input
-                                        type="text"
-                                        value={subUserPassword}
-                                        readOnly
-                                        className="form-input"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setSubUserPassword(generateRandomPassword())}
-                                        className="icon-btn"
-                                        title="Générer un nouveau mot de passe"
-                                    >
-                                        <FaPlus />
-                                    </button>
+                            {/* Afficher le champ mot de passe seulement en mode création */}
+                            {isCreatingUser && (
+                                <div className="form-group">
+                                    <label>Mot de passe temporaire</label>
+                                    <div className="password-input">
+                                        <input
+                                            type="text"
+                                            value={subUserPassword}
+                                            readOnly
+                                            className="form-input"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setSubUserPassword(generateRandomPassword())}
+                                            className="icon-btn"
+                                            title="Générer un nouveau mot de passe"
+                                        >
+                                            <FaPlus />
+                                        </button>
+                                    </div>
+                                    <small className="hint">Ce mot de passe sera envoyé à l'utilisateur</small>
                                 </div>
-                                <small className="hint">Ce mot de passe sera envoyé à l'utilisateur</small>
-                            </div>
+                            )}
                         </div>
 
-                        <button
-                            onClick={handleCreateSubUser}
-                            className="btn-primary"
-                            disabled={!subUserForm.email || !subUserForm.role || isSubmitting}
-                        >
-                            {isSubmitting ? 'Création en cours...' : <><FaPlus /> Créer l'utilisateur</>}
-                        </button>
+                        <div className="form-actions">
+                            {isCreatingUser ? (
+                                <button
+                                    onClick={handleCreateSubUser}
+                                    className="btn-primary"
+                                    disabled={!subUserForm.email || !subUserForm.role || isSubmitting}
+                                >
+                                    {isSubmitting ? 'Création en cours...' : <><FaPlus /> Créer l'utilisateur</>}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleUpdateUser}
+                                    className="btn-primary"
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? 'Mise à jour...' : <><FaEdit /> Mettre à jour</>}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Liste des utilisateurs */}
-                    {/* Liste des utilisateurs */}
+                    {/* Liste des utilisateurs - RESTE INCHANGÉ */}
                     <div className="users-section">
                         <h3 className="section-title">
                             <FaUsers style={{ marginRight: "10px" }} />
@@ -672,7 +652,8 @@ const TeamsPage = ({ checkPermission }) => {
                                 </table>
                             </div>
                         )}
-                        {/* Modal de réinitialisation de mot de passe */}
+
+                        {/* Modal de réinitialisation de mot de passe - RESTE INCHANGÉ */}
                         {showResetPassword && (
                             <div className="modal-overlay">
                                 <div className="modal">
@@ -696,74 +677,10 @@ const TeamsPage = ({ checkPermission }) => {
                                 </div>
                             </div>
                         )}
-
-                        {/* Modal d'édition d'utilisateur */}
-                        {editingUser && (
-                            <div className="modal-overlay">
-                                <div className="modal">
-                                    <div className="modal-header">
-                                        <h3>Modifier l'utilisateur</h3>
-                                        <button onClick={() => setEditingUser(null)} className="close-btn">
-                                            <FaTimes />
-                                        </button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <div className="form-group">
-                                            <label>Email <span className="required">*</span></label>
-                                            <input
-                                                type="email"
-                                                value={subUserForm.email}
-                                                onChange={(e) => setSubUserForm({ ...subUserForm, email: e.target.value })}
-                                                className="form-input"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Nom complet</label>
-                                            <input
-                                                value={subUserForm.name}
-                                                onChange={(e) => setSubUserForm({ ...subUserForm, name: e.target.value })}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Nom d'utilisateur</label>
-                                            <input
-                                                value={subUserForm.username}
-                                                onChange={(e) => setSubUserForm({ ...subUserForm, username: e.target.value })}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Rôle <span className="required">*</span></label>
-                                            <select
-                                                value={subUserForm.role}
-                                                onChange={(e) => setSubUserForm({ ...subUserForm, role: e.target.value })}
-                                                className="form-input"
-                                                required
-                                            >
-                                                <option value={ROLES.ADMIN}>Administrateur</option>
-                                                <option value={ROLES.RH_DAF}>RH_DAF</option>
-                                                <option value={ROLES.COMPTABLE}>Comptable</option>
-                                                <option value={ROLES.CHARGE_COMPTE}>Chargé de compte</option>
-                                                <option value={ROLES.LECTEUR}>Lecteur</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button onClick={() => setEditingUser(null)} className="btn-secondary">
-                                            Annuler
-                                        </button>
-                                        <button onClick={handleUpdateUser} className="btn-primary" disabled={isSubmitting}>
-                                            {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
+
             {/* Formulaire d'édition/création d'équipe */}
             {isEditingEquipe ? (
                 <form onSubmit={handleEquipeUpdate} className="form-card">

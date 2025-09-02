@@ -242,19 +242,19 @@ export const styles = StyleSheet.create({
         color: '#bbb',
         fontStyle: 'italic'
     },
-    primesTotalRow: {
+    sectionTotalRow: {
         flexDirection: 'row',
         backgroundColor: '#d4edda',
         paddingVertical: 6,  // Réduit de 8
         paddingHorizontal: 6  // Réduit de 8
     },
-    primesTotalLabel: {
+    sectionTotalLabel: {
         flex: 1,
         fontWeight: 'bold',
         fontSize: 8,  // Réduit de 11
         color: '#155724'
     },
-    primesTotalValue: {
+    sectionTotalValue: {
         width: '30%',
         fontWeight: 'bold',
         fontSize: 8,  // Réduit de 11

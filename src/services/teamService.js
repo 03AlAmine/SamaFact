@@ -126,25 +126,40 @@ export const teamService = {
     return userRef.id;
   },
 
-  updateUser: async (companyId, userId, updates) => {
-    const companyRef = doc(db, 'companies', companyId);
-    const userRef = doc(companyRef, 'users', userId);
+  // Dans teamService.js
+  updateUser: async (userId, updates) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        ...updates,
+        updatedAt: new Date()
+      });
 
-    await updateDoc(userRef, {
-      ...updates,
-      updatedAt: new Date()
-    });
+      // Mettre à jour aussi le profil si nécessaire
+      if (updates.companyId) {
+        const profileRef = doc(db, `companies/${updates.companyId}/profiles`, userId);
+        await updateDoc(profileRef, {
+          ...updates,
+          updatedAt: new Date()
+        });
+      }
+
+      return { success: true, message: "Utilisateur modifié avec succès !" };
+    } catch (error) {
+      console.error("Erreur:", error);
+      throw error;
+    }
   },
 
-  toggleUserStatus: async (companyId, userId, currentStatus) => {
-    const companyRef = doc(db, 'companies', companyId);
-    const userRef = doc(companyRef, 'users', userId);
 
+  toggleUserStatus: async (userId, currentStatus) => {
+    const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       disabled: !currentStatus,
       updatedAt: new Date()
     });
   },
+
 
   checkEmailExists: async (companyId, email) => {
     const companyRef = doc(db, 'companies', companyId);

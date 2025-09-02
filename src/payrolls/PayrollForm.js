@@ -179,6 +179,7 @@ const PayrollForm = () => {
         const salaireNetAPayer = remunerationNette + totalPrimes;
         const tooqpartipm = qpartipm * 2
         const totalfiscales = trimf + cfce + ir;
+        
 
         return {
             brutSocial,
@@ -189,6 +190,7 @@ const PayrollForm = () => {
             cotisationsPatronales: totalCotisationsPatronales,
             cotisationsTotales: totalCotisantions,
             salaireNet: remunerationNette,
+            totalPrimes,
             salaireNetAPayer,
             totalRetenuesPris,
             totalRetenues,
