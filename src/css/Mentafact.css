@@ -204,7 +204,7 @@
   padding: 0.5rem 0.8rem 0.5rem 0.5rem;
   border-radius: var(--border-radius);
   transition: var(--transition);
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
 .user-profile-trigger:hover {
@@ -608,7 +608,7 @@
 }
 
 .stat-icon.clients {
-  background: var(--primary-gradient);
+  background: var(--secondary-dark);
 }
 .stat-icon.employees {
   background: var(--warning-gradient);
@@ -621,6 +621,10 @@
   background: var(--danger-color);
 }
 
+.stat-icon.teams{
+    background: var(--secondary);
+
+}
 .stat-icon.masse_salariale {
   background: var(--success-light);
 }
@@ -1466,8 +1470,11 @@
 }
 
 .chart-card:hover, .chart-card-stat:hover {
+  transform: var(--hover-effect);
   box-shadow: var(--box-shadow-soft);
+  transform: translateY(-5px);
 }
+
 
 .chart-card h3, .chart-card-stat h3 {
   font-size: 1.1rem;

@@ -126,16 +126,16 @@ export const InvoiceChart = ({ invoices }) => {
     }
   });
 
-  // Palette dégradée
-  const backgroundColors = Array(12).fill(0).map((_, i) => {
-    const ratio = i / 12;
-    return `rgba(99, 102, 241, ${0.4 + ratio * 0.4})`;
-  });
+  // Palette de couleurs variée pour chaque barre
+  const backgroundColors = [
+    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#f59e0b',
+    '#eab308', '#84cc16', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'
+  ];
 
-  const borderColors = backgroundColors.map(color => color.replace('0.4', '1').replace('0.8', '1'));
+  const borderColors = backgroundColors.map(color => color);
 
   const data = {
-    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
     datasets: [
       {
         label: "Chiffre d'affaires (FCFA)",
@@ -147,30 +147,53 @@ export const InvoiceChart = ({ invoices }) => {
         hoverBackgroundColor: borderColors,
         hoverBorderWidth: 2
       },
+      {
+        // Ligne de courbe pour relier les sommets
+        type: 'line',
+        label: 'Tendance',
+        data: monthlyData,
+        backgroundColor: 'transparent',
+        borderColor: 'rgba(45, 91, 156, 0.5)',
+        borderWidth: 1.5,
+        pointRadius: 3, // Cercles visibles sur chaque point
+        pointHoverRadius: 5,
+        pointBackgroundColor: 'rgba(145, 66, 48, 0.8)',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 1.5,
+        tension: 0.4, // Courbure de la ligne
+        fill: false
+      }
     ],
   };
 
   const options = {
-    ...commonOptions,
+    responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      ...commonOptions.plugins,
+      legend: {
+        display: false
+      },
       tooltip: {
-        ...commonOptions.plugins.tooltip,
         callbacks: {
           label: function (context) {
-            return `${context.dataset.label}: ${context.raw.toLocaleString()} FCFA`;
+            return `${context.dataset.label || 'Tendance'}: ${context.raw.toLocaleString()} FCFA`;
           }
         }
       }
     },
     scales: {
-      ...commonOptions.scales,
       y: {
-        ...commonOptions.scales.y,
         beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.03)'
+        },
         ticks: {
-          ...commonOptions.scales.y.ticks,
           callback: value => value.toLocaleString() + ' FCFA'
+        }
+      },
+      x: {
+        grid: {
+          display: false
         }
       }
     }
