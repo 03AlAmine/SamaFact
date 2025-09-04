@@ -271,8 +271,7 @@ const PayrollSection = ({
                         <div
                             key={p.id}
                             className={`document-card ${getStatus(p) === "Payé" ? "paid-card" :
-                                getStatus(p) === "Validé" ? "validated-card" :
-                                    getStatus(p) === "Annulé" ? "cancelled-card" : ""
+                                getStatus(p) === "Validé" ? "validated-card" : ""
                                 }`}
                             onMouseEnter={() => setHoveredItem(p.id)}
                             onMouseLeave={() => setHoveredItem(null)}
@@ -281,8 +280,7 @@ const PayrollSection = ({
                             <div className="card-header" style={{ borderTop: '4px solid #3b82f6' }}>
                                 <div className="header-status">
                                     <span className={`status-badge ${getStatus(p) === "Payé" ? "paid" :
-                                        getStatus(p) === "Validé" ? "validated" :
-                                            getStatus(p) === "Annulé" ? "cancelled" : "draft"
+                                        getStatus(p) === "Validé" ? "validated" : "draft"
                                         }`}>
                                         {getStatus(p)}
                                     </span>
@@ -454,8 +452,7 @@ const PayrollSection = ({
                                     onClick={() => onPreview(p)}
                                     className={
                                         getStatus(p) === 'Payé' ? 'paid-row' :
-                                            getStatus(p) === 'Validé' ? 'validated-row' :
-                                                getStatus(p) === 'Annulé' ? 'cancelled-row' : 'draft-row'
+                                            getStatus(p) === 'Validé' ? 'validated-row' : 'draft-row'
                                     }
                                 >
                                     <td>
@@ -481,8 +478,7 @@ const PayrollSection = ({
 
                                     <td>
                                         <span className={`status-badge ${getStatus(p) === 'Payé' ? 'paid' :
-                                            getStatus(p) === 'Validé' ? 'validated' :
-                                                getStatus(p) === 'Annulé' ? 'cancelled' : 'draft'
+                                            getStatus(p) === 'Validé' ? 'validated' : 'draft'
                                             }`}>
                                             {getStatus(p)}
                                         </span>
@@ -583,8 +579,7 @@ const PayrollSection = ({
                                             Statut
                                         </span>
                                         <span className={`detail-value status ${selectedPayroll.statut === "paid" ? "paid" :
-                                            selectedPayroll.statut === "validated" ? "validated" :
-                                                selectedPayroll.statut === "cancelled" ? "cancelled" : "draft"}`}>
+                                            selectedPayroll.statut === "validated" ? "validated" : "draft"}`}>
                                             {getStatus(selectedPayroll)}
                                         </span>
                                     </div>

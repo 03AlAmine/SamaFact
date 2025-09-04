@@ -215,7 +215,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
 
                         {/* Montants */}
                         <View style={styles.tableRow}>
-                            {["4 220", "-", "-", "-", formData.retenues.salaire || "0", formData.retenues.avances || "2", formData.retenues.qpartipm || "2", "-"].map((val, i) => (
+                            {["4 220", "-", "-", "-", formData.retenues.salaire || "0", formData.retenues.avances || "0", formData.retenues.qpartipm || "0", "-"].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
@@ -321,8 +321,8 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>Fiscales</Text>
                         <Text style={styles.tableCell}>{formatCurrency(formData.retenues.trimf)} (TRIMF)</Text>
-                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.trimf)} (TRIMF)</Text>
                         <Text style={styles.tableCell}>{formatCurrency(formData.retenues.ir)} (IR)</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.cfce)} (C.F.C.E)</Text>
                         <Text style={styles.tableCell}>{formatCurrency(calculations.totalfiscales)}</Text>
                     </View>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import DocumentSection from "../components/DocumentSection";
-import { exportToExcel, exportToPDF } from "../components/exportUtils";
+import { exportToExcel, exportToPDF } from "../utils/exportUtils";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import ModernDateRangePicker from "../components/ModernDateRangePicker";
 import { collection, query, where, onSnapshot } from "firebase/firestore";

@@ -465,13 +465,14 @@
   background-color: #d1d5db;
   cursor: not-allowed;
 }
-/* Style pour les badges de statut */
+/* Badge de statut */
 .status-badge {
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-badge.paid {
@@ -483,6 +484,14 @@
   background-color: #fee2e2;
   color: #b91c1c;
 }
+.status-badge.partial {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.status-badge.validated {
+  background-color: #fef3c7;
+  color: #92400e;
+}
 
 /* Style pour les lignes payées */
 .paid-row {
@@ -492,11 +501,11 @@
 .paid-row:hover {
   background-color: #dcfce7;
 }
-.partial-row {
+.partial-row, .validated-row {
   background-color: #fdfdf0;
 }
 
-.partial-row:hover {
+.partial-row:hover, .validated-row:hover {
   background-color: #c5e5c0;
 }
 
@@ -644,7 +653,7 @@
 }
 
 .paid-card {
-  background-color: #f0fdf4;
+  background-color: #f2f0fd;
   box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);
 }
 .partial-card {
@@ -658,29 +667,6 @@
   right: 8px;
 }
 
-/* Badge de statut */
-.status-badge {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.status-badge.paid {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.status-badge.pending {
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-.status-badge.partial {
-  background-color: #fef3c7;
-  color: #92400e;
-}
 
 /* Styles globaux de la modal */
 .document-details-modal-container .ant-modal-content {

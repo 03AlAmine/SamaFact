@@ -19,6 +19,18 @@ import {
 const convertIfTimestamp = (value) =>
   value && typeof value.toDate === "function" ? value.toDate() : value;
 
+// Fonction utilitaire pour nettoyer les objets des valeurs undefined
+const cleanObject = (obj) => {
+  const cleaned = { ...obj };
+  Object.keys(cleaned).forEach(key => {
+    if (cleaned[key] === undefined) {
+      delete cleaned[key];
+    } else if (typeof cleaned[key] === 'object' && cleaned[key] !== null) {
+      cleaned[key] = cleanObject(cleaned[key]); // Nettoyer récursivement les objets imbriqués
+    }
+  });
+  return cleaned;
+};
 export const payrollService = {
   // 🔄 Lecture en temps réel des bulletins de paie
   getPayrolls: (companyId, callback) => {
@@ -105,7 +117,7 @@ export const payrollService = {
         salaireNet: calculations.salaireNet || 0,
         salaireNetAPayer: calculations.salaireNetAPayer || 0
       },
-      statut: "draft", // draft, validated, paid, cancelled
+      statut: "draft", // draft, validated, paid
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -256,27 +268,69 @@ export const payrollService = {
     }
   },
 
-  // 💰 Marquer comme payé
+  // 💰 Marquer comme payé - VERSION CORRIGÉE
   markAsPaid: async (companyId, payrollId, paymentDetails) => {
     try {
       const payrollRef = doc(db, `companies/${companyId}/payrolls/${payrollId}`);
       const resumeRef = doc(db, `companies/${companyId}/payrolls_resume/${payrollId}`);
 
-      const paymentData = {
-        statut: "paid",
-        paymentDate: new Date().toISOString(),
-        paymentMethod: paymentDetails.method || "virement",
-        paymentReference: paymentDetails.reference || "",
-        paymentNote: paymentDetails.note || "",
+      // Récupérer le bulletin actuel pour connaître le montant déjà payé
+      const currentPayroll = await getDoc(payrollRef);
+
+      if (!currentPayroll.exists()) {
+        return { success: false, message: "Bulletin introuvable." };
+      }
+
+      const currentData = currentPayroll.data();
+      const alreadyPaid = currentData.montantPaye || 0;
+      const newAmountPaid = alreadyPaid + (paymentDetails.montantPaye || 0);
+
+      // Déterminer le statut en fonction du montant payé
+      const netAPayer = currentData.calculations?.salaireNetAPayer || 0;
+      const newStatus = newAmountPaid >= netAPayer ? "paid" : "partially_paid";
+
+      // Gérer paymentDetails - s'assurer que c'est un tableau
+      let existingPaymentDetails = [];
+
+      if (Array.isArray(currentData.paymentDetails)) {
+        existingPaymentDetails = currentData.paymentDetails;
+      } else if (currentData.paymentDetails && typeof currentData.paymentDetails === 'object') {
+        // Si paymentDetails existe mais n'est pas un tableau, le convertir en tableau
+        existingPaymentDetails = [currentData.paymentDetails];
+      }
+
+      // Préparer les données de paiement en nettoyant les valeurs undefined
+      const paymentData = cleanObject({
+        statut: newStatus,
+        montantPaye: newAmountPaid,
+        paymentDetails: [
+          ...existingPaymentDetails,
+          cleanObject({
+            datePaiement: paymentDetails.datePaiement || new Date().toISOString(),
+            modePaiement: paymentDetails.modePaiement || "virement",
+            reference: paymentDetails.reference || "",
+            montantPaye: paymentDetails.montantPaye || 0,
+            note: paymentDetails.note || "",
+            timestamp: new Date().toISOString()
+          })
+        ],
         updatedAt: new Date().toISOString()
-      };
+      });
 
       await updateDoc(payrollRef, paymentData);
-      await updateDoc(resumeRef, paymentData);
+
+      // Mettre à jour le résumé
+      await updateDoc(resumeRef, cleanObject({
+        statut: newStatus,
+        montantPaye: newAmountPaid,
+        updatedAt: new Date().toISOString()
+      }));
 
       return {
         success: true,
-        message: "Bulletin marqué comme payé avec succès"
+        message: newStatus === "paid"
+          ? "Bulletin marqué comme payé avec succès"
+          : "Paiement partiel enregistré avec succès"
       };
     } catch (error) {
       console.error("Erreur marquage payé:", error);
@@ -293,19 +347,40 @@ export const payrollService = {
       const payrollRef = doc(db, `companies/${companyId}/payrolls/${payrollId}`);
       const resumeRef = doc(db, `companies/${companyId}/payrolls_resume/${payrollId}`);
 
-      await updateDoc(payrollRef, {
-        statut: "cancelled",
+      // Récupérer le bulletin actuel pour connaître son statut actuel
+      const currentPayroll = await getDoc(payrollRef);
+
+      if (!currentPayroll.exists()) {
+        return { success: false, message: "Bulletin introuvable." };
+      }
+
+      const currentData = currentPayroll.data();
+
+      // Déterminer le statut de retour selon le statut actuel
+      let newStatus = "draft";
+
+      if (currentData.statut === "paid" || currentData.statut === "partially_paid") {
+        // Si le bulletin était payé, le remettre à "validated"
+        newStatus = "validated";
+      } else if (currentData.statut === "validated") {
+        // Si le bulletin était validé, le remettre à "draft"
+        newStatus = "draft";
+      }
+      // Si c'était déjà un brouillon, il reste en brouillon
+
+      const updateData = {
+        statut: newStatus,
         cancelledAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      });
+      };
 
-      await updateDoc(resumeRef, {
-        statut: "cancelled",
-        cancelledAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      await updateDoc(payrollRef, updateData);
+      await updateDoc(resumeRef, updateData);
 
-      return { success: true, message: "Bulletin annulé avec succès !" };
+      return {
+        success: true,
+        message: `Bulletin ${newStatus === "validated" ? "dé-payé et remis en validé" : "annulé"} avec succès !`
+      };
     } catch (error) {
       console.error("Erreur annulation bulletin:", error);
       return { success: false, message: "Erreur lors de l'annulation du bulletin." };

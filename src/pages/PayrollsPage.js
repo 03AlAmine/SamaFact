@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { exportToExcel, exportToPDF } from "../components/exportUtils";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { exportToExcel, exportToPDF } from "../utils/exportUtils";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import ModernDateRangePicker from "../components/ModernDateRangePicker";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
@@ -7,7 +7,7 @@ import { db } from "../firebase";
 import { useAuth } from "../auth/AuthContext";
 import { previewPayrollPdf, downloadPayrollPdf } from '../services/pdf_payrollService';
 import { payrollService } from '../services/payrollService';
-import ModalPaiement from "../components/ModalPaiement";
+import ModalPaiementPayroll from "../components/ModalPaiementPay";
 import { message, Modal } from "antd";
 import PayrollSection from "../components/DocumentSectionPayroll";
 
@@ -21,11 +21,12 @@ const PayrollsPage = ({
 }) => {
     const { currentUser } = useAuth();
     const [payrolls, setPayrolls] = useState([]);
+    const [allPayrolls, setAllPayrolls] = useState([]); // Nouvel état pour tous les bulletins
     const [modalVisible, setModalVisible] = useState(false);
     const [currentPayroll, setCurrentPayroll] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [dateRange, setDateRange] = useState({ from: null, to: null });
-    const [activeTab, setActiveTab] = useState("all"); // all, draft, validated, paid, cancelled
+    const [activeTab, setActiveTab] = useState("all"); // all, draft, validated, paid
 
     // Fonction pour obtenir le statut d'un bulletin
     const getStatus = (payroll) => {
@@ -33,7 +34,7 @@ const PayrollsPage = ({
             draft: "Brouillon",
             validated: "Validé",
             paid: "Payé",
-            cancelled: "Annulé"
+            partially_paid: "Partiellement payé",
         };
         return statusMap[payroll.statut] || payroll.statut;
     };
@@ -43,9 +44,16 @@ const PayrollsPage = ({
         if (!dateRange.from && !dateRange.to) return items;
 
         return items.filter(item => {
+            if (!item.periode || !item.periode.au) return false;
+            
             const itemDate = new Date(item.periode.au);
             const fromDate = dateRange.from ? new Date(dateRange.from) : null;
             const toDate = dateRange.to ? new Date(dateRange.to) : null;
+
+            // Réinitialiser l'heure pour une comparaison correcte
+            if (fromDate) fromDate.setHours(0, 0, 0, 0);
+            if (toDate) toDate.setHours(23, 59, 59, 999);
+            itemDate.setHours(12, 0, 0, 0);
 
             return (
                 (!fromDate || itemDate >= fromDate) &&
@@ -54,7 +62,7 @@ const PayrollsPage = ({
         });
     }, [dateRange]);
 
-    // Chargement des bulletins depuis Firestore
+    // Chargement de TOUS les bulletins depuis Firestore (sans filtre de statut)
     useEffect(() => {
         if (!currentUser || !companyId) return;
 
@@ -66,11 +74,7 @@ const PayrollsPage = ({
             conditions.push(where("employeeId", "==", selectedEmployee.id));
         }
 
-        // Filtre par statut si différent de "all"
-        if (activeTab !== "all") {
-            conditions.push(where("statut", "==", activeTab));
-        }
-
+        // NE PAS filtrer par statut ici pour avoir tous les bulletins
         const q = query(payrollsRef, ...conditions, orderBy("periode.au", "desc"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -85,13 +89,38 @@ const PayrollsPage = ({
                         ? doc.data().periode.au.toDate()
                         : doc.data().periode.au || null
                 }
-
             }));
-            setPayrolls(payrollsData);
+            setAllPayrolls(payrollsData); // Stocker tous les bulletins
         });
 
         return () => unsubscribe();
-    }, [currentUser, companyId, selectedEmployee, activeTab]);
+    }, [currentUser, companyId, selectedEmployee]); // Retirer activeTab des dépendances
+
+    // Filtrer les bulletins selon l'onglet actif
+    useEffect(() => {
+        if (activeTab === "all") {
+            setPayrolls(allPayrolls);
+        } else {
+            setPayrolls(allPayrolls.filter(p => p.statut === activeTab));
+        }
+    }, [allPayrolls, activeTab]);
+
+    // Calcul des compteurs pour chaque onglet
+    const { tabCounts, filteredItems } = useMemo(() => {
+        const filteredByDate = filterByDate(allPayrolls); // Utiliser allPayrolls pour les compteurs
+
+        const counts = {
+            all: filteredByDate.length,
+            draft: filteredByDate.filter(p => p.statut === "draft").length,
+            validated: filteredByDate.filter(p => p.statut === "validated").length,
+            paid: filteredByDate.filter(p => p.statut === "paid" || p.statut === "partially_paid").length,
+        };
+
+        // Filtrer les éléments pour l'affichage (utiliser payrolls qui est déjà filtré par statut)
+        const itemsToDisplay = filterByDate(payrolls);
+        
+        return { tabCounts: counts, filteredItems: itemsToDisplay };
+    }, [allPayrolls, payrolls, filterByDate]);
 
     // Gestion de la suppression avec confirmation
     const handleDelete = async (id) => {
@@ -119,7 +148,7 @@ const PayrollsPage = ({
 
     // Gestion des exports
     const handleExport = (format) => {
-        const data = filterByDate(payrolls);
+        const data = filterByDate(allPayrolls); // Exporter tous les bulletins filtrés par date
         const fileName = `Bulletins_de_paie_${selectedEmployee ? selectedEmployee.nom : ''}`;
 
         if (format === 'excel') {
@@ -185,7 +214,7 @@ const PayrollsPage = ({
 
     // Gestion du paiement
     const handlePayment = (id) => {
-        const payrollToPay = payrolls.find(p => p.id === id);
+        const payrollToPay = allPayrolls.find(p => p.id === id);
         setCurrentPayroll(payrollToPay);
         setModalVisible(true);
     };
@@ -220,7 +249,7 @@ const PayrollsPage = ({
         Modal.confirm({
             title: 'Confirmer l\'annulation',
             content: 'Êtes-vous sûr de vouloir annuler ce bulletin de paie ?',
-            okText: 'Annuler',
+            okText: 'Confirmer',
             okType: 'danger',
             cancelText: 'Retour',
             onOk: async () => {
@@ -329,21 +358,27 @@ const PayrollsPage = ({
         }
     };
 
+    // Fonction pour obtenir le nom affiché de l'onglet
+    const getTabDisplayName = (tab) => {
+        const names = {
+            'all': 'Tous',
+            'draft': 'Brouillons',
+            'validated': 'Validés',
+            'paid': 'Payés',
+        };
+        return names[tab] || tab;
+    };
+
     return (
         <div className="payrolls-page-container">
             <div className="navbar-tabs">
-                {['all', 'draft', 'validated', 'paid', 'cancelled'].map((tab) => (
+                {['all', 'draft', 'validated', 'paid'].map((tab) => (
                     <button
                         key={tab}
                         className={activeTab === tab ? "active" : ""}
                         onClick={() => setActiveTab(tab)}
                     >
-                        {tab === 'all' ? 'Tous' :
-                            tab === 'draft' ? 'Brouillons' :
-                                tab === 'validated' ? 'Validés' :
-                                    tab === 'paid' ? 'Payés' : 'Annulés'} ({filterByDate(payrolls.filter(p =>
-                                        tab === 'all' ? true : p.statut === tab
-                                    )).length})
+                        {getTabDisplayName(tab)} ({tabCounts[tab]})
                     </button>
                 ))}
             </div>
@@ -378,9 +413,7 @@ const PayrollsPage = ({
 
             <PayrollSection
                 title="Bulletins de paie"
-                items={filterByDate(payrolls.filter(p =>
-                    activeTab === 'all' ? true : p.statut === activeTab
-                ))}
+                items={filteredItems}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 navigate={navigate}
@@ -397,13 +430,12 @@ const PayrollsPage = ({
                 showEmployeeColumn={!selectedEmployee}
             />
 
-            <ModalPaiement
+            <ModalPaiementPayroll
                 visible={modalVisible}
                 onCancel={() => setModalVisible(false)}
                 onConfirm={handleConfirmPayment}
                 payroll={currentPayroll}
                 loading={paymentLoading}
-                isPayroll={true}
             />
         </div>
     );
