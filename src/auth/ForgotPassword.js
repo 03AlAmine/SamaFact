@@ -30,37 +30,37 @@ const ForgotPassword = () => {
 
     return (
         <div className="auth-forgot">
-        <div className="auth-form-forgot">
-            <form className="form-auth-forgot" onSubmit={handleReset}>
-                <img src={logo} alt="Logo SamaFact" className="auth-logo-forgot" />
+            <div className="auth-form-forgot">
+                <form className="form-auth-forgot" onSubmit={handleReset}>
+                    <img src={logo} alt="Logo SamaFact" className="auth-logo-forgot" />
 
-                <h1>Mot de passe oublié</h1>
+                    <h1>Mot de passe oublié</h1>
 
-                {error && <div className="auth-error">{error}</div>}
-                {message && <div className="auth-error" style={{ backgroundColor: "#e6fffa", color: "#2ec4b6", borderLeftColor: "#2ec4b6" }}>{message}</div>}
+                    {error && <div className="auth-error">{error}</div>}
+                    {message && <div className="auth-error" style={{ backgroundColor: "#e6fffa", color: "#2ec4b6", borderLeftColor: "#2ec4b6" }}>{message}</div>}
 
-                <div className="auth-input-box">
-                    <input
-                        type="email"
-                        placeholder="Entrez votre adresse email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                    <FaEnvelope className="auth-icon" />
-                </div>
+                    <div className="auth-input-box">
+                        <input
+                            type="email"
+                            placeholder="Entrez votre adresse email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <FaEnvelope className="auth-icon" />
+                    </div>
 
-                <button type="submit" className="auth-btn" disabled={loading}>
-                    {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
-                </button>
+                    <button type="submit" className="auth-btn" disabled={loading}>
+                        {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
+                    </button>
 
-                <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-                    <Link to="/" style={{ color: 'var(--primary-color)', textDecoration: 'underline' }}>
-                        ← Retour à la connexion
-                    </Link>
-                </p>
-            </form>
-        </div>
+                    <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+                        <Link to="/" style={{ color: 'var(--primary-color)', textDecoration: 'underline' }}>
+                            ← Retour à la connexion
+                        </Link>
+                    </p>
+                </form>
+            </div>
         </div>
     );
 };

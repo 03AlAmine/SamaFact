@@ -215,7 +215,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
 
                         {/* Montants */}
                         <View style={styles.tableRow}>
-                            {["4 220", "-", "-", "-", formData.retenues.salaire || "0", formData.retenues.avances || "0", formData.retenues.qpartipm || "0", "-"].map((val, i) => (
+                            {["4 220", "-", "-", "-", formData.retenues.retenueSalaire || "0", formData.retenues.avances || "0", formData.retenues.qpartipm || "0", "-"].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
@@ -332,13 +332,13 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     <View style={[styles.tableRow, styles.splitRow]}>
                         <View style={styles.splitColumn}>
                             <Text style={styles.splitHeader}>Cotisations salariales</Text>
-                            <Text style={styles.splitValue}>{formatCurrency(calculations.cotisatisationsEmp)}</Text>
+                            <Text style={styles.splitValue}>{formatCurrency(calculations.cotisationsEmp)}</Text>
                         </View>
                         <View style={styles.verticalDivider}></View>
 
                         <View style={styles.splitColumn}>
                             <Text style={styles.splitHeader}>Cotisations patronales</Text>
-                            <Text style={styles.splitValue}>{formatCurrency(calculations.cotisatisationsEmployeur)}</Text>
+                            <Text style={styles.splitValue}>{formatCurrency(calculations.cotisationsEmployeur)}</Text>
                         </View>
 
                     </View>

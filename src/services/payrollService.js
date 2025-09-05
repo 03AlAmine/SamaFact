@@ -84,6 +84,7 @@ export const payrollService = {
       employeePosition: employee.poste,
       employeeAddresse: employee.adresse,
       employeeCategorie: employee.categorie,
+      nbreofParts: employee.nbreofParts || 1,
       periode: {
         du: formData.periode.du,
         au: formData.periode.au
@@ -103,7 +104,8 @@ export const payrollService = {
         autresPrimes: parseFloat(formData.primes.autresPrimes) || 0
       },
       retenues: {
-        ipm: parseFloat(formData.retenues.ipm) || 0,
+        retenueSalaire: parseFloat(formData.retenues.retenueSalaire) || 0,
+        qpartipm: parseFloat(formData.retenues.qpartipm) || 0,
         avances: parseFloat(formData.retenues.avances) || 0,
         trimf: parseFloat(formData.retenues.trimf) || 0,
         cfce: parseFloat(formData.retenues.cfce) || 0,
@@ -114,8 +116,16 @@ export const payrollService = {
         brutFiscal: calculations.brutFiscal || 0,
         cotisationsSalariales: calculations.cotisationsSalariales || 0,
         cotisationsPatronales: calculations.cotisationsPatronales || 0,
+        cotisationsEmployeur: calculations.cotisationsEmployeur || 0,
+        cotisationsEmp: calculations.cotisationsEmp || 0,
+        cotisationsTotales: calculations.cotisationsTotales || 0,
+        tooqpartipm: calculations.tooqpartipm || 0,
+        totalRetnues: calculations.totalRetnues || 0,
+        totalRetenuesPris: calculations.totalRetenuesPris || 0,
+        totalPrimes: calculations.totalPrimes || 0,
+        totalfiscales: calculations.totalfiscales || 0,
         salaireNet: calculations.salaireNet || 0,
-        salaireNetAPayer: calculations.salaireNetAPayer || 0
+        salaireNetAPayer: calculations.salaireNetAPayer || 0,
       },
       statut: "draft", // draft, validated, paid
       createdAt: new Date().toISOString(),

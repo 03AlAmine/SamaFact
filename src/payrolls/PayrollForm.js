@@ -112,7 +112,7 @@ const PayrollForm = () => {
             autresPrimes: '0'
         },
         retenues: {
-            salaire: '0',
+            retenueSalaire: '0',
             qpartipm: '0',
             avances: '0',
             trimf: '300',
@@ -139,7 +139,7 @@ const PayrollForm = () => {
         const autresPrimes = parseFloat(formData.primes.autresPrimes) || 0;
 
         // Retenues
-        const retenueSalaire = parseFloat(formData.retenues.salaire) || 0;
+        const retenueSalaire = parseFloat(formData.retenues.retenueSalaire) || 0;
         const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
         const avances = parseFloat(formData.retenues.avances) || 0;
         const trimf = parseFloat(formData.retenues.trimf) || 0;
@@ -171,7 +171,7 @@ const PayrollForm = () => {
         const totalCotisationsEmployeur = ipresRGP + ipresRCP + allocationFamiliale + accidentTravail + qpartipm + cfce;
         const totalCotisationsSalariales = ipresRG + ipresRC;
         const totalCotisationsPatronales = ipresRGP + ipresRCP;
-        const totalCotisantions = totalCotisationsEmp + totalCotisationsEmployeur;
+        const totalCotisations = totalCotisationsEmp + totalCotisationsEmployeur;
 
         // Salaire Net
         const remunerationNette = brutSocial - totalRetenuesPris;
@@ -179,16 +179,16 @@ const PayrollForm = () => {
         const salaireNetAPayer = remunerationNette + totalPrimes;
         const tooqpartipm = qpartipm * 2
         const totalfiscales = trimf + cfce + ir;
-        
+
 
         return {
             brutSocial,
             brutFiscal,
-            cotisatisationsEmp: totalCotisationsEmp,
-            cotisatisationsEmployeur: totalCotisationsEmployeur,
+            cotisationsEmp: totalCotisationsEmp,
+            cotisationsEmployeur: totalCotisationsEmployeur,
             cotisationsSalariales: totalCotisationsSalariales,
             cotisationsPatronales: totalCotisationsPatronales,
-            cotisationsTotales: totalCotisantions,
+            cotisationsTotales: totalCotisations,
             salaireNet: remunerationNette,
             totalPrimes,
             salaireNetAPayer,
@@ -241,39 +241,50 @@ const PayrollForm = () => {
                 if (location.state && location.state.payroll) {
                     const payroll = location.state.payroll;
 
+                    // Mettre à jour l'employé sélectionné
+                    setSelectedEmployeeId(payroll.employeeId || '');
+
+                    // Mettre à jour le numéro de bulletin
+                    setPayrollNumber(payroll.numero || '');
+
+                    // Fonction pour convertir les dates Firestore
+                    const convertFirestoreDate = (date) => {
+                        if (!date) return new Date().toISOString().split('T')[0];
+                        return date.toDate ? date.toDate().toISOString().split('T')[0] : date;
+                    };
+
+                    // Mettre à jour les données du formulaire
                     setFormData({
                         periode: {
-                            du: payroll.periode?.du || '',
-                            au: payroll.periode?.au || ''
+                            du: convertFirestoreDate(payroll.periode?.du),
+                            au: convertFirestoreDate(payroll.periode?.au)
                         },
                         remuneration: {
-                            tauxHoraire: payroll.remuneration?.tauxHoraire || '0',
-                            salaireBase: payroll.remuneration?.salaireBase || '0',
-                            sursalaire: payroll.remuneration?.sursalaire || '0',
-                            indemniteDeplacement: payroll.remuneration?.indemniteDeplacement || '0',
-                            autresIndemnites: payroll.remuneration?.autresIndemnites || '0',
-                            avantagesNature: payroll.remuneration?.avantagesNature || '0'
+                            tauxHoraire: payroll.remuneration?.tauxHoraire?.toString() || '0',
+                            salaireBase: payroll.remuneration?.salaireBase?.toString() || '0',
+                            sursalaire: payroll.remuneration?.sursalaire?.toString() || '0',
+                            indemniteDeplacement: payroll.remuneration?.indemniteDeplacement?.toString() || '0',
+                            autresIndemnites: payroll.remuneration?.autresIndemnites?.toString() || '0',
+                            avantagesNature: payroll.remuneration?.avantagesNature?.toString() || '0'
                         },
                         primes: {
-                            transport: payroll.primes?.transport || '26000',
-                            panier: payroll.primes?.panier || '0',
-                            repas: payroll.primes?.repas || '0',
-                            anciennete: payroll.primes?.anciennete || '0',
-                            responsabilite: payroll.primes?.responsabilite || '0',
-                            autresPrimes: payroll.primes?.autresPrimes || '0'
+                            transport: payroll.primes?.transport?.toString() || '26000',
+                            panier: payroll.primes?.panier?.toString() || '0',
+                            repas: payroll.primes?.repas?.toString() || '0',
+                            anciennete: payroll.primes?.anciennete?.toString() || '0',
+                            responsabilite: payroll.primes?.responsabilite?.toString() || '0',
+                            autresPrimes: payroll.primes?.autresPrimes?.toString() || '0'
                         },
                         retenues: {
-                            salaire: payroll.retenues?.salaire || '0',
-                            qpartipm: payroll.retenues?.qpartipm || '0',
-                            avances: payroll.retenues?.avances || '0',
-                            trimf: payroll.retenues?.trimf || '300',
-                            cfce: payroll.retenues?.cfce || '0',
-                            ir: payroll.retenues?.ir || '0'
+                            retenueSalaire: payroll.retenues?.retenueSalaire?.toString() || '0',
+                            qpartipm: payroll.retenues?.qpartipm?.toString() || '0',
+                            avances: payroll.retenues?.avances?.toString() || '0',
+                            trimf: payroll.retenues?.trimf?.toString() || '300',
+                            cfce: payroll.retenues?.cfce?.toString() || '0',
+                            ir: payroll.retenues?.ir?.toString() || '0'
                         }
                     });
 
-                    setSelectedEmployeeId(payroll.employeeId || '');
-                    setPayrollNumber(payroll.numero || '');
                     setIsSaved(true);
                 } else {
                     const numero = await payrollService.generatePayrollNumber(currentUser.companyId);
@@ -321,7 +332,13 @@ const PayrollForm = () => {
     }, [currentUser]);
 
     // Mettre à jour le salaire de base quand l'employé est sélectionné
+    // Mettre à jour le salaire de base quand l'employé est sélectionné
     useEffect(() => {
+        // Ne pas exécuter cette mise à jour si on est en mode édition
+        if (location.state?.payroll?.id && selectedEmployeeId === location.state.payroll.employeeId) {
+            return;
+        }
+
         if (selectedEmployeeId) {
             const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
             if (selectedEmployee) {
@@ -344,12 +361,13 @@ const PayrollForm = () => {
                     },
                     retenues: {
                         ...prev.retenues,
-                        avances: selectedEmployee.avances || '0'
+                        avances: selectedEmployee.avances || '0',
+                        retenueSalaire: selectedEmployee.retenueSalaire || '0',
                     }
                 }));
             }
         }
-    }, [selectedEmployeeId, employees]);
+    }, [selectedEmployeeId, employees, location.state?.payroll]); // Ajouter location.state?.payroll aux dépendances
 
     // Sauvegarde du bulletin
     const savePayrollToFirestore = async (payrollData, isUpdate = false) => {
@@ -653,8 +671,8 @@ const PayrollForm = () => {
                             <label className="label">Retenue salaire</label>
                             <input
                                 type="number"
-                                name="retenues.salaire"
-                                value={formData.retenues.salaire}
+                                name="retenues.retenueSalaire"
+                                value={formData.retenues.retenueSalaire}
                                 onChange={handleChange}
                                 className="input"
                             />

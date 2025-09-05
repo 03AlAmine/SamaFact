@@ -28,6 +28,7 @@ const PayrollsPage = ({
     const [dateRange, setDateRange] = useState({ from: null, to: null });
     const [activeTab, setActiveTab] = useState("all"); // all, draft, validated, paid
 
+
     // Fonction pour obtenir le statut d'un bulletin
     const getStatus = (payroll) => {
         const statusMap = {
@@ -45,7 +46,7 @@ const PayrollsPage = ({
 
         return items.filter(item => {
             if (!item.periode || !item.periode.au) return false;
-            
+
             const itemDate = new Date(item.periode.au);
             const fromDate = dateRange.from ? new Date(dateRange.from) : null;
             const toDate = dateRange.to ? new Date(dateRange.to) : null;
@@ -118,7 +119,7 @@ const PayrollsPage = ({
 
         // Filtrer les éléments pour l'affichage (utiliser payrolls qui est déjà filtré par statut)
         const itemsToDisplay = filterByDate(payrolls);
-        
+
         return { tabCounts: counts, filteredItems: itemsToDisplay };
     }, [allPayrolls, payrolls, filterByDate]);
 
@@ -309,7 +310,7 @@ const PayrollsPage = ({
                     autresPrimes: payroll.primes?.autresPrimes || 0
                 },
                 retenues: {
-                    salaire: payroll.retenues?.salaire || 0,
+                    retenueSalaire: payroll.retenues?.retenueSalaire || 0,
                     qpartipm: payroll.retenues?.qpartipm || 0,
                     ipm: payroll.retenues?.ipm || 0,
                     avances: payroll.retenues?.avances || 0,
@@ -356,6 +357,62 @@ const PayrollsPage = ({
             console.error(error);
             alert("Erreur lors du téléchargement");
         }
+    };
+
+    const handleEdit = (payroll) => {
+        const selectedEmployee = employees.find(e => e.id === payroll.employeeId);
+
+        navigate("/payroll", {
+            state: {
+                payroll: {
+                    // Données de base
+                    id: payroll.id,
+                    employeeId: payroll.employeeId,
+                    employeeName: payroll.employeeName,
+                    employeeMatricule: payroll.employeeMatricule,
+                    employeePosition: payroll.employeePosition,
+                    employeeAddresse: payroll.employeeAddresse,
+                    employeeCategorie: payroll.employeeCategorie,
+                    nbreofParts: payroll.nbreofParts || 1, // Ajout important!
+                    dateEmbauche: payroll.dateEmbauche,
+                    typeContrat: payroll.typeContrat,
+                    statut: payroll.statut,
+                    numero: payroll.numero,
+                    createdAt: payroll.createdAt,
+                    updatedAt: payroll.updatedAt,
+
+                    // Données structurées comme attendues par PayrollForm
+                    periode: payroll.periode,
+                    remuneration: payroll.remuneration || {
+                        tauxHoraire: '0',
+                        salaireBase: '0',
+                        sursalaire: '0',
+                        indemniteDeplacement: '0',
+                        autresIndemnites: '0',
+                        avantagesNature: '0'
+                    },
+                    primes: payroll.primes || {
+                        transport: '26000',
+                        panier: '0',
+                        repas: '0',
+                        anciennete: '0',
+                        responsabilite: '0',
+                        autresPrimes: '0'
+                    },
+                    retenues: payroll.retenues || {
+                        retenueSalaire: '0',
+                        qpartipm: '0',
+                        avances: '0',
+                        trimf: '300',
+                        cfce: '0',
+                        ir: '0'
+                    },
+                    calculations: payroll.calculations || {},
+                },
+                employee: selectedEmployee,
+                isEditing: true
+            }
+        });
     };
 
     // Fonction pour obtenir le nom affiché de l'onglet
@@ -418,6 +475,7 @@ const PayrollsPage = ({
                 setSearchTerm={setSearchTerm}
                 navigate={navigate}
                 onDelete={handleDelete}
+                onEdit={handleEdit} // Ajoutez cette ligne
                 selectedEmployee={selectedEmployee}
                 type="payroll"
                 onPreview={handlePreview}

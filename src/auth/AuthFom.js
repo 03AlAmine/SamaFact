@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser, FaInfoCircle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser, FaInfoCircle, FaEyeSlash, FaEye } from 'react-icons/fa';
 import './AuthForm.css';
 import logo from '../assets/Logo_Mf.png';
 import PasswordGate from './PasswordGate';
@@ -11,6 +11,8 @@ import Preloader from '../components/Preloader';
 const AuthForm = ({ type }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [userName, setUserName] = useState('');
@@ -206,7 +208,7 @@ const AuthForm = ({ type }) => {
             ) : (
                 <div className={`auth-container ${activeForm}`}>
                     <div className="auth-form-box auth-login">
-                        <form className="form-auth" onSubmit={(e) => handleSubmit(e, 'login')}>
+                        <form className="form-auth" onSubmit={(e) => handleSubmit(e, "login")}>
                             {error && <div className="auth-error">{error}</div>}
 
                             <h1>Connexion</h1>
@@ -220,21 +222,35 @@ const AuthForm = ({ type }) => {
                                 />
                                 <FaUser className="auth-icon" />
                             </div>
+
                             <div className="auth-input-box">
                                 <input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Mot de passe"
                                     required
                                 />
-                                <FaLock className="auth-icon" />
+                                {password.length === 0 ? (
+                                    <FaLock className="auth-icon" />
+                                ) : showPassword ? (
+                                    <FaEyeSlash
+                                        className="auth-icon cursor-pointer"
+                                        onClick={() => setShowPassword(false)}
+                                    />
+                                ) : (
+                                    <FaEye
+                                        className="auth-icon cursor-pointer"
+                                        onClick={() => setShowPassword(true)}
+                                    />
+                                )}
                             </div>
+
                             <div className="auth-forgot-link">
                                 <Link to="/forgot-password">Mot de passe oublié?</Link>
                             </div>
                             <button disabled={loading} type="submit" className="auth-btn">
-                                {loading ? 'Connexion en cours...' : 'Se connecter'}
+                                {loading ? "Connexion en cours..." : "Se connecter"}
                             </button>
                             <p>ou connectez-vous avec</p>
                             <div className="auth-social-icons">
@@ -254,8 +270,8 @@ const AuthForm = ({ type }) => {
                         <div className="auth-toggle-panel auth-toggle-left">
                             <img src={logo} alt="Logo" className="auth-logo" />
                             <h1 className="auth-welcome-title">
-                                Bienvenue sur<br />
-                                <span className="h1-span">SamaFact</span>
+                                Content de vous revoir  <br /> sur
+                                <span className="h1-span"> SamaFact !</span>
                             </h1>
 
                             <p>Vous n'avez pas encore de compte ?</p>
@@ -267,8 +283,10 @@ const AuthForm = ({ type }) => {
                         <div className="auth-toggle-panel auth-toggle-right">
                             <img src={logo} alt="Logo" className="auth-logo" />
 
-                            <h1>Content de vous revoir ! <br />
+                            <h1>Bienvenue sur<br />
                                 <span className="h1-span">SamaFact</span>
+                                <p>Votre application de paie et de facturation</p>
+
                             </h1>
                             <p>Vous avez déjà un compte ?</p>
                             <button className="auth-btn auth-login-btn" onClick={toggleForm}>

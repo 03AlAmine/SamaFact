@@ -772,6 +772,8 @@ const Mentafact = () => {
                     employees={employees}
                     selectedEmployee={selectedEmployee}
                     companyId={companyId}
+                    navigate={navigate}
+
                 />;
             case "stats":
                 return <StatsPage

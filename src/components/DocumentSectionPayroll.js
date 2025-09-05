@@ -43,6 +43,7 @@ const PayrollSection = ({
     onDuplicate,
     onDownload,
     onPreview,
+    onEdit,
     onValidate,
     onMarkAsPaid,
     onCancel,
@@ -358,16 +359,7 @@ const PayrollSection = ({
                                     <SwiperSlide>
                                         <button className="action-btn edit" onClick={(e) => {
                                             e.stopPropagation();
-                                            navigate("/payroll", {
-                                                state: {
-                                                    payroll: p,
-                                                    employee: selectedEmployee || {
-                                                        id: p.employeeId,
-                                                        nom: p.employeeName?.split(' ')[0],
-                                                        prenom: p.employeeName?.split(' ').slice(1).join(' ')
-                                                    }
-                                                }
-                                            });
+                                            onEdit(p); // Utiliser la fonction handleEdit passée en prop
                                         }} title="Modifier">
                                             <FaEdit />
                                         </button>
@@ -496,8 +488,12 @@ const PayrollSection = ({
 
                                             {/* Groupe 2 */}
                                             <div className="action-group">
-                                                <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/payroll", { state: { payroll: p, employee: selectedEmployee || { id: p.employeeId, nom: p.employeeName?.split(' ')[0], prenom: p.employeeName?.split(' ').slice(1).join(' ') } } }); }} title="Modifier"><FaEdit /></button>
-                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
+                                                <button className="action-btn edit" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEdit(p); // Utiliser la fonction handleEdit passée en prop
+                                                }} title="Modifier">
+                                                    <FaEdit />
+                                                </button>                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
                                                 {p.statut === "draft" ? (
                                                     <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider"><FaCheckCircle /></button>
                                                 ) : p.statut === "validated" ? (
