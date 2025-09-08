@@ -25,8 +25,9 @@ import {
     FaPaperPlane,
     FaChevronRight,
     FaChevronLeft,
+    FaSpinner,
 } from 'react-icons/fa';
-import { Modal, Button } from 'antd';
+import { Modal, Button, message } from 'antd';
 import empty from '../assets/empty.png';
 import '../css/DocumentSection.css';
 import UserNameLookup from './UserNameLookup';
@@ -34,6 +35,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
+import emailjs from "emailjs-com";
+
 
 const DocumentSection = ({
     title,
@@ -59,6 +62,8 @@ const DocumentSection = ({
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [sendingEmails, setSendingEmails] = useState({}); // État pour suivre les emails en cours d'envoi
+
 
     // Précharger l'image de fond
     useEffect(() => {
@@ -156,6 +161,41 @@ const DocumentSection = ({
     // Déterminez le mode d'affichage
     const displayMode = isMobile ? 'card' : viewMode;
 
+    const sendEmail = async (doc) => {
+        // Définir cet email comme en cours d'envoi
+        setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
+
+        const templateParams = {
+            to_name: doc.clientNom || "Client",
+            to_email: doc.clientEmail || "client@gmail.com",
+            document_numero: doc.numero,
+            montant: doc.totalTTC,
+            date: doc.date,
+        };
+
+        try {
+            await emailjs.send(
+                "service_samafact",
+                "template_samafact",
+                templateParams,
+                "ioK4mXd5cOkG_z4EY"
+            );
+
+            // Afficher un message de succès
+            message.success("Email envoyé avec succès ✅");
+
+        } catch (error) {
+            // Afficher un message d'erreur
+            message.error("Erreur lors de l'envoi de l'email ❌");
+        } finally {
+            // Retirer cet email de la liste des envois en cours
+            setSendingEmails(prev => {
+                const newState = { ...prev };
+                delete newState[doc.id];
+                return newState;
+            });
+        }
+    };
     if (loading) {
         return (
             <div
@@ -380,7 +420,14 @@ const DocumentSection = ({
 
                                     <SwiperSlide>
                                         <button className="action-btn info_view" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails"><FaInfoCircle /></button>
-                                        <button className="action-btn send" title="Envoyer par email"><FaPaperPlane /></button>
+                                        <button
+                                            className="action-btn send"
+                                            title="Envoyer par email"
+                                            onClick={(e) => { e.stopPropagation(); sendEmail(f); }}
+                                            disabled={sendingEmails[f.id]} // Désactiver le bouton pendant l'envoi
+                                        >
+                                            {sendingEmails[f.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
+                                        </button>
                                         <button className="action-btn add" title="Ajouter"><FaPlus /></button>
                                     </SwiperSlide>
 
@@ -499,7 +546,14 @@ const DocumentSection = ({
                                             {/* Groupe 3 */}
                                             <div className="action-group">
                                                 <button className="action-btn info_view" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails"><FaInfoCircle /></button>
-                                                <button className="action-btn send" title="Envoyer par email"><FaPaperPlane /></button>
+                                                <button
+                                                    className="action-btn send"
+                                                    title="Envoyer par email"
+                                                    onClick={(e) => { e.stopPropagation(); sendEmail(f); }}
+                                                    disabled={sendingEmails[f.id]} // Désactiver le bouton pendant l'envoi
+                                                >
+                                                    {sendingEmails[f.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
+                                                </button>
                                                 <button className="action-btn add" title="Ajouter"><FaPlus /></button>
                                             </div>
 

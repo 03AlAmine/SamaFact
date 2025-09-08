@@ -83,6 +83,7 @@ export const invoiceService = {
       clientAdresse: formData.client.Adresse[0],
       clientVille: formData.client.Ville?.[0] || "", // Ajout de la ville
       clientId: formData.clientId || "",
+      clientEmail: formData.client.Email?.[0] || "", // Ajout de l'email
       ribs: formData.ribs || ["CBAO"],
       objet: formData.objet || "", // Ajout de l'objet ici
       showSignature: formData.showSignature !== false, // false par défaut si non défini
@@ -135,7 +136,8 @@ export const invoiceService = {
         clientId: facture.clientId || "",
         Nom: [facture.clientNom || ""],
         Adresse: [facture.clientAdresse || ""],
-        Ville: [facture.clientVille || ""] // Ajouté si nécessaire
+        Ville: [facture.clientVille || ""], // Ajouté si nécessaire
+        Email: [facture.clientEmail || ""] // Ajouté
       },
       items,
       totals: {

@@ -43,6 +43,7 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
           Nom: [selectedClient.nom],
           Adresse: [selectedClient.adresse],
           Ville: [selectedClient.ville || ""],
+          Email: [selectedClient.email || ""]
           // Ajoutez d'autres champs si nécessaire
         }
       });
@@ -274,7 +275,8 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
         client: {
           Nom: [location.state.client.nom || ""],
           Adresse: [location.state.client.adresse || ""],
-          Ville: [location.state.client.ville || ""]
+          Ville: [location.state.client.ville || ""],
+          Email: [location.state.client.email || ""]
         }
       }));
     }
@@ -358,6 +360,7 @@ const InvoiceForm = ({ data, setData, clients, handleSave, isSaving, isSaved, sh
                 }}>
                   <p><strong>Nom:</strong> {data.client.Nom[0]}</p>
                   <p><strong>Adresse:</strong> {data.client.Adresse?.[0] || 'N/A'}</p>
+                  <p><strong>Ville:</strong> {data.client.Ville?.[0] || 'N/A'}</p>
                   <p><strong>Ville:</strong> {data.client.Ville?.[0] || 'N/A'}</p>
                 </div>
               )}

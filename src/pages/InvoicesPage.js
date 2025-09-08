@@ -212,7 +212,8 @@ const InvoicesPage = ({
                         id: document.clientId, // Ajout de l'ID ici
                         nom: document.clientNom || "",
                         adresse: document.clientAdresse || "",
-                        ville: document.clientVille || ""
+                        ville: document.clientVille || "",
+                        email: document.clientEmail || "",
                     }
                 }
             });

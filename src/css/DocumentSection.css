@@ -1208,3 +1208,21 @@
     padding: 20px 16px;
   }
 }
+
+
+/* Animation pour le spinner */
+.spinnerr {
+    animation: spin 1.5s linear infinite;
+    color: --var(primary-color);  
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Style pour les boutons désactivés */
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
