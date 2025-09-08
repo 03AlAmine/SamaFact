@@ -281,7 +281,7 @@ const PayrollSection = ({
                             onMouseLeave={() => setHoveredItem(null)}
                             onClick={() => onPreview(p)}
                         >
-                            <div className="card-header" style={{ borderTop: '4px solid #3b82f6' }}>
+                            <div className="card-header" style={{ borderTop: '4px solid #28a745' }}>
                                 <div className="header-status">
                                     <span className={`status-badge ${getStatus(p) === "Payé" ? "paid" :
                                         getStatus(p) === "Validé" ? "validated" : "draft"
