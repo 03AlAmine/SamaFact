@@ -27,8 +27,7 @@ const PayrollsPage = ({
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [dateRange, setDateRange] = useState({ from: null, to: null });
     const [activeTab, setActiveTab] = useState("all"); // all, draft, validated, paid
-
-
+    const [, setLoading] = useState(false);
     // Fonction pour obtenir le statut d'un bulletin
     const getStatus = (payroll) => {
         const statusMap = {
@@ -391,58 +390,128 @@ const PayrollsPage = ({
         });
     };
 
-// Fonction utilitaire pour nettoyer les données de duplication
-const cleanDuplicatedPayroll = (originalPayroll, newNumber) => {
-    const { 
-        id, 
-        createdAt, 
-        updatedAt, 
-        statut, 
-        numero, 
-        paymentDetails, 
-        montantPaye, 
-        validatedAt,
-        paidAt,
-        cancelledAt,
-        ...cleanedData 
-    } = originalPayroll;
+    // Fonction utilitaire pour nettoyer les données de duplication
+    const cleanDuplicatedPayroll = (originalPayroll, newNumber) => {
+        const {
+            id,
+            createdAt,
+            updatedAt,
+            statut,
+            numero,
+            paymentDetails,
+            montantPaye,
+            validatedAt,
+            paidAt,
+            cancelledAt,
+            ...cleanedData
+        } = originalPayroll;
 
-    return {
-        ...cleanedData,
-        numero: newNumber,
-        statut: "draft",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        periode: {
-            du: new Date().toISOString().split('T')[0],
-            au: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]
+        return {
+            ...cleanedData,
+            numero: newNumber,
+            statut: "draft",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            periode: {
+                du: new Date().toISOString().split('T')[0],
+                au: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]
+            }
+        };
+    };
+
+    // Utilisation dans handleDuplicate
+    const handleDuplicate = async (payroll) => {
+        try {
+            const newNumber = await payrollService.generatePayrollNumber(companyId);
+            const selectedEmployee = employees.find(e => e.id === payroll.employeeId);
+
+            // Nettoyer les données pour la duplication
+            const duplicatedPayroll = cleanDuplicatedPayroll(payroll, newNumber);
+
+            navigate("/payroll", {
+                state: {
+                    payroll: duplicatedPayroll,
+                    employee: selectedEmployee,
+                    isDuplicate: true
+                }
+            });
+
+        } catch (error) {
+            console.error("Erreur lors de la duplication:", error);
+            message.error("Erreur lors de la duplication du bulletin");
         }
     };
-};
 
-// Utilisation dans handleDuplicate
-const handleDuplicate = async (payroll) => {
-    try {
-        const newNumber = await payrollService.generatePayrollNumber(companyId);
-        const selectedEmployee = employees.find(e => e.id === payroll.employeeId);
+    // Fonction pour générer automatiquement un bulletin
+const handleGenerate = async (payroll) => {
+    Modal.confirm({
+        title: 'Générer un nouveau bulletin',
+        content: 'Cette action va créer un nouveau bulletin basé sur ce modèle et télécharger automatiquement le PDF.',
+        okText: 'Générer',
+        cancelText: 'Annuler',
+        onOk: async () => {
+            try {
+                setLoading(true);
+                
+                const newNumber = await payrollService.generatePayrollNumber(companyId);
+                const selectedEmployee = employees.find(e => e.id === payroll.employeeId);
 
-        // Nettoyer les données pour la duplication
-        const duplicatedPayroll = cleanDuplicatedPayroll(payroll, newNumber);
+                if (!selectedEmployee) {
+                    throw new Error("Employé non trouvé");
+                }
 
-        navigate("/payroll", {
-            state: {
-                payroll: duplicatedPayroll,
-                employee: selectedEmployee,
-                isDuplicate: true
+                // Préparer les données pour le nouveau bulletin
+                const generatedPayroll = {
+                    ...cleanDuplicatedPayroll(payroll, newNumber),
+                    periode: {
+                        du: new Date().toISOString().split('T')[0],
+                        au: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]
+                    }
+                };
+
+                const payrollData = payrollService.preparePayrollData(
+                    generatedPayroll,
+                    payroll.calculations || {},
+                    selectedEmployee
+                );
+
+                // Enregistrer en base de données
+                const result = await payrollService.addPayroll(
+                    companyId,
+                    currentUser.uid,
+                    payrollData
+                );
+
+                if (result.success) {
+                    message.success("Bulletin généré et enregistré avec succès !");
+                    
+                    // Préparer les données pour le PDF
+                    const payrollDataForPdf = preparePayrollData({
+                        ...payrollData,
+                        id: result.id,
+                        numero: newNumber
+                    });
+                    
+                    // Télécharger le PDF
+                    await downloadPayrollPdf(
+                        payrollDataForPdf.employee,
+                        payrollDataForPdf.formData,
+                        payrollDataForPdf.calculations,
+                        payrollDataForPdf.companyInfo
+                    );
+                    
+                } else {
+                    message.error(result.message);
+                }
+            } catch (error) {
+                console.error("Erreur lors de la génération:", error);
+                message.error(error.message || "Erreur lors de la génération du bulletin");
+            } finally {
+                setLoading(false);
             }
-        });
-
-    } catch (error) {
-        console.error("Erreur lors de la duplication:", error);
-        message.error("Erreur lors de la duplication du bulletin");
-    }
+        }
+    });
 };
-
 
     // Fonction pour obtenir le nom affiché de l'onglet
     const getTabDisplayName = (tab) => {
@@ -504,12 +573,13 @@ const handleDuplicate = async (payroll) => {
                 setSearchTerm={setSearchTerm}
                 navigate={navigate}
                 onDelete={handleDelete}
-                onEdit={handleEdit} // Ajoutez cette ligne
+                onEdit={handleEdit}
                 selectedEmployee={selectedEmployee}
                 type="payroll"
                 onPreview={handlePreview}
                 onDownload={handleDownload}
                 onDuplicate={handleDuplicate}
+                onGenerate={handleGenerate}
                 onValidate={handleValidate}
                 onMarkAsPaid={handlePayment}
                 onCancel={handleCancel}

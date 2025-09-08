@@ -22,6 +22,8 @@ import {
     FaFileSignature,
     FaChevronRight,
     FaChevronLeft,
+    FaMagic // AJOUTER CETTE ICÔNE
+
 } from 'react-icons/fa';
 import { Modal, Button } from 'antd';
 import empty from '../assets/empty.png';
@@ -45,6 +47,7 @@ const PayrollSection = ({
     onPreview,
     onEdit,
     onValidate,
+    onGenerate,
     onMarkAsPaid,
     onCancel,
     getStatus,
@@ -382,6 +385,22 @@ const PayrollSection = ({
                                         ) : null}
                                     </SwiperSlide>
 
+                                    {/* Slide 3 - Ajouter une nouvelle slide pour le bouton Générer */}
+                                    <SwiperSlide>
+                                        <button
+                                            className="action-btn generate"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onGenerate(p);
+                                            }}
+                                            title="Générer automatiquement"
+                                        >
+                                            <FaMagic />
+                                        </button>
+
+                                        {/* Vous pouvez ajouter d'autres boutons ici si nécessaire */}
+                                    </SwiperSlide>
+
                                     {/* Navigation */}
                                     <div
                                         className={`swiper-nav-btn swiper-prev swiper-prev-${p.id}`}
@@ -504,6 +523,19 @@ const PayrollSection = ({
                                                 ) : null}
                                             </div>
 
+                                            {/* Groupe 3 - Ajouter un nouveau groupe d'actions */}
+                                            <div className="action-group">
+                                                <button
+                                                    className="action-btn generate"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onGenerate(p);
+                                                    }}
+                                                    title="Générer automatiquement"
+                                                >
+                                                    <FaMagic />
+                                                </button>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

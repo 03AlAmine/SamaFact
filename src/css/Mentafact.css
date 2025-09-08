@@ -621,9 +621,8 @@
   background: var(--danger-color);
 }
 
-.stat-icon.teams{
-    background: var(--secondary);
-
+.stat-icon.teams {
+  background: var(--secondary);
 }
 .stat-icon.masse_salariale {
   background: var(--success-light);
@@ -1459,7 +1458,8 @@
   position: relative;
 }
 
-.chart-card, .chart-card-stat {
+.chart-card,
+.chart-card-stat {
   background-color: var(--card-bg);
   padding: 1.5rem;
   border-radius: var(--border-radius);
@@ -1469,14 +1469,15 @@
   overflow: hidden;
 }
 
-.chart-card:hover, .chart-card-stat:hover {
+.chart-card:hover,
+.chart-card-stat:hover {
   transform: var(--hover-effect);
   box-shadow: var(--box-shadow-soft);
   transform: translateY(-5px);
 }
 
-
-.chart-card h3, .chart-card-stat h3 {
+.chart-card h3,
+.chart-card-stat h3 {
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
   color: var(--text-dark);
@@ -1903,20 +1904,22 @@ button:hover svg {
 
 /* Couleur bleue pour mentafact */
 .toggle-btn.mentafact {
-  background: rgba(58, 123, 213, 0.1);
+  background: rgba(58, 123, 213, 0.3);
   color: #3a7bd5;
 }
 .toggle-btn.mentafact:hover {
-  background: rgba(58, 123, 213, 0.2);
+  background: rgba(58, 123, 213, 0.5);
+  color: white;
 }
 
 /* Couleur verte pour payroll */
 .toggle-btn.payroll {
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(76, 175, 80, 0.3);
   color: #28a745;
 }
 .toggle-btn.payroll:hover {
-  background: rgba(76, 175, 80, 0.2);
+  background: rgba(76, 175, 80, 0.5);
+  color: white;
 }
 
 /* Transitions sur icône */
@@ -2004,7 +2007,8 @@ button:hover svg {
 }
 
 @media (max-width: 1199px) {
-  .chart-card:nth-child(1), .chart-card-stat:nth-child(1) {
+  .chart-card:nth-child(1),
+  .chart-card-stat:nth-child(1) {
     width: 100%;
   }
 }
@@ -2015,7 +2019,8 @@ button:hover svg {
     flex-direction: column;
     align-items: center; /* centre la légende et le graph */
   }
-  .chart-card, .chart-card-stat {
+  .chart-card,
+  .chart-card-stat {
     flex: 1 1 100%;
     min-width: 300px; /* ✅ largeur minimale pour éviter que ça casse trop tôt */
     display: flex;

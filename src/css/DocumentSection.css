@@ -64,7 +64,6 @@
   visibility: visible;
 }
 
-
 .header-left,
 .header-right {
   display: flex;
@@ -501,11 +500,13 @@
 .paid-row:hover {
   background-color: #dcfce7;
 }
-.partial-row, .validated-row {
+.partial-row,
+.validated-row {
   background-color: #fdfdf0;
 }
 
-.partial-row:hover, .validated-row:hover {
+.partial-row:hover,
+.validated-row:hover {
   background-color: #c5e5c0;
 }
 
@@ -634,7 +635,7 @@
     width: 100%;
     overflow-x: auto;
   }
-    .create-btn {
+  .create-btn {
     padding: 10px;
     height: 40px;
     justify-content: center;
@@ -649,11 +650,10 @@
   .create-btn span {
     display: none;
   }
-
 }
 
 .paid-card {
-  background-color: #f2f0fd;
+  background-color: #f0fdf4;
   box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);
 }
 .partial-card {
@@ -666,7 +666,6 @@
   top: 8px;
   right: 8px;
 }
-
 
 /* Styles globaux de la modal */
 .document-details-modal-container .ant-modal-content {
@@ -1201,5 +1200,3 @@
     padding: 20px 16px;
   }
 }
-
-
