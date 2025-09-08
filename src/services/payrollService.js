@@ -136,16 +136,26 @@ export const payrollService = {
   // ➕ Création d'un bulletin de paie
   addPayroll: async (companyId, userId, payrollData) => {
     try {
+      // Vérifier si un bulletin avec le même numéro existe déjà
+      const payrollsRef = collection(db, `companies/${companyId}/payrolls`);
+      const q = query(payrollsRef, where("numero", "==", payrollData.numero));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        return {
+          success: false,
+          message: "Un bulletin avec ce numéro existe déjà."
+        };
+      }
+
       const payrollToSave = {
         ...payrollData,
-        companyId,           // l'entreprise
-        userId,              // l'utilisateur qui enregistre
+        companyId,
+        userId,
         createdAt: new Date().toISOString(),
-        statut: "draft"      // ou "en attente", selon ton workflow
+        statut: "draft"
       };
 
-      // Ajouter le bulletin
-      const payrollsRef = collection(db, `companies/${companyId}/payrolls`);
       const docRef = await addDoc(payrollsRef, payrollToSave);
 
       // Créer la collection résumée
@@ -157,8 +167,8 @@ export const payrollService = {
         periode: payrollToSave.periode,
         salaireNetAPayer: payrollToSave.calculations.salaireNetAPayer,
         statut: payrollToSave.statut,
-        userId,              // on conserve l'userId ici aussi
-        companyId,           // et le companyId
+        userId,
+        companyId,
         createdAt: payrollToSave.createdAt
       });
 

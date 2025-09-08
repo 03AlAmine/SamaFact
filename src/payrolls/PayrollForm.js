@@ -27,6 +27,9 @@ const PayrollForm = () => {
     const [showEmployeInfo, setShowEmployeInfo] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [lastSavedCalculations, setLastSavedCalculations] = useState(null);
+    const [isDuplicating, setIsDuplicating] = useState(location.state?.isDuplicate || false);
+    const [duplicationComplete, setDuplicationComplete] = useState(false);
+
 
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
@@ -240,12 +243,21 @@ const PayrollForm = () => {
             try {
                 if (location.state && location.state.payroll) {
                     const payroll = location.state.payroll;
+                    const isDuplicate = location.state.isDuplicate || false;
+
+                    // METTRE À JOUR L'ÉTAT DE DUPLICATION
+                    setIsDuplicating(isDuplicate);
 
                     // Mettre à jour l'employé sélectionné
                     setSelectedEmployeeId(payroll.employeeId || '');
 
-                    // Mettre à jour le numéro de bulletin
-                    setPayrollNumber(payroll.numero || '');
+                    // Pour la duplication, générer un nouveau numéro
+                    if (isDuplicate) {
+                        const numero = await payrollService.generatePayrollNumber(currentUser.companyId);
+                        setPayrollNumber(numero);
+                    } else {
+                        setPayrollNumber(payroll.numero || '');
+                    }
 
                     // Fonction pour convertir les dates Firestore
                     const convertFirestoreDate = (date) => {
@@ -285,7 +297,10 @@ const PayrollForm = () => {
                         }
                     });
 
-                    setIsSaved(true);
+                    // NE PAS METTRE isSaved À TRUE POUR LA DUPLICATION
+                    if (!isDuplicate) {
+                        setIsSaved(true);
+                    }
                 } else {
                     const numero = await payrollService.generatePayrollNumber(currentUser.companyId);
                     setPayrollNumber(numero);
@@ -332,10 +347,12 @@ const PayrollForm = () => {
     }, [currentUser]);
 
     // Mettre à jour le salaire de base quand l'employé est sélectionné
-    // Mettre à jour le salaire de base quand l'employé est sélectionné
     useEffect(() => {
-        // Ne pas exécuter cette mise à jour si on est en mode édition
-        if (location.state?.payroll?.id && selectedEmployeeId === location.state.payroll.employeeId) {
+        // Ne pas exécuter cette mise à jour si on est en mode édition ou duplication
+        const isEditing = location.state?.payroll?.id && selectedEmployeeId === location.state.payroll.employeeId;
+        const isDuplicating = location.state?.isDuplicate;
+
+        if (isEditing || isDuplicating) {
             return;
         }
 
@@ -367,7 +384,7 @@ const PayrollForm = () => {
                 }));
             }
         }
-    }, [selectedEmployeeId, employees, location.state?.payroll]); // Ajouter location.state?.payroll aux dépendances
+    }, [selectedEmployeeId, employees, location.state?.payroll, location.state?.isDuplicate]);
 
     // Sauvegarde du bulletin
     const savePayrollToFirestore = async (payrollData, isUpdate = false) => {
@@ -375,7 +392,8 @@ const PayrollForm = () => {
             throw new Error("Company ID not available");
         }
 
-        if (isUpdate && location.state?.payroll?.id) {
+        // Utiliser l'état isDuplicating
+        if (isUpdate && location.state?.payroll?.id && !isDuplicating) {
             return payrollService.updatePayroll(
                 currentUser.companyId,
                 location.state.payroll.id,
@@ -396,7 +414,9 @@ const PayrollForm = () => {
             return;
         }
 
-        if (isSaved && !location.state?.payroll?.id) {
+        const isEditing = !!location.state?.payroll?.id && !isDuplicating;
+
+        if (isSaved && !isEditing && !isDuplicating) {
             showNotification("Ce bulletin est déjà enregistré. Créez un nouveau bulletin si nécessaire.", "warning");
             return;
         }
@@ -405,20 +425,39 @@ const PayrollForm = () => {
             setIsSaving(true);
             const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
+            let payrollNum = payrollNumber;
+            if (isDuplicating) {
+                payrollNum = await payrollService.generatePayrollNumber(currentUser.companyId);
+                setPayrollNumber(payrollNum);
+            }
+
             const payrollData = payrollService.preparePayrollData(
-                { ...formData, numero: payrollNumber },
+                { ...formData, numero: payrollNum },
                 calculations,
                 selectedEmployee
             );
 
             const { success, message } = await savePayrollToFirestore(
                 payrollData,
-                !!location.state?.payroll?.id
+                isEditing
             );
 
             if (success) {
-                setIsSaved(true);
+                if (!isDuplicating) {
+                    setIsSaved(true);
+                } else {
+                    // POUR LA DUPLICATION RÉUSSIE, METTRE À JOUR L'ÉTAT
+                    setDuplicationComplete(true);
+                    setIsSaved(true); // Maintenant on peut mettre isSaved à true
+                }
+
                 showNotification(message, "success");
+
+              /*  if (isDuplicating) {
+                    setTimeout(() => {
+                        navigate('/');
+                    }, 2000);
+                } */
             } else {
                 showNotification(message, "error");
             }
@@ -865,12 +904,14 @@ const PayrollForm = () => {
                                 </>
                             ) : (
                                 <>
-                                    <FaSave /> {isSaved ? "Mettre à jour" : "Enregistrer"}
+                                    <FaSave />
+                                    {isDuplicating ? "Dupliquer" :
+                                        location.state?.payroll?.id ? "Mettre à jour" : "Enregistrer"}
                                 </>
                             )}
                         </button>
 
-                        {isSaved && (
+                        {(isSaved || duplicationComplete) && (
                             <PDFDownloadLink
                                 document={
                                     <PayrollPDF
@@ -890,7 +931,7 @@ const PayrollForm = () => {
                                 fileName={`bulletin_paie_${selectedEmployee.nom}_${selectedEmployee.prenom}_${formData.periode.du}_${formData.periode.au}.pdf`}
                             >
                                 {({ loading: pdfLoading }) => (
-                                    <button className="info-button" disabled={pdfLoading}>
+                                    <button className="info-button donwload" disabled={pdfLoading}>
                                         {pdfLoading ? (
                                             <>
                                                 <FaSpinner className="spinner" /> Génération...

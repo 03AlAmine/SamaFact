@@ -493,7 +493,8 @@ const PayrollSection = ({
                                                     onEdit(p); // Utiliser la fonction handleEdit passée en prop
                                                 }} title="Modifier">
                                                     <FaEdit />
-                                                </button>                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
+                                                </button>
+                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
                                                 {p.statut === "draft" ? (
                                                     <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider"><FaCheckCircle /></button>
                                                 ) : p.statut === "validated" ? (

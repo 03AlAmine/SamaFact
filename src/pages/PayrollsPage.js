@@ -165,31 +165,6 @@ const PayrollsPage = ({
         }
     };
 
-    // Duplication de bulletin
-    const handleDuplicate = async (payroll) => {
-        try {
-            const newNumber = await payrollService.generatePayrollNumber(companyId);
-
-            navigate("/payroll", {
-                state: {
-                    payroll: {
-                        ...payroll,
-                        id: undefined,
-                        numero: newNumber,
-                        statut: "draft",
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    },
-                    isDuplicate: true,
-                    employee: employees.find(e => e.id === payroll.employeeId)
-                }
-            });
-        } catch (error) {
-            console.error("Erreur duplication:", error);
-            message.error("Erreur lors de la duplication");
-        }
-    };
-
     // Gestion de la validation
     const handleValidate = async (id) => {
         Modal.confirm({
@@ -359,6 +334,7 @@ const PayrollsPage = ({
         }
     };
 
+
     const handleEdit = (payroll) => {
         const selectedEmployee = employees.find(e => e.id === payroll.employeeId);
 
@@ -414,6 +390,59 @@ const PayrollsPage = ({
             }
         });
     };
+
+// Fonction utilitaire pour nettoyer les données de duplication
+const cleanDuplicatedPayroll = (originalPayroll, newNumber) => {
+    const { 
+        id, 
+        createdAt, 
+        updatedAt, 
+        statut, 
+        numero, 
+        paymentDetails, 
+        montantPaye, 
+        validatedAt,
+        paidAt,
+        cancelledAt,
+        ...cleanedData 
+    } = originalPayroll;
+
+    return {
+        ...cleanedData,
+        numero: newNumber,
+        statut: "draft",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        periode: {
+            du: new Date().toISOString().split('T')[0],
+            au: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]
+        }
+    };
+};
+
+// Utilisation dans handleDuplicate
+const handleDuplicate = async (payroll) => {
+    try {
+        const newNumber = await payrollService.generatePayrollNumber(companyId);
+        const selectedEmployee = employees.find(e => e.id === payroll.employeeId);
+
+        // Nettoyer les données pour la duplication
+        const duplicatedPayroll = cleanDuplicatedPayroll(payroll, newNumber);
+
+        navigate("/payroll", {
+            state: {
+                payroll: duplicatedPayroll,
+                employee: selectedEmployee,
+                isDuplicate: true
+            }
+        });
+
+    } catch (error) {
+        console.error("Erreur lors de la duplication:", error);
+        message.error("Erreur lors de la duplication du bulletin");
+    }
+};
+
 
     // Fonction pour obtenir le nom affiché de l'onglet
     const getTabDisplayName = (tab) => {
