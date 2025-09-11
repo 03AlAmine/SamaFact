@@ -162,14 +162,62 @@ const DocumentSection = ({
     const displayMode = isMobile ? 'card' : viewMode;
 
     const sendEmail = async (doc) => {
+        // Vérifier d'abord si tous les éléments requis sont présents
+        const missingFields = [];
+
+        if (!doc.clientNom || doc.clientNom.trim() === "") {
+            missingFields.push("nom du client");
+        }
+
+        if (!doc.clientEmail || doc.clientEmail.trim() === "") {
+            missingFields.push("email du client");
+        } else {
+            // Vérifier si l'email est valide
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(doc.clientEmail)) {
+                message.error("L'adresse email du client n'est pas valide ❌");
+                return;
+            }
+        }
+
+        if (!doc.numero || doc.numero.trim() === "") {
+            missingFields.push("numéro du document");
+        }
+
+        if (!doc.totalTTC) {
+            missingFields.push("montant total");
+        }
+
+        if (!doc.date) {
+            missingFields.push("date du document");
+        }
+
+        if (missingFields.length > 0) {
+            message.error(
+                <div>
+                    <div>Impossible d'envoyer l'email ❌</div>
+                    <div style={{ fontSize: '12px', marginTop: '5px' }}>
+                        Données manquantes: {missingFields.join(', ')}
+                    </div>
+                </div>,
+                5 // Durée d'affichage plus longue (5 secondes)
+            );
+            return;
+        }
+
         // Définir cet email comme en cours d'envoi
         setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
 
         const templateParams = {
-            to_name: doc.clientNom || "Client",
-            to_email: doc.clientEmail || "client@gmail.com",
+            to_name: doc.clientNom,
+            to_email: doc.clientEmail,
             document_numero: doc.numero,
-            montant: doc.totalTTC,
+            montant: typeof doc.totalTTC === 'string'
+                ? doc.totalTTC
+                : doc.totalTTC.toLocaleString('fr-FR', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }),
             date: doc.date,
         };
 
@@ -181,8 +229,8 @@ const DocumentSection = ({
                 "ioK4mXd5cOkG_z4EY"
             );
 
-            // Afficher un message de succès
-            message.success("Email envoyé avec succès ✅");
+            // Afficher un message de succès avec l'email du destinataire
+            message.success(`Email envoyé à ${doc.clientEmail} ✅`);
 
         } catch (error) {
             // Afficher un message d'erreur

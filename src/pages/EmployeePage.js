@@ -362,11 +362,11 @@ const EmployeesPage = ({
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="edit-categorie" className="form-label">Catégorie <span className="required">*</span></label>
+              <label htmlFor="edit-email" className="form-label">Email <span className="required">*</span></label>
               <input
-                id="edit-categorie"
-                name="categorie"
-                value={editingEmployee.categorie}
+                id="edit-email"
+                name="email"
+                value={editingEmployee.email}
                 onChange={handleEditChange}
                 required
                 className="form-input"
@@ -454,6 +454,18 @@ const EmployeesPage = ({
             </div>
 
             <div className="form-group">
+              <label htmlFor="edit-categorie" className="form-label">Catégorie <span className="required">*</span></label>
+              <input
+                id="edit-categorie"
+                name="categorie"
+                value={editingEmployee.categorie}
+                onChange={handleEditChange}
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="edit-nbreofParts" className="form-label">Nombre de parts </label>
               <input
                 id="edit-nbreofParts"
@@ -466,8 +478,8 @@ const EmployeesPage = ({
               />
             </div>
 
-
           </div>
+
           <div className="form-section-title">
             <FaMoneyBillWave style={{ marginRight: "10px" }} />
             Primes et Indemnités Fixes
@@ -595,11 +607,11 @@ const EmployeesPage = ({
             <div className="form-row">
 
               <div className="form-group">
-                <label htmlFor="categorie" className="form-label">Catégorie <span className="required">*</span></label>
+                <label htmlFor="email" className="form-label">Email <span className="required">*</span></label>
                 <input
-                  id="categorie"
-                  name="categorie"
-                  value={employee.categorie}
+                  id="email"
+                  name="email"
+                  value={employee.email}
                   onChange={handleChange}
                   required
                   className="form-input"
@@ -681,6 +693,18 @@ const EmployeesPage = ({
                   name="salaireBase"
                   type="number"
                   value={employee.salaireBase}
+                  onChange={handleChange}
+                  required
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="categorie" className="form-label">Catégorie <span className="required">*</span></label>
+                <input
+                  id="categorie"
+                  name="categorie"
+                  value={employee.categorie}
                   onChange={handleChange}
                   required
                   className="form-input"

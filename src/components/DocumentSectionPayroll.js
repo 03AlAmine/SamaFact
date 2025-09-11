@@ -22,10 +22,12 @@ import {
     FaFileSignature,
     FaChevronRight,
     FaChevronLeft,
-    FaMagic // AJOUTER CETTE ICÔNE
+    FaMagic, // AJOUTER CETTE ICÔNE
+    FaSpinner,
+    FaPaperPlane
 
 } from 'react-icons/fa';
-import { Modal, Button } from 'antd';
+import { Modal, Button, message } from 'antd';
 import empty from '../assets/empty.png';
 import '../css/DocumentSection.css';
 import UserNameLookup from './UserNameLookup';
@@ -34,6 +36,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
+import emailjs from "emailjs-com";
 
 const PayrollSection = ({
     title,
@@ -62,6 +65,7 @@ const PayrollSection = ({
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [sendingEmails, setSendingEmails] = useState({}); // État pour suivre les emails en cours d'envoi
 
     // Précharger l'image de fond
     useEffect(() => {
@@ -136,6 +140,66 @@ const PayrollSection = ({
         };
 
         return `${format(periode.du)} - ${format(periode.au)}`;
+    };
+
+    const sendEmail = async (doc) => {
+        // Vérifier d'abord si tous les éléments requis sont présents
+        const missingFields = [];
+
+        if (!doc.employeeName) missingFields.push("nom de l'employé");
+        if (!doc.employeeEmail) missingFields.push("email de l'employé");
+        if (!doc.numero) missingFields.push("numéro du bulletin");
+        if (!doc.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
+        if (!doc.periode?.du || !doc.periode?.au) missingFields.push("période de paie");
+
+        if (missingFields.length > 0) {
+            message.error(`Données manquantes: ${missingFields.join(', ')} ❌`);
+            return;
+        }
+
+        // Vérifier si l'email est valide
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(doc.employeeEmail)) {
+            message.error("L'adresse email de l'employé n'est pas valide ❌");
+            return;
+        }
+
+        // Définir cet email comme en cours d'envoi
+        setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
+
+        const templateParams = {
+            to_name: doc.employeeName,
+            to_email: doc.employeeEmail,
+            document_numero: doc.numero,
+            montant: doc.calculations.salaireNetAPayer.toLocaleString('fr-FR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }),
+            periode: formatDateRange(doc.periode),
+        };
+
+        try {
+            await emailjs.send(
+                "service_samafact",
+                "template_samasalaire",
+                templateParams,
+                "ioK4mXd5cOkG_z4EY"
+            );
+
+            // Afficher un message de succès
+            message.success(`Email envoyé à ${doc.employeeEmail} ✅`);
+
+        } catch (error) {
+            // Afficher un message d'erreur
+            message.error("Erreur lors de l'envoi de l'email ❌");
+        } finally {
+            // Retirer cet email de la liste des envois en cours
+            setSendingEmails(prev => {
+                const newState = { ...prev };
+                delete newState[doc.id];
+                return newState;
+            });
+        }
     };
 
     if (loading) {
@@ -397,6 +461,14 @@ const PayrollSection = ({
                                         >
                                             <FaMagic />
                                         </button>
+                                        <button
+                                            className="action-btn send"
+                                            title="Envoyer par email"
+                                            onClick={(e) => { e.stopPropagation(); sendEmail(p); }}
+                                            disabled={sendingEmails[p.id]} // Désactiver le bouton pendant l'envoi
+                                        >
+                                            {sendingEmails[p.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
+                                        </button>
 
                                         {/* Vous pouvez ajouter d'autres boutons ici si nécessaire */}
                                     </SwiperSlide>
@@ -534,6 +606,14 @@ const PayrollSection = ({
                                                     title="Générer automatiquement"
                                                 >
                                                     <FaMagic />
+                                                </button>
+                                                <button
+                                                    className="action-btn send"
+                                                    title="Envoyer par email"
+                                                    onClick={(e) => { e.stopPropagation(); sendEmail(p); }}
+                                                    disabled={sendingEmails[p.id]} // Désactiver le bouton pendant l'envoi
+                                                >
+                                                    {sendingEmails[p.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
                                                 </button>
                                             </div>
                                         </div>

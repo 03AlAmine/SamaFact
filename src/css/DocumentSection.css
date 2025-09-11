@@ -464,6 +464,9 @@
   background-color: #d1d5db;
   cursor: not-allowed;
 }
+.action-btn.send:hover {
+  color: #1aa01c;
+}
 .action-btn.generate:hover {
   color: #1a85a0;
 }

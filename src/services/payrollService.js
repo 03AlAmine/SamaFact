@@ -85,6 +85,7 @@ export const payrollService = {
       employeeAddresse: employee.adresse,
       employeeCategorie: employee.categorie,
       nbreofParts: employee.nbreofParts || 1,
+      employeeEmail: employee.email || "",
       periode: {
         du: formData.periode.du,
         au: formData.periode.au
