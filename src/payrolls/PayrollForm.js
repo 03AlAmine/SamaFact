@@ -50,6 +50,18 @@ const PayrollForm = () => {
         }
     };
 
+    // Fonction utilitaire pour obtenir le premier et dernier jour du mois
+    const getCurrentMonthDateRange = () => {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        return {
+            du: firstDay.toISOString().split('T')[0],
+            au: lastDay.toISOString().split('T')[0]
+        };
+    };
+
     // Fonction pour calculer automatiquement l'IR selon le barème 2013
     const calculateIR = useCallback((brutFiscal, nbreofParts) => {
         const revenu = brutFiscal / nbreofParts;
@@ -94,10 +106,7 @@ const PayrollForm = () => {
 
     // États pour le formulaire de paie
     const [formData, setFormData] = useState({
-        periode: {
-            du: new Date().toISOString().split('T')[0],
-            au: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]
-        },
+        periode: getCurrentMonthDateRange(),
         remuneration: {
             tauxHoraire: '0',
             salaireBase: '0',
@@ -453,11 +462,11 @@ const PayrollForm = () => {
 
                 showNotification(message, "success");
 
-              /*  if (isDuplicating) {
-                    setTimeout(() => {
-                        navigate('/');
-                    }, 2000);
-                } */
+                /*  if (isDuplicating) {
+                      setTimeout(() => {
+                          navigate('/');
+                      }, 2000);
+                  } */
             } else {
                 showNotification(message, "error");
             }

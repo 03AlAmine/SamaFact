@@ -453,18 +453,28 @@ const DocumentSection = ({
                                     <SwiperSlide>
                                         <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu"><FaEye /></button>
                                         <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger"><FaDownload /></button>
-                                        <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer"><FaTrash /></button>
+                                        {f.statut !== 'payé' && (<button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer"><FaTrash /></button>
+                                        )}
                                     </SwiperSlide>
 
                                     <SwiperSlide>
-                                        <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier"><FaEdit /></button>
+                                        {f.statut !== 'payé' && (
+                                            <button
+                                                className="action-btn edit"
+                                                onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }}
+                                                title="Modifier"
+                                            >
+                                                <FaEdit />
+                                            </button>
+                                        )}
                                         <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer"><FaCopy /></button>
-                                        {f.statut === "payé" ? (
+                                        {f.statut === 'payé' ? (
                                             <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement"><FaTimes /></button>
                                         ) : (
                                             <button className="action-btn paid" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(f.id, type); }} title="Marquer comme payé"><FaCheck /></button>
                                         )}
                                     </SwiperSlide>
+
 
                                     <SwiperSlide>
                                         <button className="action-btn info_view" onClick={(e) => { e.stopPropagation(); showInfoModal(f); }} title="Détails"><FaInfoCircle /></button>
@@ -572,17 +582,20 @@ const DocumentSection = ({
 
                                     <td className="actions-cell">
                                         <div className="actions-container">
-
                                             {/* Groupe 1 */}
                                             <div className="action-group">
                                                 <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(f); }} title="Aperçu"><FaEye /></button>
                                                 <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(f); }} title="Télécharger"><FaDownload /></button>
-                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer"><FaTrash /></button>
+                                                {f.statut !== 'payé' && (
+                                                    <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(f.id, type); }} title="Supprimer"><FaTrash /></button>
+                                                )}
                                             </div>
 
                                             {/* Groupe 2 */}
                                             <div className="action-group">
-                                                <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier"><FaEdit /></button>
+                                                {f.statut !== 'payé' && (
+                                                    <button className="action-btn edit" onClick={(e) => { e.stopPropagation(); navigate("/bill", { state: { facture: f, client: selectedClient, type: f.type, objet: f.objet, ribs: f.ribs, showSignature: f.showSignature } }); }} title="Modifier"><FaEdit /></button>
+                                                )}
                                                 <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(f); }} title="Dupliquer"><FaCopy /></button>
                                                 {f.statut === 'payé' ? (
                                                     <button className="action-btn unpaid" onClick={(e) => { e.stopPropagation(); onMarkAsPending(f.id, type); }} title="Annuler le paiement"><FaTimes /></button>
@@ -590,6 +603,7 @@ const DocumentSection = ({
                                                     <button className="action-btn paid" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(f.id, type); }} title="Marquer comme payé"><FaCheck /></button>
                                                 )}
                                             </div>
+
 
                                             {/* Groupe 3 */}
                                             <div className="action-group">

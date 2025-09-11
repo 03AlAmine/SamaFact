@@ -667,6 +667,79 @@ const Mentafact = () => {
             e.target.value = '';
         }
     };
+
+    const handleImportEmployee = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setImportProgress("Début de l'import des employés...");
+
+        try {
+            // 1. Lire le fichier Excel
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            setImportProgress("Conversion des données employés...");
+
+            // 2. Transformer les données
+            const employeesToImport = jsonData.map(row => ({
+                nom: row['Nom'] || '',
+                prenom: row['Prénom'] || '',
+                email: row['Email'] || row['E-mail'] || '',
+                telephone: row['Téléphone'] || row['Phone'] || '',
+                adresse: row['Adresse'] || row['Address'] || '',
+                poste: row['Poste'] || row['Fonction'] || '',
+                departement: row['Département'] || '',
+                matricule: row['Matricule'] || '',
+                dateEmbauche: row['Date embauche'] ? (row['Date embauche']) : '',
+                typeContrat: row['Type contrat'] || 'CDI',
+                salaireBase: parseFloat(row['Salaire base'] || 0),
+                categorie: row['Catégorie'] || '',
+                nbreofParts: parseInt(row['Nombre parts'] || 1),
+                indemniteTransport: parseFloat(row['Indemnité transport'] || 26000),
+                primePanier: parseFloat(row['Prime panier'] || 0),
+                indemniteResponsabilite: parseFloat(row['Indemnité responsabilité'] || 0),
+                indemniteDeplacement: parseFloat(row['Indemnité déplacement'] || 0)
+            })).filter(employee => employee.nom.trim() !== '' && employee.prenom.trim() !== '');
+
+            if (employeesToImport.length === 0) {
+                setImportProgress("Aucun employé valide trouvé dans le fichier");
+                return;
+            }
+
+            setImportProgress(`Importation de ${employeesToImport.length} employés...`);
+
+            // 3. Importer les employés
+            let importedCount = 0;
+            for (const employee of employeesToImport) {
+                try {
+                    const result = await employeeService.addEmployee(companyId, employee);
+                    if (result.success) {
+                        importedCount++;
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de l'import d'un employé:", error);
+                }
+            }
+
+            setImportProgress(`${importedCount}/${employeesToImport.length} employés importés avec succès`);
+
+        } catch (error) {
+            console.error("Erreur lors de l'import des employés:", error);
+            setImportProgress("Erreur lors de l'import: " + error.message);
+        } finally {
+            // Réinitialiser le champ de fichier
+            e.target.value = '';
+        }
+    };
+
+
+
+
+
+
     const { canToggleModules } = useAuth();
     const { activeModule, setModuleBasedOnRole } = useAppContext();
     // Initialisation au chargement
@@ -750,6 +823,8 @@ const Mentafact = () => {
                     handleUpdate={handleUpdateEmployee}
                     handleUpdateSuivi={handleUpdateEmployeeSuivi}
                     cancelEdit={cancelEditEmployee}
+                    handleImportEmployees={handleImportEmployee} // ← Cette ligne
+                    importProgress={importProgress} // ← Et cette ligne
                 />;
             case "factures":
                 return <InvoicesPage

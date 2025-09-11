@@ -417,19 +417,22 @@ const PayrollSection = ({
                                         <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger">
                                             <FaDownload />
                                         </button>
-                                        <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer">
-                                            <FaTrash />
-                                        </button>
+                                        {p.statut !== "paid" && (
+                                            <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer">
+                                                <FaTrash />
+                                            </button>
+                                        )}
                                     </SwiperSlide>
 
                                     {/* Slide 2 */}
                                     <SwiperSlide>
-                                        <button className="action-btn edit" onClick={(e) => {
-                                            e.stopPropagation();
-                                            onEdit(p); // Utiliser la fonction handleEdit passée en prop
-                                        }} title="Modifier">
-                                            <FaEdit />
-                                        </button>
+                                        {p.statut !== "paid" && (
+                                            <button className="action-btn edit"
+                                                onClick={(e) => { e.stopPropagation(); onEdit(p); }}
+                                                title="Modifier">
+                                                <FaEdit />
+                                            </button>
+                                        )}
                                         <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer">
                                             <FaCopy />
                                         </button>
@@ -574,17 +577,20 @@ const PayrollSection = ({
                                             <div className="action-group">
                                                 <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(p); }} title="Aperçu"><FaEye /></button>
                                                 <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger"><FaDownload /></button>
-                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer"><FaTrash /></button>
+                                                {p.statut !== "paid" && (<button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer"> <FaTrash /></button>
+                                                )}
                                             </div>
 
                                             {/* Groupe 2 */}
                                             <div className="action-group">
-                                                <button className="action-btn edit" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onEdit(p); // Utiliser la fonction handleEdit passée en prop
-                                                }} title="Modifier">
-                                                    <FaEdit />
-                                                </button>
+                                                {p.statut !== "paid" && (
+                                                    <button className="action-btn edit" onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEdit(p); // Modifier seulement si pas payé
+                                                    }} title="Modifier">
+                                                        <FaEdit />
+                                                    </button>
+                                                )}
                                                 <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
                                                 {p.statut === "draft" ? (
                                                     <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider"><FaCheckCircle /></button>
@@ -594,6 +600,7 @@ const PayrollSection = ({
                                                     <button className="action-btn cancel" onClick={(e) => { e.stopPropagation(); onCancel(p.id); }} title="Annuler"><FaTimes /></button>
                                                 ) : null}
                                             </div>
+
 
                                             {/* Groupe 3 - Ajouter un nouveau groupe d'actions */}
                                             <div className="action-group">
