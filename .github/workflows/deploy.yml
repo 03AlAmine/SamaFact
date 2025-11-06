@@ -28,11 +28,10 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: "ftp.cluster031.hosting.ovh.net"  # Serveur O2Switch spécifique
+          server: "ftp.leaderinterime.com"
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/
-          server-dir: ./www/  # IMPORTANT: Chemin O2Switch
+          server-dir: /
           port: 21
           protocol: ftp
-          security: loose
