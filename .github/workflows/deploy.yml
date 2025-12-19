@@ -18,11 +18,10 @@ jobs:
         run: npm install
 
       - name: Build project
-        run: npm run build
+        run: CI=false npm run build  # <-- Ajoutez CI=false ici
         env:
           REACT_APP_ADMIN_SECRET: ${{ secrets.REACT_APP_ADMIN_SECRET }}
           REACT_APP_API_KEY: ${{ secrets.REACT_APP_API_KEY }}
-          ##GENERATE_SOURCEMAP: ${{ secrets.GENERATE_SOURCEMAP }}
           REACT_APP_ENV: production
 
       - name: Deploy via FTP
