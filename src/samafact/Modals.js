@@ -238,7 +238,7 @@ export const UserModal = ({
             const perms = getPermissionsForRole(user.role);
             onChange('permissions', perms);
         }
-    }, [mode, user.role]);
+    }, [mode, onChange, user.role]);
 
     if (!visible) return null;
 
