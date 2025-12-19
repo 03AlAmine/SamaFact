@@ -6,8 +6,9 @@ import {
 } from "react-icons/fa";
 import empty_employee from '../assets/empty_employe.png';
 import '../css/EmployeePage.css';
-import { EmployeeDetailsModal } from '../components/EmployeeModal';
+import { EmployeeDetailsModal } from '../components/dialogs/EmployeeModal';
 import { Modal, Button } from "antd";
+import LoadingState from '../components/common/LoadingState';
 
 const EmployeesPage = ({
   filteredEmployees,
@@ -38,7 +39,7 @@ const EmployeesPage = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [isMobile, setIsMobile] = useState(false); // ← Ajouter cet état
 
 
   // Précharger l'image de fond
@@ -52,6 +53,13 @@ const EmployeesPage = ({
       console.error("Erreur de chargement de l'image de fond");
       setBackgroundLoaded(true); // Continuer même si l'image échoue
     };
+  }, []);
+
+  useEffect(() => {
+    const checkIsMobile = () => setIsMobile(window.innerWidth <= 1199);
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
   // Gérer le chargement global
@@ -160,47 +168,10 @@ const EmployeesPage = ({
     }));
   };
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          padding: '40px',
-          textAlign: 'center',
-          color: '#2c3e50',
-          fontSize: '18px',
-          fontWeight: '500',
-          fontFamily: 'Inter, sans-serif',
-          backgroundColor: '#ecf0f1',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          margin: '40px auto',
-          marginTop: '5%',
-          maxWidth: '400px'
-        }}
-      >
-        <div
-          style={{
-            fontSize: '30px',
-            marginBottom: '10px',
-            animation: 'spin 1.5s linear infinite',
-            display: 'inline-block'
-          }}
-        >
-          ⏳
-        </div>
-        <div>Chargement...</div>
+  const displayMode = isMobile ? 'card' : viewMode;
 
-        <style>
-          {`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}
-        </style>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState />;
+
 
   const TrackingModal = React.memo(({
     visible,
@@ -815,15 +786,19 @@ const EmployeesPage = ({
                 onClick={() => setViewMode('card')}
                 className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
                 title="Vue cartes"
+                disabled={isMobile} // ← Ajouter disabled sur mobile
               >
                 <FaTh />
+                {/*   {isMobile && <span className="auto-badge">Auto</span>} {/* ← Badge Auto */}
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
                 title="Vue liste"
+                disabled={isMobile} // ← Ajouter disabled sur mobile
               >
                 <FaList />
+                {/*   {isMobile && <span className="auto-badge">Auto</span>} {/* ← Badge Auto */}
               </button>
             </div>
           </div>
@@ -900,7 +875,7 @@ const EmployeesPage = ({
               <FaPlus /> Ajouter un employé
             </button>
           </div>
-        ) : viewMode === 'card' ? (
+        ) : displayMode === 'card' ? ( // ← Changer viewMode par displayMode
           <div className="employees-grid">
             {sortedEmployees.map((e) => (
               <div

@@ -12,27 +12,60 @@ export const CompanyModal = ({
     mode,
     loading = false
 }) => {
+    // Liste des logos disponibles dans le dossier assets/logos
+    const availableLogos = [
+        'LIS.png',
+        'NCS.png',
+        'Samatech.jpg',
+    ];
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(e);
+    };
+
+    // Fonction pour charger dynamiquement l'image pour l'aperçu
+    const getLogoPreview = (fileName) => {
+        if (!fileName) return null;
+
+        try {
+            return require(`../assets/logos/${fileName}`);
+        } catch (error) {
+            return null;
+        }
+    };
+
+    // Gestionnaire d'erreur pour l'image
+    const handleImageError = (e) => {
+        e.target.style.display = 'none';
+        const nextSibling = e.target.nextElementSibling;
+        if (nextSibling) {
+            nextSibling.style.display = 'block';
+        }
+    };
+
     if (!visible) return null;
 
     return (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-content">
+            <div className="modal-content company-modal">
                 <div className="modal-header">
                     <h2>{mode === 'edit' ? 'Modifier' : 'Ajouter'} une entreprise</h2>
                     <button className="modal-close" onClick={onClose} aria-label="Fermer">&times;</button>
                 </div>
                 <div className="modal-body">
-                    <form onSubmit={onSubmit}>
+                    <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label htmlFor="company-name">Nom de l'entreprise</label>
+                            <label htmlFor="company-name">Nom de l'entreprise *</label>
                             <input
                                 id="company-name"
                                 type="text"
                                 className="form-control"
-                                value={company.name}
+                                value={company.name || ''}
                                 onChange={(e) => onChange('name', e.target.value)}
                                 required
                                 autoFocus
+                                placeholder="Ex: Entreprise SARL"
                             />
                         </div>
 
@@ -42,9 +75,9 @@ export const CompanyModal = ({
                                 id="company-email"
                                 type="email"
                                 className="form-control"
-                                value={company.email}
+                                value={company.email || ''}
                                 onChange={(e) => onChange('email', e.target.value)}
-                                required
+                                placeholder="contact@entreprise.com"
                             />
                         </div>
 
@@ -54,9 +87,72 @@ export const CompanyModal = ({
                                 id="company-industry"
                                 type="text"
                                 className="form-control"
-                                value={company.industry}
+                                value={company.industry || ''}
                                 onChange={(e) => onChange('industry', e.target.value)}
+                                placeholder="Ex: Informatique, Construction..."
                             />
+                        </div>
+
+                        {/* Champ pour le nom du logo */}
+                        <div className="form-group">
+                            <label htmlFor="company-logo">Logo de l'entreprise</label>
+                            <div className="logo-input-group">
+                                <input
+                                    id="company-logo"
+                                    type="text"
+                                    className="form-control logo-input"
+                                    value={company.logoFileName || ''}
+                                    onChange={(e) => onChange('logoFileName', e.target.value)}
+                                    placeholder="ex: mon-logo.png"
+                                />
+
+                                {/* Liste déroulante des logos disponibles */}
+                                <select
+                                    className="form-control logo-select"
+                                    value=""
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            onChange('logoFileName', e.target.value);
+                                        }
+                                    }}
+                                >
+                                    <option value="">Choisir un logo existant...</option>
+                                    {availableLogos.map((logo, index) => (
+                                        <option key={index} value={logo}>
+                                            {logo}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <small className="form-text text-muted">
+                                Nom du fichier logo. Le fichier doit être placé dans /assets/logos/
+                            </small>
+
+                            {/* Aperçu du logo */}
+                            {company.logoFileName && (
+                                <div className="logo-preview mt-2">
+                                    <p className="mb-1">Aperçu :</p>
+                                    <div className="preview-container">
+                                        {getLogoPreview(company.logoFileName) ? (
+                                            <>
+                                                <img
+                                                    src={getLogoPreview(company.logoFileName)}
+                                                    alt="Aperçu logo"
+                                                    className="logo-preview-image"
+                                                    onError={handleImageError}
+                                                />
+                                                <div className="logo-not-found" style={{ display: 'none' }}>
+                                                    <span className="text-danger">⚠️ Logo non trouvé</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="logo-not-found">
+                                                <span className="text-danger">⚠️ Logo non trouvé</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">
@@ -64,7 +160,7 @@ export const CompanyModal = ({
                             <select
                                 id="company-status"
                                 className="form-control"
-                                value={company.status}
+                                value={company.status || 'active'}
                                 onChange={(e) => onChange('status', e.target.value)}
                             >
                                 <option value="active">Actif</option>
@@ -88,7 +184,8 @@ export const CompanyModal = ({
                             >
                                 {loading ? (
                                     <>
-                                        <span className="spinner-border spinner-border-sm" /> Création en cours...
+                                        <span className="spinner-border spinner-border-sm" />
+                                        {mode === 'edit' ? 'Mise à jour...' : 'Création en cours...'}
                                     </>
                                 ) : (
                                     mode === 'edit' ? 'Mettre à jour' : 'Créer'
@@ -111,6 +208,7 @@ CompanyModal.propTypes = {
         email: PropTypes.string,
         industry: PropTypes.string,
         status: PropTypes.string,
+        logoFileName: PropTypes.string,
     }).isRequired,
     onChange: PropTypes.func.isRequired,
     mode: PropTypes.oneOf(['add', 'edit']).isRequired,
@@ -135,49 +233,34 @@ export const UserModal = ({
         ? companies
         : companies.filter(c => c.id === currentUser?.companyId);
 
-    // Initialise les permissions au montage
     useEffect(() => {
         if (mode === 'add' && user.role) {
             const perms = getPermissionsForRole(user.role);
             onChange('permissions', perms);
         }
-        // ✅ Ne pas mettre `onChange` ici sauf s’il est `useCallback`
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode, user.role]);
-
 
     if (!visible) return null;
 
     return (
-        <div
-            className="modal-overlay"
-            onClick={(e) => e.target === e.currentTarget && onClose()}
-        >
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="modal-content">
                 <div className="modal-header">
                     <h2>{mode === "edit" ? "Modifier" : "Ajouter"} un utilisateur</h2>
-                    <button
-                        className="modal-close"
-                        onClick={onClose}
-                        aria-label="Fermer"
-                    >
-                        &times;
-                    </button>
+                    <button className="modal-close" onClick={onClose} aria-label="Fermer">&times;</button>
                 </div>
                 <div className="modal-body">
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            onSubmit(user); // Passer l'objet user complet
-                        }}
-                    >
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        onSubmit(user);
+                    }}>
                         <div className="form-group">
                             <label htmlFor="user-name">Nom complet</label>
                             <input
                                 id="user-name"
                                 type="text"
                                 className="form-control"
-                                value={user.name}
+                                value={user.name || ''}
                                 onChange={(e) => onChange("name", e.target.value)}
                                 required
                                 autoFocus
@@ -189,7 +272,7 @@ export const UserModal = ({
                                 id="user-pseudo"
                                 type="text"
                                 className="form-control"
-                                value={user.username}
+                                value={user.username || ''}
                                 onChange={(e) => onChange("username", e.target.value)}
                                 required
                             />
@@ -201,7 +284,7 @@ export const UserModal = ({
                                 id="user-email"
                                 type="email"
                                 className="form-control"
-                                value={user.email}
+                                value={user.email || ''}
                                 onChange={(e) => onChange("email", e.target.value)}
                                 required
                             />
@@ -219,16 +302,13 @@ export const UserModal = ({
                                         onChange={(e) => onChange("password", e.target.value)}
                                         required
                                         minLength="6"
-                                        style={{ paddingRight: "40px" }} // Pour ne pas que l'œil cache le texte
+                                        style={{ paddingRight: "40px" }}
                                     />
-
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
                                         aria-label={
-                                            showPassword
-                                                ? "Masquer le mot de passe"
-                                                : "Afficher le mot de passe"
+                                            showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
                                         }
                                         style={{
                                             position: "absolute",
@@ -251,7 +331,7 @@ export const UserModal = ({
                                 <select
                                     id="user-company"
                                     className="form-control"
-                                    value={user.companyId}
+                                    value={user.companyId || ''}
                                     onChange={(e) => onChange("companyId", e.target.value)}
                                     required
                                     disabled={availableCompanies.length === 1}
@@ -273,12 +353,13 @@ export const UserModal = ({
                                 Aucune entreprise disponible pour l'affectation
                             </div>
                         )}
+
                         <div className="form-group">
                             <label htmlFor="user-role">Rôle</label>
                             <select
                                 id="user-role"
                                 className="form-control"
-                                value={user.role}
+                                value={user.role || ''}
                                 onChange={(e) => onChange("role", e.target.value)}
                             >
                                 <option value="admin">Administrateur</option>
@@ -290,6 +371,7 @@ export const UserModal = ({
                                 )}
                             </select>
                         </div>
+
                         <div className="form-actions">
                             <button
                                 type="button"
@@ -309,7 +391,7 @@ export const UserModal = ({
                                 ) : mode === "edit" ? (
                                     "Mettre à jour"
                                 ) : (
-                                    "Création..."
+                                    "Créer"
                                 )}
                             </button>
                         </div>
@@ -374,7 +456,7 @@ export const PasswordModal = ({
                                     id="new-password"
                                     type={showPassword ? "text" : "password"}
                                     className="form-control"
-                                    value={password}
+                                    value={password || ''}
                                     onChange={(e) => onChange('newPassword', e.target.value)}
                                     required
                                     minLength="6"
@@ -395,7 +477,6 @@ export const PasswordModal = ({
                                 >
                                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                                 </button>
-
                             </div>
                             <PasswordStrengthIndicator password={password} />
                         </div>
@@ -406,7 +487,7 @@ export const PasswordModal = ({
                                 id="confirm-password"
                                 type={showPassword ? "text" : "password"}
                                 className="form-control"
-                                value={confirmPassword}
+                                value={confirmPassword || ''}
                                 onChange={(e) => onChange('confirmPassword', e.target.value)}
                                 required
                                 minLength="6"
@@ -457,7 +538,6 @@ PasswordModal.propTypes = {
     loading: PropTypes.bool,
 };
 
-// Composant d'indicateur de force du mot de passe
 const PasswordStrengthIndicator = ({ password }) => {
     if (!password) return null;
 

@@ -3,7 +3,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--white-transparent);
   padding: 10px 16px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow-soft);
@@ -20,7 +19,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: var(--white);
+  background: var(--bg-card);
   border-radius: var(--border-radius-sm);
   padding: 6px 12px;
   transition: var(--transition);
@@ -196,9 +195,9 @@
     margin: 0;
     padding: 8px;
   }
-  .modern-date-range-picker{
+  .modern-date-range-picker {
     display: flex;
     flex-direction: column;
-    z-index:2
+    z-index: 2;
   }
 }

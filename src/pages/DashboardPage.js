@@ -6,10 +6,10 @@ import {
 } from "react-icons/fa";
 import {
   InvoiceChart, EmployeChart, PayrollChart, ContractTypeChart, ClientChart
-} from "../components/Charts";
+} from "../components/reports/Charts";
 import {
   DocumentSliderCard, MonthlyAmountSliderCard, PaymentStatusSliderCard
-} from '../components/DocumentSliderCard';
+} from '../components/reports/DocumentSliderCard';
 import Chart from "react-apexcharts";
 
 const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, employees, payrolls, clients }) => {
@@ -162,10 +162,16 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
         },
         <DocumentSliderCard key="doc" stats={stats} />,
         <MonthlyAmountSliderCard key="monthly" stats={stats} allFactures={allFactures} allDevis={allDevis} allAvoirs={allAvoirs} />,
-        <PaymentStatusSliderCard key="payment" stats={stats} />
+        <PaymentStatusSliderCard key="payment" stats={stats} />,
+        {
+          iconClass: "users",
+          icon: <FaUsers />,
+          value: stats.totalUsers,
+          label: "Utilisateurs"
+        },
       ],
       quickActions: [
-        { icon: <FaBolt className="action-icon" />, text: "Facture Express", route: "/bill" },
+        { icon: <FaBolt className="action-icon" />, text: "Facture Express", route: "/invoice" },
         { icon: <FaUserPlus className="action-icon" />, text: "Nouvel Client", route: "/employee/new" }
       ],
       charts: [
@@ -309,12 +315,12 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
             onClick={() => navigate(action.route)}
             className="quick-action"
             style={{
-              animationDelay: `${0.4 + idx * 0.1}s`,
+              animationDelay: `${0.1 + idx * 0.1}s`,
               opacity: isLoaded ? 1 : 0,
-              transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+              transform: isLoaded ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.9)'
             }}
           >
-            {action.icon}
+            {React.cloneElement(action.icon, { className: "action-icon" })}
             <span>{action.text}</span>
           </button>
         ))}
@@ -322,9 +328,9 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
           onClick={() => navigate("/import")}
           className="quick-action"
           style={{
-            animationDelay: `${0.4 + conf.quickActions.length * 0.1}s`,
+            animationDelay: `${0.1 + conf.quickActions.length * 0.1}s`,
             opacity: isLoaded ? 1 : 0,
-            transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
+            transform: isLoaded ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.9)'
           }}
         >
           <FaFileImport className="action-icon" />
@@ -359,36 +365,26 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
             transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
           }}
         >
-          <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-            <h2 className="section-title" style={{ display: "flex", alignItems: "center", margin: 0 }}>
-              <FaFileInvoiceDollar style={{ marginRight: "10px" }} />
+          <div className=" section-header-dash">
+            <h2 className=" section-title-dash">
+              <FaFileInvoiceDollar />
               Derniers documents
             </h2>
-            <div className="invoices-actions" style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => navigate("/bill")} className="create-invoice-btn">
-                <FaPlus style={{ marginRight: "8px" }} />
-                Créer une facture
-              </button>
-            </div>
+            <button onClick={() => navigate("/invoice")} className="create-invoice-btn">
+              <FaPlus />
+              Créer une facture
+            </button>
           </div>
 
-          {/* Onglets */}
-          <div className="slider-tabs" style={{ display: "flex", gap: "20px", marginBottom: "10px" }}>
+          <div className="slider-tabs">
             {["factures", "devis", "avoirs"].map((tab, idx) => (
               <button
                 key={tab}
                 onClick={() => setActiveSlide(tab)}
+                className={activeSlide === tab ? "active" : ""}
                 style={{
-                  padding: "8px 16px",
-                  background: activeSlide === tab ? "#333" : "#eee",
-                  color: activeSlide === tab ? "#fff" : "#000",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
                   animationDelay: `${0.9 + idx * 0.1}s`,
                   opacity: isLoaded ? 1 : 0,
-                  transform: isLoaded ? 'translateY(0)' : 'translateY(10px)'
                 }}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -443,54 +439,36 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
       )}
 
       {/* Graphiques de performance */}
-      <div
-        className="performance-charts-row"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '20px',
-          marginTop: '20px',
-          animationDelay: `1.1s`,
-          opacity: isLoaded ? 1 : 0,
-          transform: isLoaded ? 'translateY(0)' : 'translateY(20px)'
-        }}
-      >
-        {/* Graphique de performance des enseignants */}
-        <div className="chart-wrapper" style={{ flex: '1 1 60%', minWidth: '300px' }}>
-          <div className="card">
-            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", margin: "0 10px" }}>
-              <h2>Performance</h2>
-            </div>
-            <div className="body">
-              <Chart
-                options={topClientsLineChartOptions}
-                series={topClientsLineChartOptions.series}
-                type="line"
-                height={300}
-              />
-            </div>
+      <div className="performance-charts-row">
+        {/* Top Clients Chart */}
+        <div className="card">
+          <div className="header">
+            <h2>Performance des meilleurs clients</h2>
           </div>
-        </div>
-        {/* Graphique de performance des étudiants */}
-        <div className="chart-wrapper" style={{ flex: '1 1 35%', minWidth: '300px' }}>
-          <div className="card">
-            <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", margin: "0 10px" }}>
-              <h2>Graphe</h2>
-              <div className="dropdown">
-              </div>
-            </div>
-            <div className="body">
-              <Chart
-                options={studentPerformanceOptions}
-                series={studentPerformanceOptions.series}
-                type="bar"
-                height={300}
-              />
-            </div>
+          <div className="body">
+            <Chart
+              options={topClientsLineChartOptions}
+              series={topClientsLineChartOptions.series}
+              type="line"
+              height={300}
+            />
           </div>
         </div>
 
-
+        {/* Student Performance Chart */}
+        <div className="card">
+          <div className="header">
+            <h2>Performance mensuelle</h2>
+          </div>
+          <div className="body">
+            <Chart
+              options={studentPerformanceOptions}
+              series={studentPerformanceOptions.series}
+              type="bar"
+              height={300}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

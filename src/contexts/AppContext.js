@@ -8,7 +8,7 @@ export const AppProvider = ({ children }) => {
 
   // Nouvelle fonction pour gérer les changements de manière intelligente
   const setModuleBasedOnRole = (module, userRole) => {
-    const allowedRoles = ['admin', 'comptable'];
+    const allowedRoles = ['admin', 'comptable', 'superadmin', 'supadmin'];
     if (allowedRoles.includes(userRole)) {
       setActiveModule(module);
       localStorage.setItem('activeModule', module);

@@ -141,6 +141,7 @@
   color: var(--gray-medium);
 }
 
+
 .action-btn:hover {
   background: rgba(0, 0, 0, 0.05);
 }
@@ -876,3 +877,4 @@
     padding: 10px 14px;
   }
 }
+

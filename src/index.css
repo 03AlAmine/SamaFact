@@ -25,6 +25,7 @@
   --warning: #fbbf24;
   --danger: #f87171;
   --info: #60a5fa;
+  --info-light: #d1ecf1;
 
   /* Nuances de gris et textes */
   --light-color: #f8f9fa;
@@ -44,7 +45,7 @@
   /* Arrière-plans */
   --bg-color: #ffffff82;
   --bg-light: #f8fafc93;
-  --card-bg: #ffffffd0;
+  --card-bg: #ffffffbe;
   --bg-card: #ffffffc3;
   --hover-bg: #f5f7fa;
   --bg-sidebar: #1e293b;
@@ -55,12 +56,15 @@
   --border-radius-sm-alt: 8px; /* ajout du second */
   --border-color: #e0e0e0; /* conserver du premier */
   --border-color-alt: #e2e8f0;
+  --border-radius-lg: 12px;
 
   /* Dégradés */
-  --primary-gradient: linear-gradient(135deg, #4a6fa5 0%, #6b8cae 100%);
+  --primary-gradient: linear-gradient(135deg, var(--primary-color), #4a6cf7);
   --secondary-gradient: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
-  --success-gradient: linear-gradient(135deg, #28a745 0%, #5cb85c 100%);
-  --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ffd966 100%);
+  --success-gradient: linear-gradient(135deg, var(--success-color), #28c76f);
+  --warning-gradient: linear-gradient(135deg, var(--warning-color), #ff9f43);
+  --danger-gradient: linear-gradient(135deg, var(--danger-color), #ea5455);
+  --info-gradient: linear-gradient(135deg, var(--info-color), #00cfe8);
   --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
 
   /* Ombres */
@@ -108,15 +112,15 @@ body::before {
   left: 0;
   width: 100vw; /* largeur viewport */
   height: 100vh; /* hauteur viewport */
-  background-image: url("./assets/bg/bg-bill-1.svg");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)),
+    /* voile noir 40% */ url("./assets/bg/bg-fond.jpg");
   background-size: cover;
-  background-position: center;
+  background-position: end;
   z-index: -1;
   transform: scale(1);
-  animation: zoombg 16s ease-in-out infinite alternate;
+  animation: zoombg 10s ease-in-out infinite alternate;
   pointer-events: none;
 }
-
 
 @keyframes zoombg {
   from {
@@ -168,4 +172,148 @@ body::before {
   }
 }
 
+.card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-card);
+  overflow: hidden;
+  transition: var(--transition-normal);
+  border: 1px solid var(--border-color);
+}
 
+.card:hover {
+  transform: var(--hover-effect);
+  box-shadow: var(--box-shadow-soft);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  /* background: linear-gradient(135deg, var(--primary-light), transparent); */
+}
+
+
+
+.table-container, .clients-table {
+  position: relative;
+  padding-left: 5px; /* espace pour la border */
+}
+
+/* Border left élégante */
+.table-container::before, .clients-table::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 4px;
+  border-radius: 6px;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(67, 97, 238, 0.9),
+    rgba(255, 193, 7, 0.9)
+  );
+
+  box-shadow:
+    0 0 6px rgba(67, 97, 238, 0.35),
+    0 0 10px rgba(255, 193, 7, 0.25);
+}
+
+
+table thead tr {
+  position: relative;
+}
+
+table thead tr::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 2px;
+
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(67, 97, 238, 0.65),
+    rgba(255, 193, 7, 0.65),
+    rgba(67, 97, 238, 0.65),
+    transparent
+  );
+
+  box-shadow: 0 0 4px rgba(67, 97, 238, 0.25), 0 0 6px rgba(255, 193, 7, 0.2);
+}
+
+
+table tbody tr {
+  position: relative;
+
+}
+
+table tbody tr::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 0.5px;
+
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(67, 97, 238, 0.45),
+    rgba(255, 193, 7, 0.45),
+    rgba(67, 97, 238, 0.45),
+    transparent
+  );
+
+  pointer-events: none;
+}
+
+
+
+
+/* Sort options */
+.sort-options {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-label {
+  font-size: 0.9rem;
+  color: var(--client-card-bg);
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #28a746;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.sort-btn:hover {
+  background-color: var(--hover-bg);
+}
+
+.sort-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.sort-indicator {
+  margin-left: 5px;
+  font-weight: bold;
+}

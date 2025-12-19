@@ -4,10 +4,10 @@ import { FaUsers, FaChartBar, FaMoneyBillWave, FaFileSignature } from "react-ico
 import {
   InvoiceChart, ClientChart, StatusChart, MonthlyComparisonChart,
   PayrollChart, ContractTypeChart, EmployeChart
-} from "../components/Charts";
+} from "../components/reports/Charts";
 import {
   DocumentSliderCard, PaymentStatusSliderCard, TotalAmountSliderCard
-} from '../components/DocumentSliderCard';
+} from '../components/reports/DocumentSliderCard';
 import Chart from "react-apexcharts";
 
 
@@ -143,11 +143,8 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
   return (
     <div
       className="stats-section"
-      style={{
-        backgroundImage: `url(/bg-stat.jpg)`
-      }}
     >
-      <h2 className="section-title">
+      <h2 className="section-title sts">
         <FaChartBar style={{ marginRight: "10px" }} />
         Statistiques
       </h2>

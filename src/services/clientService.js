@@ -30,6 +30,32 @@ export const clientService = {
 
     return unsubscribe;
   },
+  // NOUVELLE MÉTHODE pour récupérer les clients une fois (sans realtime)
+  getClientsOnce: async (companyId) => {
+    try {
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+
+      console.log('🔍 Chargement clients (once) pour company:', companyId);
+
+      const clientsRef = collection(db, `companies/${companyId}/clients`);
+      const q = query(clientsRef);
+      const querySnapshot = await getDocs(q);
+
+      const clients = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || null
+      }));
+
+      console.log('✅ Clients chargés (once):', clients);
+      return clients;
+    } catch (error) {
+      console.error('❌ Erreur chargement clients (once):', error);
+      throw error;
+    }
+  },
 
 
   addClient: async (companyId, clientData) => {

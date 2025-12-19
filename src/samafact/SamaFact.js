@@ -110,7 +110,7 @@ const SamaFact = () => {
     loadData();
   }, [isSuperAdmin]);
 
-  // Fonctions de traitement des données
+  // Dans SamaFact.js - processCompanies
   const processCompanies = (companiesSnapshot, usersData) => {
     return companiesSnapshot.docs.map(doc => ({
       id: doc.id,
@@ -118,6 +118,7 @@ const SamaFact = () => {
       email: doc.data().email || '',
       industry: doc.data().industry || '',
       status: doc.data().status || 'active',
+      logoFileName: doc.data().logoFileName || null, // ← Ajouter ce champ
       createdAt: doc.data().createdAt?.toDate() || new Date(),
       usersCount: usersData.filter(user => user.companyId === doc.id).length
     }));
@@ -210,59 +211,93 @@ const SamaFact = () => {
     }
   };
 
+  // Dans SamaFact.js - handleAddCompany
   const handleAddCompany = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'companies'), {
+      const companyData = {
         ...forms.companyForm,
-        createdAt: new Date(),
-      });
+        logoFileName: forms.companyForm.logoFileName || null, // Ajouter le nom du logo
+        updatedAt: new Date(),
+      };
+
+      if (ui.modalMode === 'edit' && ui.selectedItem) {
+        await updateDoc(doc(db, 'companies', ui.selectedItem.id), companyData);
+        message.success('Entreprise mise à jour avec succès !');
+      } else {
+        await addDoc(collection(db, 'companies'), {
+          ...companyData,
+          createdAt: new Date(),
+        });
+        message.success('Entreprise créée avec succès !');
+      }
+
       refreshData();
       setUi(prev => ({ ...prev, showCompanyModal: false }));
-      message.success('Entreprise créée avec succès !');
+
+      // Réinitialiser le formulaire
+      setForms(prev => ({
+        ...prev,
+        companyForm: {
+          name: '',
+          email: '',
+          industry: '',
+          status: 'active',
+          logoFileName: ''
+        }
+      }));
     } catch (error) {
-      console.error("Erreur ajout entreprise:", error);
-      message.error("Erreur lors de la création de l'entreprise");
+      console.error("Erreur entreprise:", error);
+      message.error("Erreur lors de l'opération");
     }
   };
-
   const handleCreateUser = async (userData) => {
     try {
-      // Utilisation du service
-      const result = await userService.createUserWithIsolatedAuth(
-        {
-          email: userData.email,
-          password: userData.password,
+      if (ui.modalMode === 'edit' && ui.selectedItem) {
+        // Mode édition : mettre à jour l'utilisateur
+        await updateDoc(doc(db, 'users', ui.selectedItem.id), {
           name: userData.name,
           username: userData.username,
+          email: userData.email,
           role: userData.role,
           companyId: userData.companyId,
-        },
-        currentUser.uid
-      );
+          permissions: userData.permissions,
+          updatedAt: new Date()
+        });
 
-      if (result.success) {
-        // Fermer le modal et actualiser
-        setUi(prev => ({
-          ...prev,
-          showUserModal: false,
-          userForm: {
-            name: '',
-            username: '',
-            email: '',
-            password: '',
-            role: 'user',
-            companyId: '',
-            permissions: {}
-          }
-        }));
+        message.success('Utilisateur mis à jour avec succès !');
+      } else {
+        // Mode création : créer un nouvel utilisateur
+        const result = await userService.createUserWithIsolatedAuth(
+          {
+            email: userData.email,
+            password: userData.password,
+            name: userData.name,
+            username: userData.username,
+            role: userData.role,
+            companyId: userData.companyId,
+          },
+          currentUser.uid
+        );
 
-        refreshData();
+        if (!result.success) {
+          throw new Error(result.error || "Erreur lors de la création");
+        }
+
         message.success('Utilisateur créé avec succès !');
       }
+
+      // Fermer le modal et actualiser
+      setUi(prev => ({
+        ...prev,
+        showUserModal: false,
+      }));
+
+      refreshData();
+
     } catch (error) {
-      console.error("Erreur création:", error);
-      message.error(error.message || "Erreur lors de la création");
+      console.error("Erreur création/modification:", error);
+      message.error(error.message || "Erreur lors de l'opération");
     }
   };
 
@@ -312,20 +347,60 @@ const SamaFact = () => {
   };
 
   const openModal = (type, item = null) => {
-    // Réinitialisation du formulaire
-    if (type === 'User') {
-      setForms(prev => ({
-        ...prev,
-        userForm: {
-          name: '',
-          username: '',
-          email: '',
-          password: '',
-          role: 'user',
-          companyId: '',
-          permissions: {}
-        }
-      }));
+    // Si on est en mode édition (item existe), pré-remplir le formulaire
+    if (item) {
+      if (type.toLowerCase() === 'user') {
+        // Pour un utilisateur
+        setForms(prev => ({
+          ...prev,
+          userForm: {
+            name: item.name || '',
+            username: item.username || '',
+            email: item.email || '',
+            password: '', // Ne pas pré-remplir le mot de passe
+            role: item.role || 'user',
+            companyId: item.companyId || '',
+            permissions: item.permissions || {}
+          }
+        }));
+      } else if (type.toLowerCase() === 'company') {
+        // Pour une entreprise
+        setForms(prev => ({
+          ...prev,
+          companyForm: {
+            name: item.name || '',
+            email: item.email || '',
+            industry: item.industry || '',
+            status: item.status || 'active',
+          }
+        }));
+      }
+    } else {
+      // Mode ajout - réinitialisation
+      if (type.toLowerCase() === 'user') {
+        setForms(prev => ({
+          ...prev,
+          userForm: {
+            name: '',
+            username: '',
+            email: '',
+            password: '',
+            role: 'user',
+            companyId: '',
+            permissions: {}
+          }
+        }));
+      } else if (type.toLowerCase() === 'company') {
+        setForms(prev => ({
+          ...prev,
+          companyForm: {
+            name: '',
+            email: '',
+            industry: '',
+            status: 'active',
+          }
+        }));
+      }
     }
 
     setUi(prev => ({
@@ -336,12 +411,12 @@ const SamaFact = () => {
       modalMode: item ? 'edit' : 'add'
     }));
   };
-
-  const openPasswordModal = (item) => {
+  const openPasswordModal = (type, item) => {
     setUi(prev => ({
       ...prev,
       showPasswordModal: true,
-      selectedItem: item
+      selectedItem: item, // item devrait être un objet ici
+      modalType: type // vous pouvez ajouter ceci si besoin
     }));
   };
 
@@ -663,14 +738,14 @@ const SamaFact = () => {
             </div>
           </div>
 
-          {ui.activeTab === "companies" ? (
+          {ui.activeTab === 'companies' ? (
             <CompanyTable
               companies={filteredCompanies}
               users={data.users || []}
               onDelete={handleDelete}
               onToggleStatus={handleToggleStatus}
-              onEdit={openModal}
-              onPasswordReset={openPasswordModal}
+              onEdit={(type, item) => openModal(type, item)} // type et item
+              onPasswordReset={(type, item) => openPasswordModal(type, item)} // type et item
               getRoleLabel={getRoleLabel}
             />
           ) : (
@@ -678,8 +753,8 @@ const SamaFact = () => {
               users={filteredUsers}
               companies={data.companies}
               onDelete={handleDelete}
-              onEdit={(user) => openModal("User", user)}
-              onPasswordReset={openPasswordModal}
+              onEdit={(type, item) => openModal(type, item)} // type et item
+              onPasswordReset={(type, item) => openPasswordModal(type, item)} // type et item
               getRoleLabel={getRoleLabel}
             />
           )}

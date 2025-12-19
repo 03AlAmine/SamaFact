@@ -57,7 +57,6 @@
 }
 
 .nav-item.active {
-  background-color: var(--primary);
   color: white;
 }
 
@@ -200,8 +199,6 @@
   margin-bottom: 2rem;
 }
 
-
-
 .bg-blue {
   background-color: var(--primary);
 }
@@ -233,7 +230,6 @@
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
-
 
 .chart-header {
   display: flex;
@@ -271,8 +267,6 @@
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
 }
-
-
 
 .section-header h3 {
   font-size: 1.25rem;
@@ -335,7 +329,6 @@
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
-
 
 .bg-primary {
   background: var(--primary-color);
@@ -555,14 +548,6 @@
   background: #c8e6c9;
 }
 
-/* Styles pour les badges */
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8em;
-  text-transform: capitalize;
-}
-
 .status-badge.active {
   background: #e8f5e9;
   color: #2e7d32;
@@ -578,7 +563,7 @@
   padding: 4px 8px;
   border-radius: 12px;
   text-transform: capitalize;
-}  
+}
 
 .user-role.superadmin {
   background-color: #fcfde3;
@@ -726,8 +711,6 @@
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   color: black;
 }
-
-
 
 .primary-btn:hover {
   background: var(--secondary-color);
@@ -1026,4 +1009,54 @@
   .unauthorized-message {
     font-size: 15px;
   }
+}
+/* Modals.css */
+.logo-select-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.logo-input {
+  flex: 1;
+}
+
+.logo-select {
+  width: 200px;
+}
+
+.logo-preview {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 5px;
+}
+
+.preview-image {
+  margin-top: 10px;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ccc;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.preview-image img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.preview-error {
+  color: #ff4d4f;
+  font-size: 12px;
+}
+
+.form-hint {
+  color: #666;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
 }

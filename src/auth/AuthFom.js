@@ -1,18 +1,16 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser, FaInfoCircle, FaEyeSlash, FaEye } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser, FaInfoCircle, FaEyeSlash, FaEye, FaBan } from 'react-icons/fa';
 import './AuthForm.css';
 import logo from '../assets/Logo_Mf.png';
 import PasswordGate from './PasswordGate';
-import Preloader from '../components/Preloader';
+import Preloader from '../components/other/Preloader';
 
 const AuthForm = ({ type }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [userName, setUserName] = useState('');
@@ -21,11 +19,11 @@ const AuthForm = ({ type }) => {
     const [isAdminVerified, setIsAdminVerified] = useState(false);
     const { login, signup } = useAuth();
     const navigate = useNavigate();
-    // eslint-disable-next-line no-unused-vars
     const location = useLocation();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
     const [showSuccess, setShowSuccess] = useState(false);
     const [username, setUsername] = useState('');
+    
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
         setError('');
@@ -52,6 +50,7 @@ const AuthForm = ({ type }) => {
                 return setError("Le nom de l'entreprise est requis");
             }
         }
+        
         try {
             setError('');
             setLoading(true);
@@ -64,6 +63,7 @@ const AuthForm = ({ type }) => {
 
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
+                // Redirection selon le rôle
                 if (user.role === 'superadmin') {
                     window.location.assign('/samafact');
                 } else if (user.role === 'admin' || user.role === 'user') {
@@ -82,6 +82,7 @@ const AuthForm = ({ type }) => {
             setLoading(false);
             setShowSuccess(false);
 
+            // 🔥 GESTION AMÉLIORÉE DES ERREURS - INCLUT LA DÉSACTIVATION
             if (formType === 'login') {
                 switch (err.code) {
                     case 'auth/user-not-found':
@@ -91,14 +92,47 @@ const AuthForm = ({ type }) => {
                     case 'auth/too-many-requests':
                         setError("Trop de tentatives. Réessayez plus tard");
                         break;
+                    case 'auth/account-disabled':
+                    case 'ACCOUNT_DISABLED': // Erreur personnalisée
+                        setError("Votre compte a été désactivé. Contactez votre administrateur.");
+                        break;
                     default:
-                        setError("Erreur de connexion");
+                        // Vérifier si c'est une erreur de compte désactivé via le message
+                        if (err.message && err.message.includes('désactivé')) {
+                            setError(err.message);
+                        } else {
+                            setError("Erreur de connexion");
+                        }
                 }
             } else {
                 setError(err.message || "Erreur d'inscription");
             }
         }
     }
+
+    // 🔥 NOUVEAU : Composant pour afficher l'erreur de compte désactivé
+    const renderDisabledAccountError = () => {
+        if (error && error.includes('désactivé')) {
+            return (
+                <div className="auth-error disabled-account">
+                    <FaBan className="error-icon" />
+                    <div>
+                        <strong>Compte désactivé</strong>
+                        <p>{error}</p>
+                        <div className="disabled-account-actions">
+                            <button 
+                                className="auth-btn auth-contact-admin"
+                                onClick={() => window.location.href = 'mailto:admin@mentafact.com'}
+                            >
+                                Contacter l'administrateur
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        return error ? <div className="auth-error">{error}</div> : null;
+    };
 
     const renderRegisterForm = () => {
         if (type === 'register' && !isAdminVerified) {
@@ -209,7 +243,8 @@ const AuthForm = ({ type }) => {
                 <div className={`auth-container ${activeForm}`}>
                     <div className="auth-form-box auth-login">
                         <form className="form-auth" onSubmit={(e) => handleSubmit(e, "login")}>
-                            {error && <div className="auth-error">{error}</div>}
+                            {/* 🔥 REMPLACÉ : Utilise le nouveau composant d'erreur */}
+                            {renderDisabledAccountError()}
 
                             <h1>Connexion</h1>
                             <div className="auth-input-box">

@@ -4,13 +4,13 @@ import { AuthProvider } from './auth/AuthContext';
 import { PrivateRoute } from './auth/PrivateRoute';
 import Login from './auth/Login';
 import Register from './auth/Register';
-import Facture from './bill/Fact';
-import Payroll from './payrolls/PayrollForm';
+import Facture from './data/bill/Fact';
+import Payroll from './data/payrolls/PayrollForm';
 import Profile from './profil/Profile';
 import Home from './Mentafact';
-import NotFound from './components/NotFound';
+import NotFound from './components/other/NotFound';
 import Admin from './samafact/SamaFact';
-import AccessDenied from './components/AccessDenied';
+import AccessDenied from './components/other/AccessDenied';
 import ForgotPassword from './auth/ForgotPassword';
 import { UiProvider } from './contexts/uiContext'; // Ajoutez cette importation
 
@@ -68,7 +68,7 @@ function App() {
 
             <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
             <Route
-              path="/bill"
+              path="/invoice"
               element={
                 <PrivateRoute requiredPermission="manageDocuments">
                   <Facture />

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { exportToExcel, exportToPDF } from "../utils/exportUtils";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
-import ModernDateRangePicker from "../components/ModernDateRangePicker";
+import ModernDateRangePicker from "../components/docpayroll/ModernDateRangePicker";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../auth/AuthContext";
 import { previewPayrollPdf, downloadPayrollPdf } from '../services/pdf_payrollService';
 import { payrollService } from '../services/payrollService';
-import ModalPaiementPayroll from "../components/ModalPaiementPay";
+import ModalPaiementPayroll from "../components/dialogs/ModalPaiementPay";
 import { message, Modal } from "antd";
 import PayrollSection from "../components/DocumentSectionPayroll";
 

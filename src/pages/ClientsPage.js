@@ -1,13 +1,632 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
     FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone,
     FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch,
     FaFileInvoiceDollar, FaFileExcel, FaList, FaTh,
-    FaSortAlphaDown
+    FaSortAlphaDown, FaChevronLeft, FaChevronRight
 } from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
-import '../css/ClientPage.css'; // Assurez-vous d'avoir ce fichier CSS pour le style
+import '../css/ClientPage.css';
+import LoadingState from '../components/common/LoadingState';
 
+
+// Composant d'état vide
+const EmptyState = ({ onAddClient }) => (
+    <div className="empty-state">
+        <img src={empty_client} alt="Aucun client" className="empty-image" />
+        <h3>Aucun client trouvé</h3>
+        <p>Commencez par créer votre premier client</p>
+        <button className="primary-btn" onClick={onAddClient}>
+            <FaPlus /> Ajouter un client
+        </button>
+    </div>
+);
+
+// Composant de formulaire client
+const ClientForm = ({
+    isEditing,
+    formData,
+    onSubmit,
+    onCancel,
+    onChange,
+    onSocieteBlur
+}) => (
+    <form onSubmit={onSubmit} className="client-form">
+        <div className="form-header">
+            <h2 className="form-title">
+                {isEditing ? <FaEdit /> : <FaPlus />}
+                {isEditing ? "Modifier le client" : "Ajouter un nouveau client"}
+            </h2>
+            {!isEditing && (
+                <button type="button" className="primary-btn" onClick={onCancel}>
+                    <FaPlus /> Fermer le formulaire
+                </button>
+            )}
+        </div>
+
+        <div className="form-row">
+            <FormField
+                label="Responsable"
+                name="societe"
+                value={formData.societe}
+                onChange={onChange}
+                placeholder="Monsieur Diop - Dame"
+            />
+            <FormField
+                label="Raison sociale"
+                name="nom"
+                value={formData.nom}
+                onChange={onChange}
+                onBlur={isEditing ? onSocieteBlur : undefined}
+                required
+                placeholder="Leader Interim"
+            />
+        </div>
+
+        <div className="form-row">
+            <FormField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={onChange}
+                placeholder="leader@gmail.com"
+            />
+            <FormField
+                label="Téléphone"
+                name="telephone"
+                value={formData.telephone}
+                onChange={onChange}
+                placeholder="781234567"
+            />
+        </div>
+
+        <div className="form-row">
+            <FormField
+                label="Adresse"
+                name="adresse"
+                value={formData.adresse}
+                onChange={onChange}
+                required
+                placeholder="Ouest Foire, Route de l'Aéroport"
+            />
+            <FormField
+                label="Ville/Pays"
+                name="ville"
+                value={formData.ville}
+                onChange={onChange}
+                placeholder="Dakar, Sénégal"
+            />
+            <FormSelect
+                label="Type"
+                name="type"
+                value={formData.type || "prospect"}
+                onChange={onChange}
+                options={[
+                    { value: "client", label: "Client" },
+                    { value: "prospect", label: "Prospect" },
+                    { value: "partenaire", label: "Partenaire" },
+                    { value: "fournisseur", label: "Fournisseur" }
+                ]}
+            />
+        </div>
+
+        {isEditing && formData.anciensNoms?.length > 0 && (
+            <div className="anciens-noms">
+                <small>Anciens noms : {formData.anciensNoms.map(n => n.nom).join(", ")}</small>
+            </div>
+        )}
+
+        {isEditing ? (
+            <div className="form-actions">
+                <button type="button" onClick={onCancel} className="cancel-btn">
+                    Annuler
+                </button>
+                <button type="submit" className="update-btn">
+                    Mettre à jour
+                </button>
+            </div>
+        ) : (
+            <button type="submit" className="submit-btn">
+                Ajouter le client
+            </button>
+        )}
+    </form>
+);
+
+// Composant de champ de formulaire réutilisable
+const FormField = ({ label, required, ...props }) => (
+    <div className="form-group">
+        <label htmlFor={props.name} className="form-label">
+            {label} {required && <span className="required">*</span>}
+        </label>
+        <input
+            id={props.name}
+            className="form-input"
+            {...props}
+        />
+    </div>
+);
+
+// Composant de sélection de formulaire
+const FormSelect = ({ label, options, ...props }) => (
+    <div className="form-group">
+        <label htmlFor={props.name} className="form-label">{label}</label>
+        <select id={props.name} className="form-input" {...props}>
+            {options.map(option => (
+                <option key={option.value} value={option.value}>
+                    {option.label}
+                </option>
+            ))}
+        </select>
+    </div>
+);
+
+// Composant d'en-tête
+const ClientsHeader = ({
+    clientsCount,
+    viewMode,
+    setViewMode,
+    searchTerm,
+    setSearchTerm,
+    sortBy,
+    sortOrder,
+    toggleSort,
+    onAddClient,
+    showAddForm,
+    onImport,
+    isMobile,
+    currentPage,
+    totalPages,
+    onPageChange,
+    itemsPerPage,
+    onItemsPerPageChange
+}) => (
+    <div className="section-header header-client">
+        <div className="header-left">
+            <h2 className="section-title">
+                <FaUsers /> Clients ({clientsCount})
+            </h2>
+            <ViewControls
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                isMobile={isMobile}
+            />
+            <SearchBox searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        </div>
+
+        <div className="header-right">
+            <SortOptions
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                toggleSort={toggleSort}
+            />
+            
+            {/* Pagination controls */}
+            <div className="pagination-controls">
+                <div className="items-per-page-selector">
+                    <select 
+                        value={itemsPerPage} 
+                        onChange={onItemsPerPageChange}
+                        className="items-per-page-select"
+                    >
+                        <option value={10}>10/page</option>
+                        <option value={20}>20/page</option>
+                        <option value={50}>50/page</option>
+                        <option value={100}>100/page</option>
+                    </select>
+                </div>
+                
+                <div className="pagination-navigation">
+                    <button 
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="pagination-btn prev-btn"
+                    >
+                        <FaChevronLeft />
+                    </button>
+                    
+                    <span className="page-info">
+                        Page {currentPage} sur {totalPages}
+                    </span>
+                    
+                    <button 
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="pagination-btn next-btn"
+                    >
+                        <FaChevronRight />
+                    </button>
+                </div>
+            </div>
+            
+            <ActionButtons
+                onAddClient={onAddClient}
+                showAddForm={showAddForm}
+                onImport={onImport}
+            />
+        </div>
+    </div>
+);
+
+// Contrôles de vue
+const ViewControls = ({ viewMode, setViewMode, isMobile }) => (
+    <div className="view-controls">
+        <button
+            onClick={() => setViewMode('card')}
+            className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
+            title="Vue cartes"
+            disabled={isMobile}
+        >
+            <FaTh />
+            {isMobile && <span className="auto-badge">Auto</span>}
+        </button>
+        <button
+            onClick={() => setViewMode('list')}
+            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+            title="Vue liste"
+            disabled={isMobile}
+        >
+            <FaList />
+            {isMobile && <span className="auto-badge">Auto</span>}
+        </button>
+    </div>
+);
+
+// Barre de recherche
+const SearchBox = ({ searchTerm, setSearchTerm }) => (
+    <div className="search-box">
+        <FaSearch className="search-icon" />
+        <input
+            type="text"
+            placeholder="Rechercher un client..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+        />
+    </div>
+);
+
+// Options de tri
+const SortOptions = ({ sortBy, sortOrder, toggleSort }) => (
+    <div className="sort-options">
+        <div className="sort-label">Trier par:</div>
+        <SortButton
+            field="nom"
+            label="Nom"
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            toggleSort={toggleSort}
+        />
+        <SortButton
+            field="type"
+            label="Type"
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            toggleSort={toggleSort}
+        />
+    </div>
+);
+
+// Bouton de tri
+const SortButton = ({ field, label, sortBy, sortOrder, toggleSort }) => (
+    <button
+        onClick={() => toggleSort(field)}
+        className={`sort-btn ${sortBy === field ? 'active' : ''}`}
+    >
+        <FaSortAlphaDown /> {label}
+        {sortBy === field && (
+            <span className="sort-indicator">
+                {sortOrder === 'asc' ? '↑' : '↓'}
+            </span>
+        )}
+    </button>
+);
+
+// Boutons d'action
+const ActionButtons = ({ onAddClient, showAddForm, onImport }) => (
+    <>
+        <button className="primary-btn" onClick={onAddClient}>
+            <FaPlus /> {showAddForm ? "Fermer le formulaire" : "Ajouter un client"}
+        </button>
+        <ImportButton onImport={onImport} />
+    </>
+);
+
+// Bouton d'importation
+const ImportButton = ({ onImport }) => (
+    <label htmlFor="file-upload" className="import-btn">
+        <FaFileExcel /> Importer
+        <input
+            id="file-upload"
+            type="file"
+            accept=".xlsx, .xls, .csv"
+            onChange={onImport}
+            style={{ display: 'none' }}
+        />
+    </label>
+);
+
+// Carte client
+const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
+    const handleAction = (e, action) => {
+        e.stopPropagation();
+        action(client);
+    };
+
+    return (
+        <div
+            className={`client-card ${isSelected ? 'active' : ''}`}
+            onClick={() => onSelect(client.id)}
+        >
+            <div className={`client-type-badge ${client.type}`}>
+                {client.type.charAt(0).toUpperCase() + client.type.slice(1)}
+            </div>
+
+            <div className="client-header">
+                <div className="client-avatar">
+                    {client.nom.charAt(0).toUpperCase()}
+                </div>
+                <div className="client-info">
+                    <div className="client-name">{client.nom}</div>
+                    {client.societe && <div className="client-company">{client.societe}</div>}
+                </div>
+                <div className="client-actions">
+                    <ActionButton
+                        icon={<FaEdit />}
+                        title="Modifier"
+                        onClick={(e) => handleAction(e, onEdit)}
+                        className="edit-btn"
+                    />
+                    <ActionButton
+                        icon={<FaTrash />}
+                        title="Supprimer"
+                        onClick={(e) => handleAction(e, onDelete)}
+                        className="delete-btn"
+                    />
+                </div>
+            </div>
+
+            <ClientDetails client={client} />
+
+            {client.anciensNoms?.length > 0 && (
+                <div className="client-history">
+                    <small>Ancien nom: {client.anciensNoms[0].nom}</small>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Détails du client
+const ClientDetails = ({ client }) => (
+    <div className="client-details">
+        <DetailItem
+            icon={<FaEnvelope />}
+            value={client.email}
+        />
+        <DetailItem
+            icon={<FaPhone />}
+            value={client.telephone}
+        />
+        <DetailItem
+            icon={<FaMapMarkerAlt />}
+            value={client.adresse && `${client.adresse} - ${client.ville}`}
+        />
+        <DetailItem
+            icon={<FaBuilding />}
+            value={client.societe}
+        />
+    </div>
+);
+
+// Élément de détail
+const DetailItem = ({ icon, value }) =>
+    value ? (
+        <div className="client-detail">
+            {React.cloneElement(icon, { className: "detail-icon" })}
+            <span className="detail-value">{value}</span>
+        </div>
+    ) : null;
+
+// Bouton d'action réutilisable
+const ActionButton = ({ icon, title, onClick, className }) => (
+    <button
+        onClick={onClick}
+        className={`action-btn ${className}`}
+        title={title}
+    >
+        {icon}
+    </button>
+);
+
+// Ligne de tableau client
+const ClientTableRow = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
+    const handleAction = (e, action) => {
+        e.stopPropagation();
+        action(client);
+    };
+
+    return (
+        <tr
+            className={isSelected ? 'active' : ''}
+            onClick={() => onSelect(client.id)}
+        >
+            <td>
+                <div className="cell-content">
+                    <div className="client-avatar-small">
+                        {client.nom.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div className="client-name">{client.nom}</div>
+                        {client.societe && <div className="client-company">{client.societe}</div>}
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div className={`client-badge ${client.type}`}>
+                    {client.type.charAt(0).toUpperCase() + client.type.slice(1)}
+                </div>
+            </td>
+            <td>
+                <ContactInfo client={client} />
+            </td>
+            <td>
+                <AddressInfo client={client} />
+            </td>
+            <td>
+                <TableActions
+                    onEdit={(e) => handleAction(e, onEdit)}
+                    onDelete={(e) => handleAction(e, onDelete)}
+                />
+            </td>
+        </tr>
+    );
+};
+
+// Informations de contact
+const ContactInfo = ({ client }) => (
+    <div className="client-contact">
+        {client.email && <div><FaEnvelope /> {client.email}</div>}
+        {client.telephone && <div><FaPhone /> {client.telephone}</div>}
+    </div>
+);
+
+// Informations d'adresse
+const AddressInfo = ({ client }) =>
+    client.adresse ? (
+        <div className="client-address">
+            <FaMapMarkerAlt /> {client.adresse}
+            {client.ville && `, ${client.ville}`}
+        </div>
+    ) : null;
+
+// Actions du tableau
+const TableActions = ({ onEdit, onDelete }) => (
+    <div className="table-actions">
+        <ActionButton
+            icon={<FaEdit />}
+            title="Modifier"
+            onClick={onEdit}
+            className="edit-btn"
+        />
+        <ActionButton
+            icon={<FaTrash />}
+            title="Supprimer"
+            onClick={onDelete}
+            className="delete-btn"
+        />
+    </div>
+);
+
+// Section des factures
+const ClientInvoicesSection = ({
+    selectedClient,
+    clientFactures,
+    onCreateInvoice,
+    onDeleteFacture,
+    sectionRef
+}) => {
+    if (!selectedClient) return null;
+
+    const factures = clientFactures || [];
+
+    return (
+        <div className="invoices-section">
+            <div className="invoices-header" ref={sectionRef}>
+                <h2 className="section-title">
+                    <FaFileInvoiceDollar /> Factures de {selectedClient.nom} ({factures.length})
+                </h2>
+                <div className="invoices-actions">
+                    <button onClick={onCreateInvoice} className="create-invoice-btn">
+                        <FaPlus /> Créer une facture
+                    </button>
+                    <button className="export-btn">Exporter</button>
+                </div>
+            </div>
+
+            {factures.length === 0 ? (
+                <div className="empty-state">
+                    <p>Aucune facture trouvée pour ce client</p>
+                    <button onClick={onCreateInvoice} className="primary-btn">
+                        <FaPlus /> Créer une facture
+                    </button>
+                </div>
+            ) : (
+                <InvoicesTable
+                    factures={factures}
+                    onDeleteFacture={onDeleteFacture}
+                />
+            )}
+        </div>
+    );
+};
+
+// Tableau des factures
+const InvoicesTable = ({ factures, onDeleteFacture }) => (
+    <div className="invoices-table-container">
+        <table className="invoice-table">
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Date</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {factures.map(facture => (
+                    <InvoiceRow
+                        key={facture.id}
+                        facture={facture}
+                        onDeleteFacture={onDeleteFacture}
+                    />
+                ))}
+            </tbody>
+        </table>
+    </div>
+);
+
+// Ligne de facture
+const InvoiceRow = ({ facture, onDeleteFacture }) => (
+    <tr>
+        <td>
+            {facture.numero}
+            {facture.nomSocieteHistorique && (
+                <span title={`Ancien nom: ${facture.nomSocieteHistorique}`}>*</span>
+            )}
+        </td>
+        <td>{facture.date}</td>
+        <td>{facture.totalTTC} FCFA</td>
+        <td>
+            <span className={`invoice-status ${facture.statut}`}>
+                {facture.statut}
+            </span>
+        </td>
+        <td>
+            <div className="table-actions">
+                <ActionButton
+                    icon={<FaEdit />}
+                    title="Modifier"
+                    className="edit-btn"
+                />
+                <ActionButton
+                    icon={<FaTrash />}
+                    title="Supprimer"
+                    onClick={() => onDeleteFacture(facture.id)}
+                    className="delete-btn"
+                />
+                <ActionButton
+                    icon={<FaSearch />}
+                    title="Voir"
+                    className="view-btn"
+                />
+            </div>
+        </td>
+    </tr>
+);
+
+// COMPOSANT PRINCIPAL
 const ClientsPage = ({
     clients,
     filteredClients,
@@ -34,465 +653,161 @@ const ClientsPage = ({
     importProgress,
     setImportProgress
 }) => {
-    const [viewMode, setViewMode] = useState('list'); // 'card' ou 'list'
-    const [sortBy, setSortBy] = useState('nom'); // 'nom', 'type', 'dateCreation'
-    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' ou 'desc'
+    const [viewMode, setViewMode] = useState('list');
+    const [sortBy, setSortBy] = useState('nom');
+    const [sortOrder, setSortOrder] = useState('asc');
     const invoicesSectionRef = useRef(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+    
+    // États pour la pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
-    // Précharger l'image de fond
+    // Préchargement de l'image de fond
     useEffect(() => {
         const img = new Image();
         img.src = "/bg-client.jpg";
-        img.onload = () => {
-            setBackgroundLoaded(true);
-        };
-        img.onerror = () => {
-            console.error("Erreur de chargement de l'image de fond");
-            setBackgroundLoaded(true); // Continuer même si l'image échoue
-        };
+        img.onload = img.onerror = () => setBackgroundLoaded(true);
     }, []);
 
-    // Gérer le chargement global
+    // Gestion du chargement
     useEffect(() => {
-        // Attendre que l'image de fond soit chargée
         if (backgroundLoaded) {
-            const timer = setTimeout(() => {
-                setLoading(false);
-            }, 500); // Réduit à 0.5s pour plus de fluidité
-
+            const timer = setTimeout(() => setLoading(false), 500);
             return () => clearTimeout(timer);
         }
     }, [backgroundLoaded]);
 
-    const handleFileUpload = (e) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        if (handleImportClient) handleImportClient(e);
-    };
-
-    // Fonction pour trier les clients
-    const toggleSort = (field) => {
-        if (sortBy === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(field);
-            setSortOrder('asc');
-        }
-    };
-
-    // Clients triés
-    const sortedClients = [...filteredClients].sort((a, b) => {
-        let compareValue;
-        if (sortBy === 'nom') {
-            compareValue = a.nom.localeCompare(b.nom);
-        } else if (sortBy === 'type') {
-            compareValue = a.type.localeCompare(b.type);
-        } else if (sortBy === 'dateCreation') {
-            compareValue = new Date(a.dateCreation) - new Date(b.dateCreation);
-        }
-        return sortOrder === 'asc' ? compareValue : -compareValue;
-    });
-
-    // Fonction modifiée pour inclure le défilement
-    const handleClientClick = (clientId) => {
-        loadClientInvoices(clientId);
-
-        // Défilement vers la section des factures
-        setTimeout(() => {
-            invoicesSectionRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }, 100);
-    };
-
-    // Ajoutez cet état et useEffect au début de votre composant
-    const [isMobile, setIsMobile] = useState(false);
-
-    // Détection automatique du mobile
+    // Détection responsive
     useEffect(() => {
-        const checkIsMobile = () => {
-            setIsMobile(window.innerWidth <= 992);
-        };
-
-        // Vérifier au chargement
+        const checkIsMobile = () => setIsMobile(window.innerWidth <= 992);
         checkIsMobile();
-
-        // Écouter les changements de taille
         window.addEventListener('resize', checkIsMobile);
-
-        return () => {
-            window.removeEventListener('resize', checkIsMobile);
-        };
+        return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
-    // Déterminez le mode d'affichage
+    // Réinitialiser à la première page quand la recherche change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, sortBy, sortOrder]);
+
+    // Gestion de l'upload de fichier
+    const handleFileUpload = useCallback((e) => {
+        if (!e.target.files?.length) return;
+        handleImportClient?.(e);
+    }, [handleImportClient]);
+
+    // Tri des clients
+    const toggleSort = useCallback((field) => {
+        setSortBy(current => current === field ? current : field);
+        setSortOrder(current =>
+            sortBy === field ? (current === 'asc' ? 'desc' : 'asc') : 'asc'
+        );
+    }, [sortBy]);
+
+    // Clients triés (mémoïsé)
+    const sortedClients = useMemo(() => {
+        return [...filteredClients].sort((a, b) => {
+            let compareValue = 0;
+            if (sortBy === 'nom') compareValue = a.nom.localeCompare(b.nom);
+            else if (sortBy === 'type') compareValue = a.type.localeCompare(b.type);
+            else if (sortBy === 'dateCreation') compareValue = new Date(a.dateCreation) - new Date(b.dateCreation);
+            return sortOrder === 'asc' ? compareValue : -compareValue;
+        });
+    }, [filteredClients, sortBy, sortOrder]);
+
+    // Pagination calculs
+    const totalItems = sortedClients.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    // Calcul des clients à afficher pour la page actuelle
+    const paginatedClients = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return sortedClients.slice(startIndex, endIndex);
+    }, [sortedClients, currentPage, itemsPerPage]);
+
+    // Gestion du changement de page
+    const handlePageChange = useCallback((page) => {
+        if (page < 1 || page > totalPages) return;
+        setCurrentPage(page);
+        
+        // Scroll vers le haut quand on change de page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [totalPages]);
+
+    // Gestion du changement d'éléments par page
+    const handleItemsPerPageChange = useCallback((e) => {
+        const newItemsPerPage = parseInt(e.target.value, 10);
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1); // Retour à la première page
+    }, []);
+
+    // Sélection du client avec défilement
+    const handleClientSelect = useCallback((clientId) => {
+        loadClientInvoices(clientId);
+        setTimeout(() => {
+            invoicesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    }, [loadClientInvoices]);
+
+    // Détermination du mode d'affichage
     const displayMode = isMobile ? 'card' : viewMode;
 
-    if (loading) {
-        return (
-            <div
-                style={{
-                    padding: '40px',
-                    textAlign: 'center',
-                    color: '#2c3e50',
-                    fontSize: '18px',
-                    fontWeight: '500',
-                    fontFamily: 'Inter, sans-serif',
-                    backgroundColor: '#ecf0f1',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    margin: '40px auto',
-                    marginTop: '5%',
-                    maxWidth: '400px'
-                }}
-            >
-                <div
-                    style={{
-                        fontSize: '30px',
-                        marginBottom: '10px',
-                        animation: 'spin 1.5s linear infinite',
-                        display: 'inline-block'
-                    }}
-                >
-                    ⏳
-                </div>
-                <div>Chargement...</div>
-
-                <style>
-                    {`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}
-                </style>
-            </div>
-        );
-    }
-
+    if (loading) return <LoadingState />;
 
     return (
         <>
-            {editingClient ? (
-                <form onSubmit={handleUpdate} className="client-form">
-                    <h2 className="form-title">
-                        <FaEdit style={{ marginRight: "10px" }} />
-                        Modifier le client
-                    </h2>
+            {/* Formulaires */}
+            {editingClient && (
+                <ClientForm
+                    isEditing={true}
+                    formData={editingClient}
+                    onSubmit={handleUpdate}
+                    onCancel={cancelEdit}
+                    onChange={handleEditChange}
+                    onSocieteBlur={handleSocieteBlur}
+                />
+            )}
 
-                    {/* Formulaire d'édition... */}
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="edit-societe" className="form-label">Responsable </label>
-                            <input
-                                id="edit-societe"
-                                name="societe"
-                                value={editingClient.societe}
-                                onChange={handleEditChange}
-                                className="form-input"
-                            />
-                        </div>
+            {showAddForm && !editingClient && (
+                <ClientForm
+                    isEditing={false}
+                    formData={client}
+                    onSubmit={handleSubmit}
+                    onCancel={() => setShowAddForm(false)}
+                    onChange={handleChange}
+                />
+            )}
 
-                        <div className="form-group">
-                            <label htmlFor="edit-nom" className="form-label">Raison sociale <span className="required">*</span></label>
-                            <input
-                                id="edit-nom"
-                                name="nom"
-                                value={editingClient.nom}
-                                onChange={handleEditChange}
-                                onBlur={handleSocieteBlur}
-                                required
-                                className="form-input"
-                            />
-                            {editingClient.anciensNoms?.length > 0 && (
-                                <div className="anciens-noms">
-                                    <small>Anciens noms : {editingClient.anciensNoms.map(n => n.nom).join(", ")}</small>
-                                </div>
-                            )}
-                        </div>
-
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="edit-email" className="form-label">Email</label>
-                            <input
-                                id="edit-email"
-                                name="email"
-                                type="email"
-                                value={editingClient.email}
-                                onChange={handleEditChange}
-                                className="form-input"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="edit-telephone" className="form-label">Téléphone</label>
-                            <input
-                                id="edit-telephone"
-                                name="telephone"
-                                value={editingClient.telephone}
-                                onChange={handleEditChange}
-                                className="form-input"
-                            />
-                        </div>
-                    </div>
-                    <div className="form-row">
-
-                        <div className="form-group">
-                            <label htmlFor="edit-adresse" className="form-label">Adresse <span className="required">*</span></label>
-                            <input
-                                id="edit-adresse"
-                                name="adresse"
-                                value={editingClient.adresse}
-                                onChange={handleEditChange}
-                                required
-                                className="form-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="ville" className="form-label">Ville/Pays</label>
-                            <input
-                                id="ville"
-                                name="ville"
-                                value={editingClient.ville}
-                                onChange={handleEditChange}
-                                className="form-input"
-                                placeholder="Ex: Dakar, Sénégal"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="edit-type" className="form-label">Type</label>
-                            <select
-                                id="edit-type"
-                                name="type"
-                                value={editingClient.type || "prospect"}
-                                onChange={handleEditChange}
-                                className="form-input"
-                            >
-                                <option value="client">Client</option>
-                                <option value="prospect">Prospect</option>
-                                <option value="partenaire">Partenaire</option>
-                                <option value="fournisseur">Fournisseur</option>
-                            </select>
-                        </div>
-                    </div>
-
-
-                    <div className="form-actions">
-                        <button type="button" onClick={cancelEdit} className="cancel-btn">
-                            Annuler
-                        </button>
-                        <button type="submit" className="update-btn">
-                            Mettre à jour
-                        </button>
-                    </div>
-                </form>
-            ) : (
-                showAddForm && (
-                    <form onSubmit={handleSubmit} className="client-form">
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <h2 className="form-title">
-                                <FaPlus style={{ marginRight: "10px" }} />
-                                Ajouter un nouveau client
-                            </h2>
-
-                            <button
-                                className="primary-btn"
-                                onClick={() => setShowAddForm(!showAddForm)}
-                            >
-                                <FaPlus /> {showAddForm ? "Fermer le formulaire" : "Ajouter un client"}
-                            </button>
-                        </div>
-
-                        {/* Formulaire d'ajout... */}
-                        <div className="form-row">
-
-                            <div className="form-group">
-                                <label htmlFor="societe" className="form-label">Responsable</label>
-                                <input
-                                    id="societe"
-                                    name="societe"
-                                    value={client.societe}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="Monsieur Diop - Dame"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="nom" className="form-label">Raison sociale <span className="required">*</span></label>
-                                <input
-                                    id="nom"
-                                    name="nom"
-                                    value={client.nom}
-                                    onChange={handleChange}
-                                    required
-                                    className="form-input"
-                                    placeholder="Leader Interim"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="email" className="form-label">Email</label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    value={client.email}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="leader@gmail.com"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="telephone" className="form-label">Téléphone</label>
-                                <input
-                                    id="telephone"
-                                    name="telephone"
-                                    value={client.telephone}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="781234567"
-                                />
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="adresse" className="form-label">Adresse <span className="required">*</span></label>
-                                <input
-                                    id="adresse"
-                                    name="adresse"
-                                    value={client.adresse}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="Ouest Foire, Route de l'Aéroport"
-
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="ville" className="form-label">Ville/Pays</label>
-                                <input
-                                    id="ville"
-                                    name="ville"
-                                    value={client.ville}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="Dakar, Sénégal"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="type" className="form-label">Type</label>
-                                <select
-                                    id="type"
-                                    name="type"
-                                    value={client.type}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                >
-                                    <option value="client">Client</option>
-                                    <option value="prospect">Prospect</option>
-                                    <option value="partenaire">Partenaire</option>
-                                    <option value="fournisseur">Fournisseur</option>
-
-                                </select>
-                            </div>
-                        </div>
-                        <button type="submit" className="submit-btn">
-                            Ajouter le client
-                        </button>
-                    </form>
-                ))}
+            {/* Section principale */}
             <div
                 className={`clients-section ${backgroundLoaded ? 'background-loaded' : ''}`}
-                style={{
-                    backgroundImage: `url(/bg-client.jpg)`,
-                }}
             >
-                <div className="section-header">
-                    <div className="header-left">
-                        <h2 className="section-title">
-                            <FaUsers style={{ marginRight: "10px" }} />
-                            Clients ({sortedClients.length})
-                        </h2>
+                <ClientsHeader
+                    clientsCount={totalItems}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    toggleSort={toggleSort}
+                    onAddClient={() => setShowAddForm(!showAddForm)}
+                    showAddForm={showAddForm}
+                    onImport={handleFileUpload}
+                    isMobile={isMobile}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                />
 
-                        <div className="view-controls">
-                            <button
-                                onClick={() => setViewMode('card')}
-                                className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
-                                title="Vue cartes"
-                                disabled={isMobile} // Désactiver sur mobile si en mode automatique
-                            >
-                                <FaTh />
-                                {isMobile && <span className="auto-badge">Auto</span>}
-                            </button>
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                                title="Vue liste"
-                                disabled={isMobile} // Désactiver sur mobile si en mode automatique
-                            >
-                                <FaList />
-                                {isMobile && <span className="auto-badge">Auto</span>}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="header-right">
-                        <div className="search-box">
-                            <FaSearch className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Rechercher un client..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="sort-options">
-                            <div className="sort-label">Trier par:</div>
-                            <button
-                                onClick={() => toggleSort('nom')}
-                                className={`sort-btn ${sortBy === 'nom' ? 'active' : ''}`}
-                            >
-                                <FaSortAlphaDown /> Nom
-                                {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                            </button>
-                            <button
-                                onClick={() => toggleSort('type')}
-                                className={`sort-btn ${sortBy === 'type' ? 'active' : ''}`}
-                            >
-                                <FaSortAlphaDown /> Type
-                                {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                            </button>
-                        </div>
-
-
-                        <button
-                            className="primary-btn"
-                            onClick={() => setShowAddForm(!showAddForm)}
-                        >
-                            <FaPlus /> {showAddForm ? "Fermer le formulaire" : "Ajouter un client"}
-                        </button>
-
-                        <label htmlFor="file-upload" className="import-btn">
-                            <FaFileExcel /> Importer
-                            <input
-                                id="file-upload"
-                                type="file"
-                                accept=".xlsx, .xls, .csv"
-                                onChange={handleFileUpload}
-                                style={{ display: 'none' }}
-                            />
-                        </label>
-                    </div>
-                </div>
-
+                {/* Barre de progression d'import */}
                 {importProgress && (
                     <div className="import-progress">
                         <div>{importProgress}</div>
@@ -504,257 +819,234 @@ const ClientsPage = ({
                     </div>
                 )}
 
-                {sortedClients.length === 0 ? (
-                    <div className="empty-state">
-                        <img src={empty_client} alt="Aucun client" className="empty-image" />
-                        <h3>Aucun client trouvé</h3>
-                        <p>Commencez par créer votre premier client</p>
-                        <button
-                            className="primary-btn"
-                            onClick={() => setShowAddForm(!showAddForm)}
-                        >
-                            <FaPlus /> Ajouter un client
-                        </button>
-                    </div>
-                ) : (displayMode === 'card' ? (
-                    // Vue card
-                    <div className="clients-grid">
-                        {sortedClients.map((c) => (
-                            <div
-                                key={c.id}
-                                className={`client-card ${selectedClient?.id === c.id ? 'active' : ''}`}
-                                onClick={() => handleClientClick(c.id)}
-                            >
-                                <div className={`client-type-badge ${c.type}`}>
-                                    {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
-                                </div>
-
-                                <div className="client-header">
-                                    <div className="client-avatar">
-                                        {c.nom.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="client-info">
-                                        <div className="client-name">{c.nom}</div>
-                                        {c.societe && <div className="client-company">{c.societe}</div>}
-                                    </div>
-                                    <div className="client-actions">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEdit(c);
-                                            }}
-                                            className="action-btn edit-btn"
-                                            title="Modifier"
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(c.id);
-                                            }}
-                                            className="action-btn delete-btn"
-                                            title="Supprimer"
-                                        >
-                                            <FaTrash />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="client-details">
-                                    {c.email && (
-                                        <div className="client-detail">
-                                            <FaEnvelope className="detail-icon" />
-                                            <span className="detail-value">{c.email}</span>
-                                        </div>
-                                    )}
-                                    {c.telephone && (
-                                        <div className="client-detail">
-                                            <FaPhone className="detail-icon" />
-                                            <span className="detail-value">{c.telephone}</span>
-                                        </div>
-                                    )}
-                                    {c.adresse && (
-                                        <div className="client-detail">
-                                            <FaMapMarkerAlt className="detail-icon" />
-                                            <span className="detail-value">{c.adresse} - {c.ville}</span>
-                                        </div>
-                                    )}
-                                    {c.societe && (
-                                        <div className="client-detail">
-                                            <FaBuilding className="detail-icon" />
-                                            <span className="detail-value">{c.societe}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {c.anciensNoms?.length > 0 && (
-                                    <div className="client-history">
-                                        <small>Ancien nom: {c.anciensNoms[0].nom}</small>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    // Vue tableau
-                    <table className="clients-table">
-                        <thead>
-                            <tr>
-                                <th
-                                    onClick={() => toggleSort('nom')}
-                                    className={sortBy === 'nom' ? 'active' : ''}
-                                >
-                                    <div className="th-content">
-                                        Nom
-                                        {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                <th
-                                    onClick={() => toggleSort('type')}
-                                    className={sortBy === 'type' ? 'active' : ''}
-                                >
-                                    <div className="th-content">
-                                        Type
-                                        {sortBy === 'type' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                <th>Contact</th>
-                                <th>Adresse</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedClients.map((c) => (
-                                <tr
-                                    key={c.id}
-                                    className={selectedClient?.id === c.id ? 'active' : ''}
-                                    onClick={() => handleClientClick(c.id)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td>
-                                        <div className="cell-content">
-                                            <div className="client-avatar-small">
-                                                {c.nom.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <div className="client-name">{c.nom}</div>
-                                                {c.societe && <div className="client-company">{c.societe}</div>}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className={`client-badge ${c.type}`}>
-                                            {c.type.charAt(0).toUpperCase() + c.type.slice(1)}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="client-contact">
-                                            {c.email && <div><FaEnvelope /> {c.email}</div>}
-                                            {c.telephone && <div><FaPhone /> {c.telephone}</div>}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {c.adresse && (
-                                            <div className="client-address">
-                                                <FaMapMarkerAlt /> {c.adresse}
-                                                {c.ville && `, ${c.ville}`}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className="table-actions">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEdit(c);
-                                                }}
-                                                className="action-btn edit-btn"
-                                                title="Modifier"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(c.id);
-                                                }}
-                                                className="action-btn delete-btn"
-                                                title="Supprimer"
-                                            >
-                                                <FaTrash />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                {/* Liste des clients */}
+                {totalItems === 0 ? (
+                    <EmptyState onAddClient={() => setShowAddForm(true)} />
+                ) : displayMode === 'card' ? (
+                    <>
+                        <div className="clients-grid">
+                            {paginatedClients.map((clientItem) => (
+                                <ClientCard
+                                    key={clientItem.id}
+                                    client={clientItem}
+                                    isSelected={selectedClient?.id === clientItem.id}
+                                    onSelect={handleClientSelect}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                />
                             ))}
-                        </tbody>
-                    </table>
-                ))}
-            </div>
-
-            {selectedClient && (() => {
-                const factures = clientFactures || [];
-                return (
-                    <div className="invoices-section" >
-                        <div className="invoices-header" ref={invoicesSectionRef}>
-                            <h2 className="section-title"><FaFileInvoiceDollar /> Factures de {selectedClient.nom} ({factures.length})</h2>
-                            <div className="invoices-actions">
-                                <button onClick={handleCreateInvoice} className="create-invoice-btn">
-                                    <FaPlus /> Créer une facture
-                                </button>
-                                <button className="export-btn">Exporter</button>
-                            </div>
                         </div>
-
-                        {factures.length === 0 ? (
-                            <div className="empty-state" style={{ backgroundImage: `url(${empty_client})` }}>
-                                <p>Aucune facture trouvée pour ce client</p>
-                                <button onClick={handleCreateInvoice} className="primary-btn">
-                                    <FaPlus /> Créer une facture
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="invoices-table-container">
-                                <table className="invoice-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Numéro</th>
-                                            <th>Date</th>
-                                            <th>Montant</th>
-                                            <th>Statut</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {factures.map(f => (
-                                            <tr key={f.id}>
-                                                <td>
-                                                    {f.numero}
-                                                    {f.nomSocieteHistorique && <span title={`Ancien nom: ${f.nomSocieteHistorique}`}>*</span>}
-                                                </td>
-                                                <td>{f.date}</td>
-                                                <td>{f.totalTTC} FCFA </td>
-                                                <td><span className={`invoice-status ${f.statut}`}>{f.statut}</span></td>
-                                                <td>
-                                                    <div className="table-actions">
-                                                        <button className="action-btn edit-btn"><FaEdit /></button>
-                                                        <button className="action-btn delete-btn" onClick={() => handleDeleteFacture(f.id)}>
-                                                            <FaTrash />
-                                                        </button>
-                                                        <button className="action-btn view-btn"><FaSearch /></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        
+                        {/* Pagination en bas pour vue carte */}
+                        {totalPages > 1 && (
+                            <div className="pagination-footer">
+                                <PaginationControls
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={handlePageChange}
+                                    totalItems={totalItems}
+                                    itemsPerPage={itemsPerPage}
+                                    startIndex={(currentPage - 1) * itemsPerPage}
+                                    endIndex={Math.min(currentPage * itemsPerPage, totalItems)}
+                                />
                             </div>
                         )}
-                    </div>
-                );
-            })()}
+                    </>
+                ) : (
+                    <>
+                        <table className="clients-table">
+                            <thead>
+                                <tr>
+                                    <th onClick={() => toggleSort('nom')} className={sortBy === 'nom' ? 'active' : ''}>
+                                        <div className="th-content">
+                                            Nom
+                                            {sortBy === 'nom' && (
+                                                <span className="sort-indicator">
+                                                    {sortOrder === 'asc' ? '↑' : '↓'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th onClick={() => toggleSort('type')} className={sortBy === 'type' ? 'active' : ''}>
+                                        <div className="th-content">
+                                            Type
+                                            {sortBy === 'type' && (
+                                                <span className="sort-indicator">
+                                                    {sortOrder === 'asc' ? '↑' : '↓'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th>Contact</th>
+                                    <th>Adresse</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedClients.map((clientItem) => (
+                                    <ClientTableRow
+                                        key={clientItem.id}
+                                        client={clientItem}
+                                        isSelected={selectedClient?.id === clientItem.id}
+                                        onSelect={handleClientSelect}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
+                        
+                        {/* Pagination en bas pour vue tableau */}
+                        {totalPages > 1 && (
+                            <div className="pagination-footer">
+                                <PaginationControls
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={handlePageChange}
+                                    totalItems={totalItems}
+                                    itemsPerPage={itemsPerPage}
+                                    startIndex={(currentPage - 1) * itemsPerPage}
+                                    endIndex={Math.min(currentPage * itemsPerPage, totalItems)}
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {/* Section des factures */}
+            <ClientInvoicesSection
+                selectedClient={selectedClient}
+                clientFactures={clientFactures}
+                onCreateInvoice={handleCreateInvoice}
+                onDeleteFacture={handleDeleteFacture}
+                sectionRef={invoicesSectionRef}
+            />
         </>
     );
 };
 
-export default ClientsPage;
+// Composant de pagination réutilisable
+const PaginationControls = React.memo(({
+    currentPage,
+    totalPages,
+    onPageChange,
+    totalItems,
+    itemsPerPage,
+    startIndex,
+    endIndex
+}) => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    
+    // Calcul des pages à afficher
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage + 1 < maxPagesToShow) {
+        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+    }
+
+    return (
+        <div className="pagination-container">
+            <div className="pagination-info">
+                Affichage de {startIndex + 1} à {endIndex} sur {totalItems} clients
+            </div>
+            
+            <div className="pagination-buttons">
+                <button
+                    onClick={() => onPageChange(1)}
+                    disabled={currentPage === 1}
+                    className="pagination-btn first-btn"
+                    title="Première page"
+                >
+                    «
+                </button>
+                
+                <button
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="pagination-btn prev-btn"
+                    title="Page précédente"
+                >
+                    <FaChevronLeft />
+                </button>
+                
+                {startPage > 1 && (
+                    <>
+                        <button
+                            onClick={() => onPageChange(1)}
+                            className={`pagination-btn page-btn ${currentPage === 1 ? 'active' : ''}`}
+                        >
+                            1
+                        </button>
+                        {startPage > 2 && <span className="pagination-ellipsis">...</span>}
+                    </>
+                )}
+                
+                {pageNumbers.map(page => (
+                    <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`pagination-btn page-btn ${currentPage === page ? 'active' : ''}`}
+                    >
+                        {page}
+                    </button>
+                ))}
+                
+                {endPage < totalPages && (
+                    <>
+                        {endPage < totalPages - 1 && <span className="pagination-ellipsis">...</span>}
+                        <button
+                            onClick={() => onPageChange(totalPages)}
+                            className={`pagination-btn page-btn ${currentPage === totalPages ? 'active' : ''}`}
+                        >
+                            {totalPages}
+                        </button>
+                    </>
+                )}
+                
+                <button
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="pagination-btn next-btn"
+                    title="Page suivante"
+                >
+                    <FaChevronRight />
+                </button>
+                
+                <button
+                    onClick={() => onPageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="pagination-btn last-btn"
+                    title="Dernière page"
+                >
+                    »
+                </button>
+            </div>
+            
+            <div className="pagination-jump">
+                <span>Aller à :</span>
+                <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={currentPage}
+                    onChange={(e) => {
+                        const page = parseInt(e.target.value, 10);
+                        if (page >= 1 && page <= totalPages) {
+                            onPageChange(page);
+                        }
+                    }}
+                    className="page-jump-input"
+                />
+            </div>
+        </div>
+    );
+});
+
+export default React.memo(ClientsPage);

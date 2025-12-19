@@ -1,884 +1,661 @@
-import React, { useState, useEffect } from 'react';
-import {
-    FaSearch,
-    FaPlus,
-    FaEdit,
-    FaTrash,
-    FaCopy,
-    FaEye,
-    FaDownload,
-    FaList,
-    FaTh,
-    FaSortAlphaDown,
-    FaSortNumericDown,
-    FaCalendarAlt,
-    FaMoneyBillWave,
-    FaUser,
-    FaCheck,
-    FaTimes,
-    FaCreditCard,
-    FaUserEdit,
-    FaCheckCircle,
-    FaFileSignature,
-    FaChevronRight,
-    FaChevronLeft,
-    FaMagic, // AJOUTER CETTE ICÔNE
-    FaSpinner,
-    FaPaperPlane
-
-} from 'react-icons/fa';
-import { Modal, Button, message } from 'antd';
-import empty from '../assets/empty.png';
-import '../css/DocumentSection.css';
-import UserNameLookup from './UserNameLookup';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-import { Autoplay, Navigation } from 'swiper/modules';
-import 'swiper/css/navigation';
 import emailjs from "emailjs-com";
 
+import PayrollCard from './docpayroll/PayrollCard';
+import PayrollTableRow from './docpayroll/PayrollTableRow';
+import PayrollHeader from './docpayroll/PayrollHeader';
+import LoadingState from './common/LoadingState';
+import EmptyState from './common/EmptyState';
+import PayrollDetailsModal from './docpayroll/PayrollDetailsModal';
+
+import '../css/DocumentSection.css';
+
 const PayrollSection = ({
-    title,
-    items,
-    searchTerm,
-    setSearchTerm,
-    onDelete,
-    selectedEmployee,
-    onDuplicate,
-    onDownload,
-    onPreview,
-    onEdit,
-    onValidate,
-    onGenerate,
-    onMarkAsPaid,
-    onCancel,
-    getStatus,
-    showEmployeeColumn = true
+  title,
+  items,
+  searchTerm,
+  setSearchTerm,
+  onDelete,
+  selectedEmployee,
+  onDuplicate,
+  onDownload,
+  onPreview,
+  onEdit,
+  onValidate,
+  onGenerate,
+  onMarkAsPaid,
+  onCancel,
+  getStatus,
+  showEmployeeColumn = true
 }) => {
-    const [sortBy, setSortBy] = useState('numero');
-    const [sortOrder, setSortOrder] = useState('desc');
-    const [viewMode, setViewMode] = useState('list');
-    const [hoveredItem, setHoveredItem] = useState(null);
-    const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-    const [selectedPayroll,] = useState(null);
-    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-    const [sendingEmails, setSendingEmails] = useState({}); // État pour suivre les emails en cours d'envoi
+  const [sortBy, setSortBy] = useState('numero');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [viewMode, setViewMode] = useState('list');
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  const [selectedPayroll, setSelectedPayroll] = useState(null);
+  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sendingEmails, setSendingEmails] = useState({});
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // États pour le scroll infini
+  const [visibleItems, setVisibleItems] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const itemsPerPage = 20;
+  const loaderRef = useRef(null);
+  const observerRef = useRef(null);
+  const containerRef = useRef(null);
+  
+  // Références pour détecter les changements
+  const prevItemsLengthRef = useRef(0);
+  const prevSearchTermRef = useRef(searchTerm);
+  const prevViewModeRef = useRef(viewMode);
 
-    // Précharger l'image de fond
-    useEffect(() => {
-        const img = new Image();
-        img.src = "/bg-fact.jpg";
-        img.onload = () => {
-            setBackgroundLoaded(true);
-        };
-        img.onerror = () => {
-            console.error("Erreur de chargement de l'image de fond");
-            setBackgroundLoaded(true); // Continuer même si l'image échoue
-        };
-    }, []);
-
-    // Gérer le chargement global
-    useEffect(() => {
-        // Attendre que l'image de fond soit chargée
-        if (backgroundLoaded) {
-            const timer = setTimeout(() => {
-                setLoading(false);
-            }, 500); // Réduit à 0.5s pour plus de fluidité
-
-            return () => clearTimeout(timer);
+  // Fonction pour charger plus d'éléments
+  const loadMoreItems = useCallback(() => {
+    if (loadingMore || !hasMore || items.length === 0) {
+      return;
+    }
+    
+    setLoadingMore(true);
+    
+    setTimeout(() => {
+      const nextPage = page + 1;
+      
+      // Trier les items par ordre descendant (numéro ou date)
+      const sortedItems = [...items].sort((a, b) => {
+        if (sortBy === 'numero') {
+          const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt((b.numero || '').replace(/\D/g, ''), 10) || 0;
+          return numB - numA;
+        } else if (sortBy === 'periode') {
+          const dateA = a.periode?.au ? new Date(a.periode.au) : new Date(0);
+          const dateB = b.periode?.au ? new Date(b.periode.au) : new Date(0);
+          return dateB - dateA;
         }
-    }, [backgroundLoaded, items]);
+        return 0;
+      });
+      
+      // Calculer les indices
+      const startIndex = nextPage * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const nextItems = sortedItems.slice(startIndex, endIndex);
+      
+      if (nextItems.length > 0) {
+        setVisibleItems(prev => [...prev, ...nextItems]);
+        setPage(nextPage);
+        
+        // Vérifier s'il reste des éléments à charger
+        const nextHasMore = sortedItems.length > (nextPage + 1) * itemsPerPage;
+        setHasMore(nextHasMore);
+      } else {
+        setHasMore(false);
+      }
+      
+      setLoadingMore(false);
+    }, 300);
+  }, [page, loadingMore, hasMore, items, itemsPerPage, sortBy]);
 
-    const handleInfoModalCancel = () => {
-        setIsInfoModalVisible(false);
+  // Calcul du nombre total filtré
+  const totalFilteredCount = useMemo(() => {
+    return items.filter(item => {
+      if (!item) return false;
+      const searchLower = (searchTerm || '').toLowerCase();
+      const numero = (item.numero || '').toLowerCase();
+      const employeeName = (item.employeeName || '').toLowerCase();
+      return numero.includes(searchLower) || employeeName.includes(searchLower);
+    }).length;
+  }, [items, searchTerm]);
+
+  // Précharger l'image de fond
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/bg-fact.jpg";
+    img.onload = img.onerror = () => {
+      setBackgroundLoaded(true);
+    };
+  }, []);
+
+  // Gérer le chargement global
+  useEffect(() => {
+    if (backgroundLoaded) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [backgroundLoaded]);
+
+  // Détection responsive
+  useEffect(() => {
+    const checkResponsive = () => {
+      const width = window.innerWidth;
+      
+      if (width <= 992) {
+        setIsMobile(true);
+        // Forcer le mode carte sur mobile
+        setViewMode("card");
+      } else {
+        setIsMobile(false);
+      }
     };
 
+    checkResponsive();
+    window.addEventListener("resize", checkResponsive);
+    window.addEventListener("orientationchange", checkResponsive);
+
+    return () => {
+      window.removeEventListener("resize", checkResponsive);
+      window.removeEventListener("orientationchange", checkResponsive);
+    };
+  }, []);
+
+  // Fonction pour initialiser le scroll infini
+  const initializeInfiniteScroll = useCallback(() => {
+    // Réinitialiser les états
+    setPage(0);
+    setVisibleItems([]);
+    setLoadingMore(false);
+    
+    if (items.length > 0) {
+      // Trier par ordre descendant
+      const sortedItems = [...items].sort((a, b) => {
+        if (sortBy === 'numero') {
+          const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt((b.numero || '').replace(/\D/g, ''), 10) || 0;
+          return numB - numA;
+        } else if (sortBy === 'periode') {
+          const dateA = a.periode?.au ? new Date(a.periode.au) : new Date(0);
+          const dateB = b.periode?.au ? new Date(b.periode.au) : new Date(0);
+          return dateB - dateA;
+        }
+        return 0;
+      });
+      
+      // Prendre les premiers items
+      const initialItems = sortedItems.slice(0, itemsPerPage);
+      setVisibleItems(initialItems);
+      
+      // Vérifier s'il y a plus à charger
+      const shouldHaveMore = sortedItems.length > itemsPerPage;
+      setHasMore(shouldHaveMore);
+      
+      prevItemsLengthRef.current = items.length;
+      prevSearchTermRef.current = searchTerm;
+    } else {
+      setVisibleItems([]);
+      setHasMore(false);
+    }
+    
+    // Réinitialiser le scroll
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [items, itemsPerPage, sortBy, searchTerm]);
+
+  // Gérer le changement de viewMode
+  const handleViewModeChange = useCallback((newViewMode) => {
+    setViewMode(newViewMode);
+    prevViewModeRef.current = newViewMode;
+  }, []);
+
+  // Effet principal pour initialiser le scroll
+  useEffect(() => {
+    const itemsLengthChanged = prevItemsLengthRef.current !== items.length;
+    const searchTermChanged = prevSearchTermRef.current !== searchTerm;
+    
+    // Initialiser seulement si les items ou le terme de recherche changent
+    if (itemsLengthChanged || searchTermChanged) {
+      initializeInfiniteScroll();
+    }
+  }, [items.length, searchTerm, initializeInfiniteScroll]);
+
+  // Configuration de l'Observer
+  useEffect(() => {
+    if (!hasMore || loadingMore) {
+      return;
+    }
+    
+    // Nettoyer l'ancien observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && hasMore && !loadingMore) {
+          loadMoreItems();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "100px",
+        threshold: 0.1
+      }
+    );
+    
+    observerRef.current = observer;
+    
+    // Attacher l'observer avec un délai
+    const attachObserver = () => {
+      if (loaderRef.current) {
+        observer.observe(loaderRef.current);
+      } else {
+        setTimeout(attachObserver, 100);
+      }
+    };
+    
+    attachObserver();
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadingMore, loadMoreItems, viewMode]);
+
+  // Forcer l'initialisation si nécessaire
+  useEffect(() => {
+    if (items.length > 0 && visibleItems.length === 0 && !loadingMore) {
+      initializeInfiniteScroll();
+    }
+  }, [items.length, visibleItems.length, loadingMore, initializeInfiniteScroll]);
+
+  // Mettre à jour hasMore
+  useEffect(() => {
+    if (items.length > 0 && visibleItems.length > 0) {
+      const sortedItems = [...items].sort((a, b) => {
+        if (sortBy === 'numero') {
+          const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt((b.numero || '').replace(/\D/g, ''), 10) || 0;
+          return numB - numA;
+        } else if (sortBy === 'periode') {
+          const dateA = a.periode?.au ? new Date(a.periode.au) : new Date(0);
+          const dateB = b.periode?.au ? new Date(b.periode.au) : new Date(0);
+          return dateB - dateA;
+        }
+        return 0;
+      });
+      
+      const currentHasMore = sortedItems.length > visibleItems.length;
+      if (currentHasMore !== hasMore) {
+        setHasMore(currentHasMore);
+      }
+    }
+  }, [items.length, visibleItems.length, hasMore, sortBy, items]);
+
+  // Reconfigurer l'observer quand le mode d'affichage change
+  useEffect(() => {
+    if (observerRef.current && loaderRef.current && hasMore && !loadingMore) {
+      setTimeout(() => {
+        if (observerRef.current && loaderRef.current) {
+          observerRef.current.unobserve(loaderRef.current);
+          observerRef.current.observe(loaderRef.current);
+        }
+      }, 100);
+    }
+  }, [viewMode, hasMore, loadingMore]);
+
+  const displayMode = isMobile ? "card" : viewMode;
+
+  const toggleSort = useCallback((field) => {
+    setSortBy(current => {
+      if (current === field) {
+        setSortOrder(order => order === 'asc' ? 'desc' : 'asc');
+        return current;
+      } else {
+        setSortOrder('asc');
+        return field;
+      }
+    });
+  }, []);
+
+  const showInfoModal = useCallback((payroll) => {
+    setSelectedPayroll(payroll);
+    setIsInfoModalVisible(true);
+  }, []);
+
+  const handleInfoModalCancel = useCallback(() => {
+    setIsInfoModalVisible(false);
+  }, []);
+
+  // Filtrage et tri des items visibles
+  const filteredItems = useMemo(() => {
+    if (visibleItems.length === 0) return [];
+    
     const safeSearch = (searchTerm || '').toLowerCase();
 
-    const filteredItems = (items || [])
-        .filter(item => {
-            if (!item) return false; // Évite les null/undefined
-            const numero = (item.numero || '').toLowerCase();
-            const name = (item.employeeName || '').toLowerCase();
-            return numero.includes(safeSearch) || name.includes(safeSearch);
-        })
+    const filtered = visibleItems.filter(item => {
+      if (!item) return false;
+      const numero = (item.numero || '').toLowerCase();
+      const name = (item.employeeName || '').toLowerCase();
+      return numero.includes(safeSearch) || name.includes(safeSearch);
+    });
 
-        .sort((a, b) => {
-            let compareValue;
-            if (sortBy === 'numero') {
-                const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10);
-                const numB = parseInt((b.numero || '').replace(/\D/g, ''), 10);
-                compareValue = numA - numB;
-            } else if (sortBy === 'employeeName') {
-                compareValue = (a.employeeName || '').localeCompare(b.employeeName || '');
-            } else if (sortBy === 'periode') {
-                compareValue = new Date(a.periode?.au) - new Date(b.periode?.au);
-            } else if (sortBy === 'salaireNetAPayer') {
-                compareValue = (a.calculations?.salaireNetAPayer || 0) - (b.calculations?.salaireNetAPayer || 0);
-            }
-            return sortOrder === 'asc' ? compareValue : -compareValue;
-        });
+    return filtered.sort((a, b) => {
+      let compareValue = 0;
+      if (sortBy === 'numero') {
+        const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt((b.numero || '').replace(/\D/g, ''), 10) || 0;
+        compareValue = numA - numB;
+      } else if (sortBy === 'employeeName') {
+        compareValue = (a.employeeName || '').localeCompare(b.employeeName || '');
+      } else if (sortBy === 'periode') {
+        const dateA = a.periode?.au ? new Date(a.periode.au) : new Date(0);
+        const dateB = b.periode?.au ? new Date(b.periode.au) : new Date(0);
+        compareValue = dateA - dateB;
+      } else if (sortBy === 'salaireNetAPayer') {
+        const netA = a.calculations?.salaireNetAPayer || 0;
+        const netB = b.calculations?.salaireNetAPayer || 0;
+        compareValue = netA - netB;
+      }
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+  }, [visibleItems, searchTerm, sortBy, sortOrder]);
 
-    const toggleSort = (field) => {
-        if (sortBy === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(field);
-            setSortOrder('asc');
-        }
-    };
+  // Fonction d'envoi d'email
+  const sendEmail = useCallback(async (doc) => {
+    const missingFields = [];
+    if (!doc.employeeName) missingFields.push("nom de l'employé");
+    if (!doc.employeeEmail) missingFields.push("email de l'employé");
+    if (!doc.numero) missingFields.push("numéro du bulletin");
+    if (!doc.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
+    if (!doc.periode?.du || !doc.periode?.au) missingFields.push("période de paie");
 
-    const formatDateRange = (periode) => {
-        if (!periode?.du || !periode?.au) return '';
-
-        const format = (date) => {
-            const d = date instanceof Date ? date : new Date(date); // Conversion forcée
-            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-        };
-
-        return `${format(periode.du)} - ${format(periode.au)}`;
-    };
-
-    const sendEmail = async (doc) => {
-        // Vérifier d'abord si tous les éléments requis sont présents
-        const missingFields = [];
-
-        if (!doc.employeeName) missingFields.push("nom de l'employé");
-        if (!doc.employeeEmail) missingFields.push("email de l'employé");
-        if (!doc.numero) missingFields.push("numéro du bulletin");
-        if (!doc.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
-        if (!doc.periode?.du || !doc.periode?.au) missingFields.push("période de paie");
-
-        if (missingFields.length > 0) {
-            message.error(`Données manquantes: ${missingFields.join(', ')} ❌`);
-            return;
-        }
-
-        // Vérifier si l'email est valide
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(doc.employeeEmail)) {
-            message.error("L'adresse email de l'employé n'est pas valide ❌");
-            return;
-        }
-
-        // Définir cet email comme en cours d'envoi
-        setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
-
-        const templateParams = {
-            to_name: doc.employeeName,
-            to_email: doc.employeeEmail,
-            document_numero: doc.numero,
-            montant: doc.calculations.salaireNetAPayer.toLocaleString('fr-FR', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }),
-            periode: formatDateRange(doc.periode),
-        };
-
-        try {
-            await emailjs.send(
-                "service_samafact",
-                "template_samasalaire",
-                templateParams,
-                "ioK4mXd5cOkG_z4EY"
-            );
-
-            // Afficher un message de succès
-            message.success(`Email envoyé à ${doc.employeeEmail} ✅`);
-
-        } catch (error) {
-            // Afficher un message d'erreur
-            message.error("Erreur lors de l'envoi de l'email ❌");
-        } finally {
-            // Retirer cet email de la liste des envois en cours
-            setSendingEmails(prev => {
-                const newState = { ...prev };
-                delete newState[doc.id];
-                return newState;
-            });
-        }
-    };
-
-    if (loading) {
-        return (
-            <div
-                style={{
-                    padding: '40px',
-                    textAlign: 'center',
-                    color: '#2c3e50',
-                    fontSize: '18px',
-                    fontWeight: '500',
-                    fontFamily: 'Inter, sans-serif',
-                    backgroundColor: '#ecf0f1',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    margin: '40px auto',
-                    marginTop: '5%',
-                    maxWidth: '400px'
-                }}
-            >
-                <div
-                    style={{
-                        fontSize: '30px',
-                        marginBottom: '10px',
-                        animation: 'spin 1.5s linear infinite',
-                        display: 'inline-block'
-                    }}
-                >
-                    ⏳
-                </div>
-                <div>Chargement...</div>
-
-                <style>
-                    {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-                </style>
-            </div>
-        );
+    if (missingFields.length > 0) {
+      message.error(`Données manquantes: ${missingFields.join(', ')} ❌`);
+      return;
     }
 
-    return (
-        <div
-            className={`document-section-container ${backgroundLoaded ? 'background-loaded' : ''}`}
-            style={{
-                backgroundImage: `url(/bg-fact.jpg)`
-            }}
-        >
-            <div className="section-header">
-                <div className="header-left">
-                    <h2 className="section-title">
-                        <FaFileSignature className="section-icon" style={{ color: '#3b82f6' }} />
-                        {title} <span className="count-badge">{filteredItems.length}</span>
-                    </h2>
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(doc.employeeEmail)) {
+      message.error("L'adresse email de l'employé n'est pas valide ❌");
+      return;
+    }
 
-                    <div className="view-controls">
-                        <button
-                            onClick={() => setViewMode('card')}
-                            className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
-                            title="Vue cartes"
-                        >
-                            <FaTh />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                            title="Vue liste"
-                        >
-                            <FaList />
-                        </button>
+    setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
+
+    const formatDateRange = (periode) => {
+      if (!periode?.du || !periode?.au) return '';
+      const format = (date) => {
+        const d = date instanceof Date ? date : new Date(date);
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      };
+      return `${format(periode.du)} - ${format(periode.au)}`;
+    };
+
+    const templateParams = {
+      to_name: doc.employeeName,
+      to_email: doc.employeeEmail,
+      document_numero: doc.numero,
+      montant: doc.calculations.salaireNetAPayer.toLocaleString('fr-FR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }),
+      periode: formatDateRange(doc.periode),
+    };
+
+    try {
+      await emailjs.send(
+        "service_samafact",
+        "template_samasalaire",
+        templateParams,
+        "ioK4mXd5cOkG_z4EY"
+      );
+      message.success(`Email envoyé à ${doc.employeeEmail} ✅`);
+    } catch (error) {
+      console.error('Erreur emailjs:', error);
+      message.error("Erreur lors de l'envoi de l'email ❌");
+    } finally {
+      setSendingEmails(prev => {
+        const newState = { ...prev };
+        delete newState[doc.id];
+        return newState;
+      });
+    }
+  }, []);
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={`document-section-container ${backgroundLoaded ? 'background-loaded' : ''}`}
+      style={{ backgroundImage: `url(/bg-fact.jpg)` }}
+    >
+      <PayrollHeader
+        title={title}
+        filteredItemsCount={totalFilteredCount}
+        viewMode={viewMode}
+        setViewMode={handleViewModeChange}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        toggleSort={toggleSort}
+        navigate={navigate}
+        selectedEmployee={selectedEmployee}
+        showEmployeeColumn={showEmployeeColumn}
+      />
+
+      {totalFilteredCount === 0 ? (
+        <EmptyState
+          title="Aucun bulletin de paie trouvé"
+          message="Commencez par créer votre premier bulletin"
+          buttonText="Créer un bulletin"
+          onButtonClick={() => navigate("/payroll", { state: { employee: selectedEmployee } })}
+          buttonColor="#3b82f6"
+        />
+      ) : (
+        <div className="content-animation">
+          {displayMode === "card" ? (
+            <div className="cards-grid">
+              {filteredItems.map((payroll) => (
+                <PayrollCard
+                  key={payroll.id}
+                  payroll={payroll}
+                  showEmployeeColumn={showEmployeeColumn}
+                  getStatus={getStatus}
+                  onPreview={onPreview}
+                  onDownload={onDownload}
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
+                  onEdit={onEdit}
+                  onValidate={onValidate}
+                  onGenerate={onGenerate}
+                  onMarkAsPaid={onMarkAsPaid}
+                  onCancel={onCancel}
+                  sendingEmails={sendingEmails}
+                  onSendEmail={sendEmail}
+                  onShowInfo={showInfoModal}
+                />
+              ))}
+              
+              {/* Élément loader */}
+              <div 
+                ref={loaderRef}
+                key={`loader-payroll-${page}-${viewMode}`}
+                className="infinite-scroll-loader"
+              >
+                {loadingMore ? (
+                  <div className="loading-spinner">
+                    <div className="ant-spin ant-spin-lg ant-spin-spinning">
+                      <span className="ant-spin-dot ant-spin-dot-spin">
+                        <i className="ant-spin-dot-item"></i>
+                        <i className="ant-spin-dot-item"></i>
+                        <i className="ant-spin-dot-item"></i>
+                        <i className="ant-spin-dot-item"></i>
+                      </span>
                     </div>
-                </div>
-
-                <div className="header-right">
-                    <div className="search-container">
-                        <FaSearch className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
+                    <div className="loading-text">
+                      Chargement des bulletins...
                     </div>
-
-                    <div className="sort-options">
-                        <div className="sort-label">Trier par:</div>
-                        <button
-                            onClick={() => toggleSort('numero')}
-                            className={`sort-btn ${sortBy === 'numero' ? 'active' : ''}`}
-                        >
-                            <FaSortNumericDown /> Numéro
-                            {sortBy === 'numero' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                        </button>
-                        {showEmployeeColumn && (
-                            <button
-                                onClick={() => toggleSort('employeeName')}
-                                className={`sort-btn ${sortBy === 'employeeName' ? 'active' : ''}`}
-                            >
-                                <FaSortAlphaDown /> Employé
-                                {sortBy === 'employeeName' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                            </button>
-                        )}
+                  </div>
+                ) : hasMore ? (
+                  <div className="has-more-indicator">
+                    <div className="has-more-count">
+                      {visibleItems.length} sur {items.length} bulletins chargés
                     </div>
-
-                    <button
-                        onClick={() => navigate("/payroll", { state: { employee: selectedEmployee } })}
-                        className="create-btn"
-                        style={{ backgroundColor: '#3b82f6' }}
-                    >
-                        <FaPlus className="btn-icon" />
-                        Créer un bulletin
-                    </button>
-                </div>
+                    <small className="has-more-hint">
+                      Faites défiler pour charger les bulletins plus anciens
+                    </small>
+                  </div>
+                ) : filteredItems.length > 0 ? (
+                  <div className="no-more-data">
+                    <span className="check-icon">✓</span> 
+                    <span className="no-more-text">
+                      Tous les bulletins sont chargés ({filteredItems.length} bulletins)
+                    </span>
+                  </div>
+                ) : null}
+              </div>
             </div>
-
-            {filteredItems.length === 0 ? (
-                <div className="empty-state">
-                    <img src={empty} alt="Aucun document" className="empty-image" />
-                    <h3>Aucun bulletin de paie trouvé</h3>
-                    <p>Commencez par créer votre premier bulletin</p>
-                    <button
-                        onClick={() => navigate("/payroll", { state: { employee: selectedEmployee } })}
-                        className="create-btn empty-btn"
-                        style={{ backgroundColor: '#3b82f6' }}
+          ) : (
+            <div className="table-container">
+              <table className="documents-table">
+                <thead>
+                  <tr>
+                    <th
+                      onClick={() => toggleSort('numero')}
+                      className={sortBy === 'numero' ? 'active' : ''}
                     >
-                        <FaPlus className="btn-icon" />
-                        Créer un bulletin
-                    </button>
-                </div>
-            ) : viewMode === 'card' ? (
-                <div className="cards-grid">
-                    {filteredItems.map((p) => (
-                        <div
-                            key={p.id}
-                            className={`document-card ${getStatus(p) === "Payé" ? "paid-card" :
-                                getStatus(p) === "Validé" ? "validated-card" : ""
-                                }`}
-                            onMouseEnter={() => setHoveredItem(p.id)}
-                            onMouseLeave={() => setHoveredItem(null)}
-                            onClick={() => onPreview(p)}
-                        >
-                            <div className="card-header" style={{ borderTop: '4px solid #28a745' }}>
-                                <div className="header-status">
-                                    <span className={`status-badge ${getStatus(p) === "Payé" ? "paid" :
-                                        getStatus(p) === "Validé" ? "validated" : "draft"
-                                        }`}>
-                                        {getStatus(p)}
-                                    </span>
-                                </div>
-
-                                <div className="document-icon">
-                                    <FaFileSignature style={{ color: '#3b82f6' }} />
-                                </div>
-                                <div className="document-info">
-                                    <h3 className="document-number">{p.numero}</h3>
-                                    {showEmployeeColumn && (
-                                        <p className="document-client">{p.employeeName || "Sans employé"}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="card-details">
-                                <div className="detail-item">
-                                    <FaCalendarAlt className="detail-icon" />
-                                    <span>{formatDateRange(p.periode)}</span>
-                                </div>
-
-                                <div className="detail-item">
-                                    <FaMoneyBillWave className="detail-icon" />
-                                    <span>
-                                        {p.calculations?.salaireNetAPayer?.toLocaleString('fr-FR', {
-                                            minimumFractionDigits: 0,
-                                            maximumFractionDigits: 0
-                                        }) || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="detail-item">
-                                    <FaUser className="detail-icon" />
-                                    <UserNameLookup userId={p.userId} />
-                                </div>
-                            </div>
-
-                            <div className={`card-actions ${hoveredItem === p.id ? 'visible' : ''}`}>
-                                <Swiper
-                                    loop={true}
-                                    spaceBetween={10}
-                                    slidesPerView={1}
-                                    grabCursor={true}
-                                    modules={[Autoplay, Navigation]}
-                                    autoplay={{
-                                        delay: 3000,
-                                        pauseOnMouseEnter: true,
-                                        disableOnInteraction: false,
-                                    }}
-                                    navigation={{
-                                        nextEl: `.swiper-next-${p.id}`,
-                                        prevEl: `.swiper-prev-${p.id}`,
-                                        disabledClass: 'swiper-button-disabled'
-                                    }}
-                                    className="custom-swiper"
-                                    onSlideChange={(swiper) => {
-                                        swiper.autoplay.start();
-                                    }}
-                                >
-                                    {/* Slide 1 */}
-                                    <SwiperSlide>
-                                        <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(p); }} title="Aperçu">
-                                            <FaEye />
-                                        </button>
-                                        <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger">
-                                            <FaDownload />
-                                        </button>
-                                        {p.statut !== "paid" && (
-                                            <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer">
-                                                <FaTrash />
-                                            </button>
-                                        )}
-                                    </SwiperSlide>
-
-                                    {/* Slide 2 */}
-                                    <SwiperSlide>
-                                        {p.statut !== "paid" && (
-                                            <button className="action-btn edit"
-                                                onClick={(e) => { e.stopPropagation(); onEdit(p); }}
-                                                title="Modifier">
-                                                <FaEdit />
-                                            </button>
-                                        )}
-                                        <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer">
-                                            <FaCopy />
-                                        </button>
-
-                                        {p.statut === "draft" ? (
-                                            <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider">
-                                                <FaCheckCircle />
-                                            </button>
-                                        ) : p.statut === "validated" ? (
-                                            <button className="action-btn pay" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(p.id); }} title="Marquer comme payé">
-                                                <FaCreditCard />
-                                            </button>
-                                        ) : p.statut === "paid" ? (
-                                            <button className="action-btn cancel" onClick={(e) => { e.stopPropagation(); onCancel(p.id); }} title="Annuler">
-                                                <FaTimes />
-                                            </button>
-                                        ) : null}
-                                    </SwiperSlide>
-
-                                    {/* Slide 3 - Ajouter une nouvelle slide pour le bouton Générer */}
-                                    <SwiperSlide>
-                                        <button
-                                            className="action-btn generate"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onGenerate(p);
-                                            }}
-                                            title="Générer automatiquement"
-                                        >
-                                            <FaMagic />
-                                        </button>
-                                        <button
-                                            className="action-btn send"
-                                            title="Envoyer par email"
-                                            onClick={(e) => { e.stopPropagation(); sendEmail(p); }}
-                                            disabled={sendingEmails[p.id]} // Désactiver le bouton pendant l'envoi
-                                        >
-                                            {sendingEmails[p.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
-                                        </button>
-
-                                        {/* Vous pouvez ajouter d'autres boutons ici si nécessaire */}
-                                    </SwiperSlide>
-
-                                    {/* Navigation */}
-                                    <div
-                                        className={`swiper-nav-btn swiper-prev swiper-prev-${p.id}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <FaChevronLeft />
-                                    </div>
-                                    <div
-                                        className={`swiper-nav-btn swiper-next swiper-next-${p.id}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <FaChevronRight />
-                                    </div>
-                                </Swiper>
-                            </div>
-
+                      <div className="th-content">
+                        Numéro
+                        {sortBy === 'numero' && (
+                          <span className="sort-indicator">
+                            {sortOrder === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    {showEmployeeColumn && (
+                      <th
+                        onClick={() => toggleSort('employeeName')}
+                        className={sortBy === 'employeeName' ? 'active' : ''}
+                      >
+                        <div className="th-content">
+                          Employé
+                          {sortBy === 'employeeName' && (
+                            <span className="sort-indicator">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
                         </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="table-container">
-                    <table className="documents-table">
-                        <thead>
-                            <tr>
-                                <th onClick={() => toggleSort('numero')} className={sortBy === 'numero' ? 'active' : ''}>
-                                    <div className="th-content">
-                                        Numéro
-                                        {sortBy === 'numero' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                {showEmployeeColumn && (
-                                    <th onClick={() => toggleSort('employeeName')} className={sortBy === 'employeeName' ? 'active' : ''}>
-                                        <div className="th-content">
-                                            Employé
-                                            {sortBy === 'employeeName' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                        </div>
-                                    </th>
-                                )}
-                                <th onClick={() => toggleSort('periode')} className={sortBy === 'periode' ? 'active' : ''}>
-                                    <div className="th-content">
-                                        Période
-                                        {sortBy === 'periode' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                <th onClick={() => toggleSort('salaireNetAPayer')} className={sortBy === 'salaireNetAPayer' ? 'active' : ''}>
-                                    <div className="th-content">
-                                        Net à payer
-                                        {sortBy === 'salaireNetAPayer' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                                    </div>
-                                </th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {filteredItems.map((p) => (
-                                <tr
-                                    key={p.id}
-                                    onClick={() => onPreview(p)}
-                                    className={
-                                        getStatus(p) === 'Payé' ? 'paid-row' :
-                                            getStatus(p) === 'Validé' ? 'validated-row' : 'draft-row'
-                                    }
-                                >
-                                    <td>
-                                        <div className="cell-content">
-                                            <FaFileSignature
-                                                className="cell-icon"
-                                                style={{ color: '#3b82f6' }}
-                                            />
-                                            {p.numero}
-                                        </div>
-                                    </td>
-
-                                    {showEmployeeColumn && <td>{p.employeeName || 'Sans employé'}</td>}
-
-                                    <td>{formatDateRange(p.periode)}</td>
-
-                                    <td className="amount-cell">
-                                        {p.calculations?.salaireNetAPayer?.toLocaleString('fr-FR', {
-                                            minimumFractionDigits: 0,
-                                            maximumFractionDigits: 0
-                                        }) || '0'} FCFA
-                                    </td>
-
-                                    <td>
-                                        <span className={`status-badge ${getStatus(p) === 'Payé' ? 'paid' :
-                                            getStatus(p) === 'Validé' ? 'validated' : 'draft'
-                                            }`}>
-                                            {getStatus(p)}
-                                        </span>
-                                    </td>
-
-                                    <td className="actions-cell">
-                                        <div className="actions-container">
-
-                                            {/* Groupe 1 */}
-                                            <div className="action-group">
-                                                <button className="action-btn view" onClick={(e) => { e.stopPropagation(); onPreview(p); }} title="Aperçu"><FaEye /></button>
-                                                <button className="action-btn download" onClick={(e) => { e.stopPropagation(); onDownload(p); }} title="Télécharger"><FaDownload /></button>
-                                                {p.statut !== "paid" && (<button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} title="Supprimer"> <FaTrash /></button>
-                                                )}
-                                            </div>
-
-                                            {/* Groupe 2 */}
-                                            <div className="action-group">
-                                                {p.statut !== "paid" && (
-                                                    <button className="action-btn edit" onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onEdit(p); // Modifier seulement si pas payé
-                                                    }} title="Modifier">
-                                                        <FaEdit />
-                                                    </button>
-                                                )}
-                                                <button className="action-btn duplicate" onClick={(e) => { e.stopPropagation(); onDuplicate(p); }} title="Dupliquer"><FaCopy /></button>
-                                                {p.statut === "draft" ? (
-                                                    <button className="action-btn validate" onClick={(e) => { e.stopPropagation(); onValidate(p.id); }} title="Valider"><FaCheckCircle /></button>
-                                                ) : p.statut === "validated" ? (
-                                                    <button className="action-btn pay" onClick={(e) => { e.stopPropagation(); onMarkAsPaid(p.id); }} title="Marquer comme payé"><FaCreditCard /></button>
-                                                ) : p.statut === "paid" ? (
-                                                    <button className="action-btn cancel" onClick={(e) => { e.stopPropagation(); onCancel(p.id); }} title="Annuler"><FaTimes /></button>
-                                                ) : null}
-                                            </div>
-
-
-                                            {/* Groupe 3 - Ajouter un nouveau groupe d'actions */}
-                                            <div className="action-group">
-                                                <button
-                                                    className="action-btn generate"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onGenerate(p);
-                                                    }}
-                                                    title="Générer automatiquement"
-                                                >
-                                                    <FaMagic />
-                                                </button>
-                                                <button
-                                                    className="action-btn send"
-                                                    title="Envoyer par email"
-                                                    onClick={(e) => { e.stopPropagation(); sendEmail(p); }}
-                                                    disabled={sendingEmails[p.id]} // Désactiver le bouton pendant l'envoi
-                                                >
-                                                    {sendingEmails[p.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            <Modal
-                title={
-                    <div className="modal-title">
-                        <FaFileSignature style={{ color: '#3b82f6', marginRight: 10 }} />
-                        <span>Détails de {selectedPayroll?.numero}</span>
-                    </div>
-                }
-                open={isInfoModalVisible}
-                onCancel={handleInfoModalCancel}
-                footer={[
-                    <Button
-                        key="back"
-                        onClick={handleInfoModalCancel}
-                        style={{ padding: '8px 20px', height: 'auto' }}
+                      </th>
+                    )}
+                    <th
+                      onClick={() => toggleSort('periode')}
+                      className={sortBy === 'periode' ? 'active' : ''}
                     >
-                        Fermer
-                    </Button>
-                ]}
-                width={700}
-                className="document-details-modal-container"
-            >
-                {selectedPayroll && (
-                    <div className="document-details-content-container">
-                        <div className="document-details-content">
-                            <div className="details-main-section">
-                                <div className="details-row">
-                                    <div className="detail-item">
-                                        <span className="detail-label">
-                                            <FaUser className="detail-icon" />
-                                            Employé
-                                        </span>
-                                        <span className="detail-value">{selectedPayroll.employeeName || "Non spécifié"}</span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">
-                                            <FaCalendarAlt className="detail-icon" />
-                                            Période
-                                        </span>
-                                        <span className="detail-value">{formatDateRange(selectedPayroll.periode)}</span>
-                                    </div>
-                                </div>
-
-                                <div className="details-row">
-                                    <div className="detail-item">
-                                        <span className="detail-label">
-                                            <FaMoneyBillWave className="detail-icon" />
-                                            Net à payer
-                                        </span>
-                                        <span className="detail-value amount">
-                                            {selectedPayroll.calculations?.salaireNetAPayer?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">
-                                            <FaCheckCircle className="detail-icon" />
-                                            Statut
-                                        </span>
-                                        <span className={`detail-value status ${selectedPayroll.statut === "paid" ? "paid" :
-                                            selectedPayroll.statut === "validated" ? "validated" : "draft"}`}>
-                                            {getStatus(selectedPayroll)}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="payment-section">
-                                <h4 className="section-subtitle">
-                                    <FaCreditCard style={{ marginRight: 8 }} />
-                                    Rémunération
-                                </h4>
-
-                                <div className="details-grid two-columns">
-                                    <div className="detail-item">
-                                        <span className="detail-label">Salaire de base</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.remuneration?.salaireBase?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">Sursalaire</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.remuneration?.sursalaire?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">Indemnité déplacement</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.remuneration?.indemniteDeplacement?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">Avantages en nature</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.remuneration?.avantagesNature?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="payment-section">
-                                <h4 className="section-subtitle">
-                                    <FaMoneyBillWave style={{ marginRight: 8 }} />
-                                    Primes
-                                </h4>
-
-                                <div className="details-grid two-columns">
-                                    <div className="detail-item">
-                                        <span className="detail-label">Transport</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.primes?.transport?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">Panier</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.primes?.panier?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">Responsabilité</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.primes?.responsabilite?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-
-                                    <div className="detail-item">
-                                        <span className="detail-label">Autres primes</span>
-                                        <span className="detail-value">
-                                            {selectedPayroll.primes?.autresPrimes?.toLocaleString('fr-FR', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2
-                                            }) || '0,00'} FCFA
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {selectedPayroll.statut === "paid" && (
-                                <div className="payment-section">
-                                    <h4 className="section-subtitle">
-                                        <FaCreditCard style={{ marginRight: 8 }} />
-                                        Paiement
-                                    </h4>
-
-                                    <div className="details-grid">
-                                        <div className="detail-item">
-                                            <span className="detail-label">Date de paiement</span>
-                                            <span className="detail-value">
-                                                {new Date(selectedPayroll.paymentDate).toLocaleDateString('fr-FR')}
-                                            </span>
-                                        </div>
-
-                                        <div className="detail-item">
-                                            <span className="detail-label">Méthode</span>
-                                            <span className="detail-value">
-                                                {selectedPayroll.paymentMethod === "virement" ? "Virement bancaire" :
-                                                    selectedPayroll.paymentMethod === "cheque" ? "Chèque" :
-                                                        selectedPayroll.paymentMethod || "Non spécifié"}
-                                            </span>
-                                        </div>
-
-                                        <div className="detail-item">
-                                            <span className="detail-label">Référence</span>
-                                            <span className="detail-value">
-                                                {selectedPayroll.paymentReference || 'Aucune référence'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="creation-section">
-                                <div className="detail-item full-width">
-                                    <span className="detail-label">
-                                        <FaUserEdit className="detail-icon" />
-                                        Créé par
-                                    </span>
-                                    <span className="detail-value">
-                                        <UserNameLookup userId={selectedPayroll.userId} />
-                                        <span className="creation-date">le {new Date(selectedPayroll.createdAt).toLocaleDateString('fr-FR')}</span>
-                                    </span>
-                                </div>
-                            </div>
+                      <div className="th-content">
+                        Période
+                        {sortBy === 'periode' && (
+                          <span className="sort-indicator">
+                            {sortOrder === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => toggleSort('salaireNetAPayer')}
+                      className={sortBy === 'salaireNetAPayer' ? 'active' : ''}
+                    >
+                      <div className="th-content">
+                        Net à payer
+                        {sortBy === 'salaireNetAPayer' && (
+                          <span className="sort-indicator">
+                            {sortOrder === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((payroll) => (
+                    <PayrollTableRow
+                      key={payroll.id}
+                      payroll={payroll}
+                      showEmployeeColumn={showEmployeeColumn}
+                      getStatus={getStatus}
+                      onPreview={onPreview}
+                      onDownload={onDownload}
+                      onDelete={onDelete}
+                      onDuplicate={onDuplicate}
+                      onEdit={onEdit}
+                      onValidate={onValidate}
+                      onGenerate={onGenerate}
+                      onMarkAsPaid={onMarkAsPaid}
+                      onCancel={onCancel}
+                      sendingEmails={sendingEmails}
+                      onSendEmail={sendEmail}
+                      onShowInfo={showInfoModal}
+                    />
+                  ))}
+                  
+                  {/* Ligne loader */}
+                  <tr 
+                    ref={loaderRef}
+                    key={`loader-row-payroll-${page}-${viewMode}`}
+                    className="loading-row"
+                  >
+                    <td colSpan={showEmployeeColumn ? 6 : 5} className="loading-cell">
+                      {loadingMore ? (
+                        <div className="loading-spinner">
+                          <div className="ant-spin ant-spin-lg ant-spin-spinning">
+                            <span className="ant-spin-dot ant-spin-dot-spin">
+                              <i className="ant-spin-dot-item"></i>
+                              <i className="ant-spin-dot-item"></i>
+                              <i className="ant-spin-dot-item"></i>
+                              <i className="ant-spin-dot-item"></i>
+                            </span>
+                          </div>
+                          <div className="loading-text">
+                            Chargement des bulletins...
+                          </div>
                         </div>
-
-                        <div className="status-progress-bar">
-                            <div className="progress-steps-container">
-                                <div className={`progress-step ${selectedPayroll.statut ? 'completed' : ''}`}>
-                                    <div className="step-circle">
-                                        {selectedPayroll.statut && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">Créé</div>
-                                    <div className="step-connector"></div>
-                                </div>
-
-                                <div className={`progress-step ${['validated', 'paid'].includes(selectedPayroll.statut) ? 'completed' : ''}`}>
-                                    <div className="step-circle">
-                                        {['validated', 'paid'].includes(selectedPayroll.statut) && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">Validé</div>
-                                    <div className="step-connector"></div>
-                                </div>
-
-                                <div className={`progress-step ${selectedPayroll.statut === 'paid' ? 'completed' : ''}`}>
-                                    <div className="step-circle">
-                                        {selectedPayroll.statut === 'paid' && <FaCheck className="check-icon" />}
-                                    </div>
-                                    <div className="step-label">Payé</div>
-                                </div>
-                            </div>
+                      ) : hasMore ? (
+                        <div className="has-more-indicator">
+                          <div className="has-more-count">
+                            {visibleItems.length} sur {items.length} bulletins chargés
+                          </div>
+                          <small className="has-more-hint">
+                            Faites défiler pour charger les bulletins plus anciens
+                          </small>
                         </div>
-                    </div>
-                )}
-            </Modal>
+                      ) : filteredItems.length > 0 ? (
+                        <div className="no-more-data">
+                          <span className="check-icon">✓</span> 
+                          <span className="no-more-text">
+                            Tous les bulletins sont chargés ({filteredItems.length} bulletins)
+                          </span>
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-    );
+      )}
+
+      <PayrollDetailsModal
+        isVisible={isInfoModalVisible}
+        onClose={handleInfoModalCancel}
+        payroll={selectedPayroll}
+        getStatus={getStatus}
+      />
+    </div>
+  );
 };
 
-export default PayrollSection;
+export default React.memo(PayrollSection);

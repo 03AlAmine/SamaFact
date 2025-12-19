@@ -1,5 +1,5 @@
 import { pdf } from '@react-pdf/renderer';
-import PayrollPDF from '../payrolls/PayrollPDF';
+import PayrollPDF from '../data/payrolls/PayrollPDF';
 
 // Conversion optimisée des dates
 const convertDate = (date) => {

@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import DocumentSection from "../components/DocumentSection";
 import { exportToExcel, exportToPDF } from "../utils/exportUtils";
-import { FaFileExcel, FaFilePdf } from "react-icons/fa";
-import ModernDateRangePicker from "../components/ModernDateRangePicker";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
-import { useAuth } from "../auth/AuthContext";
+import { FaFileExcel, FaFilePdf, FaSpinner } from "react-icons/fa";
+import ModernDateRangePicker from "../components/docpayroll/ModernDateRangePicker";
 import { downloadPdf, previewPdf } from '../services/pdfService';
 import { invoiceService } from '../services/invoiceService';
-import ModalPaiement from "../components/ModalPaiement";
+import ModalPaiement from "../components/dialogs/ModalPaiement";
 import { message, Modal } from "antd";
 
 const InvoicesPage = ({
@@ -17,22 +14,101 @@ const InvoicesPage = ({
     navigate,
     selectedClient,
     companyId,
+    getFacturesToDisplay,
+    getDevisToDisplay,
+    getAvoirsToDisplay,
 }) => {
-    const { currentUser } = useAuth();
-    const [documents, setDocuments] = useState({
-        factures: [],
-        devis: [],
-        avoirs: []
-    });
+
     const [modalVisible, setModalVisible] = useState(false);
     const [currentDocument, setCurrentDocument] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [dateRange, setDateRange] = useState({ from: null, to: null });
     const [activeTab, setActiveTab] = useState("factures");
+    const [isChangingTab, setIsChangingTab] = useState(false);
+
     const currentTab = activeTab || "factures";
 
-    // Fonction pour obtenir le statut d'un document
-    const getStatus = (document) => {
+    const typeMapping = {
+        factures: "facture",
+        devis: "devis",
+        avoirs: "avoir"
+    };
+
+    // 🔥 OPTIMISATION : Débounce pour les changements d'onglet
+    const handleTabChange = useCallback(async (tab) => {
+        if (activeTab === tab || isChangingTab) return;
+
+        setIsChangingTab(true);
+
+        try {
+            // Délai réduit pour un meilleur UX
+            await new Promise(resolve => setTimeout(resolve, 200));
+            setActiveTab(tab);
+        } catch (error) {
+            console.error("Erreur lors du changement d'onglet:", error);
+        } finally {
+            setIsChangingTab(false);
+        }
+    }, [activeTab, isChangingTab]);
+
+    // 🔥 OPTIMISATION : Mémoïsation des données filtrées par onglet
+    const tabData = useMemo(() => {
+        return {
+            factures: getFacturesToDisplay() || [],
+            devis: getDevisToDisplay() || [],
+            avoirs: getAvoirsToDisplay() || [],
+        };
+    }, [getFacturesToDisplay, getDevisToDisplay, getAvoirsToDisplay]);
+
+    // Fonction pour filtrer par date
+    const filterByDate = useCallback((items) => {
+        if (!dateRange.from && !dateRange.to) return items || [];
+
+        return (items || []).filter(item => {
+            const itemDate = new Date(item.date);
+            const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+            const toDate = dateRange.to ? new Date(dateRange.to) : null;
+
+            return (
+                (!fromDate || itemDate >= fromDate) &&
+                (!toDate || itemDate <= toDate)
+            );
+        });
+    }, [dateRange]);
+
+    // 🔥 OPTIMISATION : Mémoïsation des données filtrées par date
+    const filteredTabData = useMemo(() => {
+        return {
+            factures: filterByDate(tabData.factures),
+            devis: filterByDate(tabData.devis),
+            avoirs: filterByDate(tabData.avoirs),
+        };
+    }, [tabData, filterByDate]);
+
+    // 🔥 OPTIMISATION : Mémoïsation des compteurs filtrés
+    const filteredTabCounts = useMemo(() => {
+        return {
+            factures: filteredTabData.factures.length,
+            devis: filteredTabData.devis.length,
+            avoirs: filteredTabData.avoirs.length,
+        };
+    }, [filteredTabData]);
+
+    // Fonction pour obtenir les documents de l'onglet actif
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const getDocuments = useCallback(() => {
+        return filteredTabData[activeTab] || [];
+    });
+
+    // Fonction pour obtenir le statut d'un document (optimisée)
+    const getStatus = useCallback((document) => {
+        if (!document) return "Attente";
+        
+        // Si déjà un statut calculé, on le retourne
+        if (document.calculatedStatus) {
+            return document.calculatedStatus;
+        }
+
         // Convertir les montants en nombres pour comparaison
         const totalTTC = typeof document.totalTTC === 'string'
             ? parseFloat(document.totalTTC.replace(/\s/g, '').replace(',', '.'))
@@ -47,7 +123,7 @@ const InvoicesPage = ({
 
         // 1. Si pas de paiement ou montant payé = 0 → "En attente"
         if (montantPaye < EPSILON) {
-            return "En attente";
+            return "Attente";
         }
         // 2. Si montant payé est (presque) égal au total → "Payé"
         else if (Math.abs(montantPaye - totalTTC) < EPSILON) {
@@ -57,70 +133,14 @@ const InvoicesPage = ({
         else if (montantPaye < totalTTC) {
             return "Accompte";
         }
-        // Cas par défaut (normalement ne devrait pas arriver)
+        // Cas par défaut
         return document.statut ?
             document.statut.charAt(0).toUpperCase() + document.statut.slice(1)
             : "En attente";
-    };
+    }, []);
 
-    // Fonction pour filtrer par date
-    const filterByDate = useCallback((items) => {
-        if (!dateRange.from && !dateRange.to) return items;
-
-        return items.filter(item => {
-            const itemDate = new Date(item.date);
-            const fromDate = dateRange.from ? new Date(dateRange.from) : null;
-            const toDate = dateRange.to ? new Date(dateRange.to) : null;
-
-            return (
-                (!fromDate || itemDate >= fromDate) &&
-                (!toDate || itemDate <= toDate)
-            );
-        });
-    }, [dateRange]);
-
-    // Chargement des documents depuis Firestore
-    useEffect(() => {
-        if (!currentUser || !companyId) return;
-
-        const documentsRef = collection(db, `companies/${companyId}/factures`);
-
-        const buildQuery = (type) => {
-            const conditions = [where("type", "==", type)];
-            if (currentUser.role !== 'admin') {
-                conditions.push(where("userId", "==", currentUser.uid));
-            }
-            return query(documentsRef, ...conditions);
-        };
-
-        const unsubscribe = {
-            factures: onSnapshot(buildQuery("facture"), (snapshot) => {
-                setDocuments(prev => ({
-                    ...prev,
-                    factures: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                }));
-            }),
-            devis: onSnapshot(buildQuery("devis"), (snapshot) => {
-                setDocuments(prev => ({
-                    ...prev,
-                    devis: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                }));
-            }),
-            avoirs: onSnapshot(buildQuery("avoir"), (snapshot) => {
-                setDocuments(prev => ({
-                    ...prev,
-                    avoirs: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                }));
-            })
-        };
-
-        return () => {
-            Object.values(unsubscribe).forEach(unsub => unsub());
-        };
-    }, [currentUser, companyId]);
-
-    // Gestion de la suppression avec confirmation
-    const handleDelete = async (id, type) => {
+    // Gestion de la suppression avec confirmation (optimisée)
+    const handleDelete = useCallback(async (id, type) => {
         Modal.confirm({
             title: 'Confirmer la suppression',
             content: 'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
@@ -141,19 +161,18 @@ const InvoicesPage = ({
                 }
             }
         });
-    };
+    }, [companyId]);
 
-    // Gestion des exports
-    // Dans InvoicesPage.js, modifiez la fonction handleExport
-    const handleExport = (format) => {
-        // Récupérer les données déjà filtrées (par date, recherche, etc.)
-        const filteredData = filterByDate(documents[activeTab])
+    // Gestion des exports (optimisée)
+    const handleExport = useCallback((format) => {
+        const currentDocuments = getDocuments();
+        const filteredData = currentDocuments
             .filter(item => {
                 // Filtre par recherche
                 if (searchTerm) {
                     const searchLower = searchTerm.toLowerCase();
                     return (
-                        item.numero.toLowerCase().includes(searchLower) ||
+                        item.numero?.toLowerCase().includes(searchLower) ||
                         (item.clientNom && item.clientNom.toLowerCase().includes(searchLower)) ||
                         (item.objet && item.objet.toLowerCase().includes(searchLower))
                     );
@@ -179,53 +198,12 @@ const InvoicesPage = ({
         } else {
             exportToPDF(filteredData, fileName);
         }
-    };
-    // Duplication de document
-    const handleDuplicate = async (document) => {
-        const today = new Date().toISOString().split('T')[0];
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 7);
-        const newDueDate = dueDate.toISOString().split('T')[0];
+    }, [activeTab, searchTerm, selectedClient, getDocuments]);
 
-        try {
-            const newNumber = await invoiceService.generateInvoiceNumber(
-                companyId,
-                new Date(),
-                document.type || activeTab.slice(0, -1)
-            );
-
-            navigate("/bill", {
-                state: {
-                    facture: {
-                        ...document,
-                        id: undefined,
-                        date: today,
-                        dateEcheance: newDueDate,
-                        numero: newNumber,
-                        statut: "en attente",
-                        clientId: document.clientId // Ajout du clientId
-
-                    },
-                    isDuplicate: true,
-                    type: document.type || activeTab.slice(0, -1),
-                    client: {
-                        id: document.clientId, // Ajout de l'ID ici
-                        nom: document.clientNom || "",
-                        adresse: document.clientAdresse || "",
-                        ville: document.clientVille || "",
-                        email: document.clientEmail || "",
-                    }
-                }
-            });
-        } catch (error) {
-            console.error("Erreur duplication:", error);
-            message.error("Erreur lors de la duplication");
-        }
-    };
-
-    // Gestion du paiement avec confirmation pour annulation
-    const handlePayment = async (id, action) => {
-        const docToUpdate = documents[activeTab].find(doc => doc.id === id);
+    // Gestion du paiement (optimisée)
+    const handlePayment = useCallback(async (id, action) => {
+        const currentDocuments = getDocuments();
+        const docToUpdate = currentDocuments.find(doc => doc.id === id);
         setCurrentDocument(docToUpdate);
 
         if (action === 'paid') {
@@ -251,9 +229,51 @@ const InvoicesPage = ({
                 }
             });
         }
-    };
+    }, [companyId, getDocuments]);
 
-    const handleConfirmPayment = async (paymentDetails) => {
+    // Duplication de document (optimisée)
+    const handleDuplicate = useCallback(async (document) => {
+        const today = new Date().toISOString().split('T')[0];
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        const newDueDate = dueDate.toISOString().split('T')[0];
+
+        try {
+            const newNumber = await invoiceService.generateInvoiceNumber(
+                companyId,
+                new Date(),
+                document.type || activeTab.slice(0, -1)
+            );
+
+            navigate("/invoice", {
+                state: {
+                    facture: {
+                        ...document,
+                        id: undefined,
+                        date: today,
+                        dateEcheance: newDueDate,
+                        numero: newNumber,
+                        statut: "en attente",
+                        clientId: document.clientId
+                    },
+                    isDuplicate: true,
+                    type: document.type || activeTab.slice(0, -1),
+                    client: {
+                        id: document.clientId,
+                        nom: document.clientNom || "",
+                        adresse: document.clientAdresse || "",
+                        ville: document.clientVille || "",
+                        email: document.clientEmail || "",
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Erreur duplication:", error);
+            message.error("Erreur lors de la duplication");
+        }
+    }, [companyId, activeTab, navigate]);
+
+    const handleConfirmPayment = useCallback(async (paymentDetails) => {
         if (!currentDocument) return;
 
         setPaymentLoading(true);
@@ -284,7 +304,7 @@ const InvoicesPage = ({
                 {
                     ...paymentDetails,
                     totalTTC: totalTTC,
-                    statut: newStatus, // On envoie le statut calculé
+                    statut: newStatus,
                     isFullPayment: newStatus === "payé",
                     isPartialPayment: newStatus === "accompte"
                 }
@@ -302,7 +322,7 @@ const InvoicesPage = ({
         } finally {
             setPaymentLoading(false);
         }
-    };
+    }, [currentDocument, companyId]);
 
     return (
         <div className="invoices-page-container">
@@ -310,16 +330,27 @@ const InvoicesPage = ({
                 {['factures', 'devis', 'avoirs'].map((tab) => (
                     <button
                         key={tab}
-                        className={activeTab === tab ? "active" : ""}
-                        onClick={() => setActiveTab(tab)}
+                        className={`tab-btn ${activeTab === tab ? "active" : ""} ${isChangingTab ? "disabled" : ""
+                            }`}
+                        data-type={tab}
+                        onClick={() => handleTabChange(tab)}
+                        disabled={isChangingTab}
                     >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)} ({filterByDate(documents[tab]).length})
+                        {isChangingTab && activeTab === tab ? (
+                            <FaSpinner className="tab-spinner" />
+                        ) : null}
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        <span className="count-badge">{filteredTabCounts[tab]}</span>
                     </button>
                 ))}
             </div>
 
             <div className="filters-container">
-                <ModernDateRangePicker dateRange={dateRange} setDateRange={setDateRange} />
+                <ModernDateRangePicker
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    disabled={isChangingTab}
+                />
 
                 <div className="date-range-summary">
                     {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
@@ -334,10 +365,18 @@ const InvoicesPage = ({
                 </div>
 
                 <div className="export-buttons">
-                    <button onClick={() => handleExport('excel')} className="export-btn-excel">
+                    <button
+                        onClick={() => !isChangingTab && handleExport('excel')}
+                        className={`export-btn-excel ${isChangingTab ? "disabled" : ""}`}
+                        disabled={isChangingTab}
+                    >
                         <FaFileExcel /> Excel
                     </button>
-                    <button onClick={() => handleExport('pdf')} className="export-btn-pdf">
+                    <button
+                        onClick={() => !isChangingTab && handleExport('pdf')}
+                        className={`export-btn-pdf ${isChangingTab ? "disabled" : ""}`}
+                        disabled={isChangingTab}
+                    >
                         <FaFilePdf /> PDF
                     </button>
                 </div>
@@ -345,19 +384,20 @@ const InvoicesPage = ({
 
             <DocumentSection
                 title={currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}
-                items={filterByDate(documents[activeTab])}
+                items={getDocuments()}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 navigate={navigate}
                 onDelete={handleDelete}
                 selectedClient={selectedClient}
-                type={activeTab.slice(0, -1)} // "factures" -> "facture"
+                type={typeMapping[activeTab]}
                 onPreview={previewPdf}
                 onDownload={downloadPdf}
                 onDuplicate={handleDuplicate}
-                onMarkAsPaid={(id) => handlePayment(id, 'paid')}
-                onMarkAsPending={(id) => handlePayment(id, 'pending')}
+                onMarkAsPaid={(id) => !isChangingTab && handlePayment(id, 'paid')}
+                onMarkAsPending={(id) => !isChangingTab && handlePayment(id, 'pending')}
                 getStatus={getStatus}
+                isChangingTab={isChangingTab}
             />
 
             <ModalPaiement
@@ -371,4 +411,4 @@ const InvoicesPage = ({
     );
 };
 
-export default InvoicesPage;
+export default React.memo(InvoicesPage);

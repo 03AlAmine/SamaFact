@@ -1,0 +1,25 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "backdrop-filter",
+          "user-select",
+          "min-height: auto",
+          "scrollbar-width",
+          "scrollbar-color"
+        ]
+      }
+    ],
+    "css-prefix-order": "off"
+  },
+  "browserslist": [
+    "defaults",
+    "not ie 11",
+    "not ios_saf <= 11.2"
+  ]
+}

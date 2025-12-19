@@ -1,6 +1,6 @@
 // src/services/pdfService.js
 import { pdf } from '@react-pdf/renderer';
-import InvoicePDF from '../bill/InvoicePDF';
+import InvoicePDF from '../data/bill/InvoicePDF';
 
 export const generatePdfBlob = async (facture) => {
     try {
