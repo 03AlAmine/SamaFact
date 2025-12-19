@@ -18,10 +18,11 @@ jobs:
         run: npm install
 
       - name: Build project
-        run: CI=false npm run build  # <-- Ajoutez CI=false ici
+        run: npm run build
         env:
           REACT_APP_ADMIN_SECRET: ${{ secrets.REACT_APP_ADMIN_SECRET }}
           REACT_APP_API_KEY: ${{ secrets.REACT_APP_API_KEY }}
+          ##GENERATE_SOURCEMAP: ${{ secrets.GENERATE_SOURCEMAP }}
           REACT_APP_ENV: production
 
       - name: Deploy via FTP
@@ -31,6 +32,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./build/
-          server-dir: /
+          server-dir: /Samafact.leaderinterime.com/  
           port: 21
           protocol: ftp
