@@ -366,22 +366,26 @@ const Mentafact = () => {
     e.preventDefault();
 
     try {
-      const isNameChanged = editingClient?.nom !== client.nom;
+      const currentClientData = clients.find(c => c.id === editingClient.id);
+      const isNameChanged = currentClientData?.nom !== editingClient.nom;
+
       let anciensNoms = [...(editingClient.anciensNoms || [])];
 
       // Si le nom change, l'ajouter à l'historique
-      if (isNameChanged && editingClient?.nom) {
+      if (isNameChanged && currentClientData?.nom) {
         anciensNoms.push({
-          nom: editingClient.nom,
+          nom: currentClientData.nom,
           date: new Date().toISOString(),
-          userId: currentUser.uid
+          userId: currentUser.uid,
+          raison: "Modification manuelle"
         });
       }
 
       const updatedClient = {
         ...editingClient,
         anciensNoms,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        nomNormalized: editingClient.nom.toLowerCase().trim() // Pour faciliter les recherches
       };
 
       // Mettre à jour le client dans Firestore
@@ -392,19 +396,25 @@ const Mentafact = () => {
       );
 
       if (result.success) {
-        // Mettre à jour l'état local
-        setClients(prevClients =>
-          prevClients.map(c =>
-            c.id === editingClient.id ? updatedClient : c
-          )
+        // Mettre à jour l'état local AVANT de fermer le mode édition
+        const updatedClients = clients.map(c =>
+          c.id === editingClient.id ? updatedClient : c
         );
+        setClients(updatedClients);
+
+        // Mettre à jour également le client sélectionné si c'est celui-là
+        if (selectedClient?.id === editingClient.id) {
+          setSelectedClient(updatedClient);
+        }
 
         alert(`Client "${updatedClient.nom}" mis à jour avec succès ✅`);
 
         if (isNameChanged) {
           alert(
-            `Note : Le nom a été changé de "${editingClient.nom}" à "${updatedClient.nom}".\n` +
-            `Les nouvelles factures utiliseront le nouveau nom, mais les anciennes garderont l'ancien nom.`
+            `Note : Le nom a été changé de "${currentClientData.nom}" à "${updatedClient.nom}".\n` +
+            `• Les nouvelles factures utiliseront le nouveau nom\n` +
+            `• Les duplications de factures utiliseront le nouveau nom\n` +
+            `• Les anciennes factures garderont l'ancien nom pour l'historique`
           );
         }
 
@@ -463,14 +473,15 @@ const Mentafact = () => {
   };
 
   const handleEdit = (client) => {
-    console.log("handleEdit called with client:", client);
+    // Si le client a un nom différent de celui enregistré, demander confirmation
+    const currentClient = clients.find(c => c.id === client.id);
 
-    // Vérifier si le nom va changer
-    if (editingClient?.nom !== client.nom) {
-      const confirmMessage = `Vous allez modifier le nom du client de "${editingClient?.nom || client.nom}" à "${client.nom}".\n\n` +
+    if (currentClient && currentClient.nom !== client.nom) {
+      const confirmMessage = `Vous allez modifier le nom du client de "${currentClient.nom}" à "${client.nom}".\n\n` +
         `⚠️ Important :\n` +
         `• Les nouvelles factures utiliseront le nouveau nom\n` +
         `• Les anciennes factures garderont l'ancien nom\n` +
+        `• Les duplications futures utiliseront le nouveau nom\n` +
         `• Souhaitez-vous continuer ?`;
 
       if (!window.confirm(confirmMessage)) {
@@ -488,9 +499,6 @@ const Mentafact = () => {
   const cancelEdit = () => {
     // Demander confirmation si des changements ont été faits
     if (editingClient && (editingClient.nom !== client.nom || editingClient.email !== client.email)) {
-      if (!window.confirm("Voulez-vous annuler les modifications ?")) {
-        return;
-      }
     }
 
     setEditingClient(null);

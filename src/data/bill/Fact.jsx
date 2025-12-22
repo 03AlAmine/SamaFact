@@ -119,8 +119,9 @@ const EditorHeader = ({
         </button>
         <div className="ie-header-title">
           <h1>
-            {invoice?.id ? 'Modifier le document' : 'Nouveau document'} -
+            {isUpdate ? 'Modifier le document' : 'Nouveau document'} -
             {invoice?.type === 'avoir' ? ' Avoir' : invoice?.type === 'devis' ? ' Devis' : ' Facture'}
+            {isUpdate && <span className="ie-edit-badge"> (Édition)</span>}
           </h1>
           {invoice?.number && <span className="ie-invoice-number">{invoice.number}</span>}
         </div>
@@ -148,22 +149,24 @@ const EditorHeader = ({
         {/* Bouton Enregistrer */}
         <button
           onClick={() => onSave()}
-          disabled={saving || (isSaved && !isUpdate)} // ← AJOUTEZ LA CONDITION
+          disabled={saving || (isSaved && !isUpdate)} // ← Déjà présent
           className="ie-btn-save ie-button"
         >
           {saving ? (
             <>
-              <i className="fas fa-spinner fa-spin"></i> Enregistrement...
+              <i className="fas fa-spinner fa-spin"></i>
+              {isUpdate ? "Mise à jour..." : "Enregistrement..."} {/* ← Modification ici */}
             </>
           ) : (
             <>
-              <i className="fas fa-save"></i> Enregistrer
+              <i className="fas fa-save"></i>
+              {isUpdate ? "Modifier" : "Enregistrer"} {/* ← Modification ici */}
             </>
           )}
         </button>
 
-        {/* Bouton Télécharger PDF - SEULEMENT SI ENREGISTRÉ */}
-        {isSaved ? (
+
+        {isSaved && pdfData && (
           <PDFDownloadLink
             document={
               <InvoicePDF
@@ -171,22 +174,28 @@ const EditorHeader = ({
                 ribType={invoice?.ribs || []}
                 objet={invoice?.objet || ''}
                 showSignature={invoice?.showSignature !== false}
-                companyInfo={companyInfo} // ← Passez ici
+                companyInfo={companyInfo}
               />
             }
-            fileName={`${invoice.type}_${invoice.number}.pdf`}
+            fileName={`${invoice.type}_${invoice.number || 'document'}.pdf`}
             className="ie-btn-download ie-button"
           >
-            {({ loading }) => (
-              loading
-                ? <><i className="fas fa-spinner fa-spin"></i> Génération...</>
-                : <><i className="fas fa-file-download"></i> Télécharger</>
-            )}
+            {({ loading, error }) => {
+              if (error) {
+                console.error("PDF Generation Error:", error);
+                return <span>Erreur de génération</span>;
+              }
+              return loading ? (
+                <span>
+                  <i className="fas fa-spinner fa-spin"></i> Génération...
+                </span>
+              ) : (
+                <span>
+                  <i className="fas fa-file-download"></i> Télécharger
+                </span>
+              );
+            }}
           </PDFDownloadLink>
-        ) : (
-          <button className="ie-btn-download ie-button disabled" disabled>
-            <i className="fas fa-file-download"></i> Télécharger
-          </button>
         )}
       </div>
     </header>
@@ -1423,21 +1432,57 @@ const InvoiceEditor = () => {
         const [clientsData] = await Promise.all([
           loadClients(),
         ]);
+
+        // Mettre à jour l'état immédiatement et utiliser la variable locale
         setClients(clientsData);
 
         // Chargez les données de l'entreprise
         await loadCompanyInfo();
 
         let invoiceData;
-        let isUpdateMode = false; // ← AJOUTEZ CETTE VARIABLE
+        let isUpdateMode = false;
 
         // MODE MODIFICATION/DUPLICATION depuis location.state
         if (location.state?.facture) {
           invoiceData = invoiceService.transformFactureData(location.state.facture);
           setIsSaved(!!location.state.facture.id);
-          isUpdateMode = !!location.state.facture.id; // ← METTRE À JOUR
 
-          setSelectedClientId(location.state.facture.clientId || "");
+          // CORRECTION : Utiliser clientsData (la variable locale) au lieu de clients (l'état)
+          if (location.state.facture.clientId) {
+            const currentClient = clientsData.find(c => c.id === location.state.facture.clientId);
+            if (currentClient) {
+              invoiceData.client = {
+                Nom: [currentClient.nom],
+                Adresse: [currentClient.adresse || ""],
+                Ville: [currentClient.ville || ""],
+                Email: [currentClient.email || ""]
+              };
+              setSelectedClientId(currentClient.id);
+            } else {
+              // Si le client n'est pas trouvé dans la liste locale, garder les données originales
+              invoiceData.client = invoiceData.client || {
+                Nom: [location.state.facture.client?.nom || ""],
+                Adresse: [location.state.facture.client?.adresse || ""],
+                Ville: [location.state.facture.client?.ville || ""],
+                Email: [location.state.facture.client?.email || ""]
+              };
+              setSelectedClientId(location.state.facture.clientId);
+            }
+          }
+
+          isUpdateMode = !!location.state.facture.id && !location.state.isDuplicate;
+
+          if (location.state.isDuplicate) {
+            // Pour une duplication, générer un nouveau numéro
+            const newNumber = await invoiceService.generateInvoiceNumber(
+              currentUser.companyId,
+              new Date(invoiceData.facture.Date[0] || new Date()),
+              invoiceData.facture.Type[0]
+            );
+            invoiceData.facture.Numéro = [newNumber];
+            isUpdateMode = false;
+          }
+
           setSelectedRibs(location.state.facture.ribs || []);
           setObjet(location.state.facture.objet || "");
           setShowSignature(location.state.facture.showSignature !== false);
@@ -1448,7 +1493,20 @@ const InvoiceEditor = () => {
           if (result.success) {
             invoiceData = invoiceService.transformFactureData(result.data);
             setIsSaved(true);
-            isUpdateMode = true; // ← C'EST UNE MODIFICATION
+            isUpdateMode = true;
+
+            // CORRECTION : Chercher aussi le client dans clientsData pour l'édition
+            if (result.data.clientId) {
+              const currentClient = clientsData.find(c => c.id === result.data.clientId);
+              if (currentClient) {
+                invoiceData.client = {
+                  Nom: [currentClient.nom],
+                  Adresse: [currentClient.adresse || ""],
+                  Ville: [currentClient.ville || ""],
+                  Email: [currentClient.email || ""]
+                };
+              }
+            }
 
             setSelectedClientId(result.data.clientId || "");
             setSelectedRibs(result.data.ribs || []);
@@ -1482,7 +1540,7 @@ const InvoiceEditor = () => {
             }
           };
           setIsSaved(false);
-          isUpdateMode = false; // ← C'EST UNE NOUVELLE FACTURE
+          isUpdateMode = false;
 
           // Si un client est passé via location.state
           if (location.state?.client) {
@@ -1498,9 +1556,7 @@ const InvoiceEditor = () => {
         }
 
         setData(invoiceData);
-        setIsUpdate(isUpdateMode); // ← METTRE À JOUR L'ÉTAT
-
-
+        setIsUpdate(isUpdateMode);
 
       } catch (error) {
         console.error('❌ Erreur initialisation:', error);
@@ -1525,6 +1581,7 @@ const InvoiceEditor = () => {
           }
         });
         setIsSaved(false);
+        setIsUpdate(false); // ← Ajouter cette ligne
       } finally {
         setLoading(false);
       }
@@ -1604,14 +1661,16 @@ const InvoiceEditor = () => {
       setData(updatedData);
       setIsSaved(true);
 
+      const action = id || (location.state?.facture?.id) ? "modifiée" : "enregistrée";
+
       alert(
         `${data.facture.Type[0] === 'avoir' ? 'Avoir' : data.facture.Type[0] === 'devis' ? 'Devis' : 'Facture'} ` +
-        `enregistré(e) avec succès !`
+        `${action} avec succès !` // ← Modification ici
       );
 
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
-      alert("Erreur lors de l'enregistrement");
+      alert(`Erreur lors de la ${isUpdate ? 'modification' : 'création'}`); // ← Modification ici
     } finally {
       setSaving(false);
     }
@@ -1672,8 +1731,70 @@ const InvoiceEditor = () => {
 
 
   const getPdfData = () => {
-    if (!data.client?.Nom?.[0]) return null;
-    return transformToLegacyFormat(data);
+    // Si pas de données, retourner un objet avec des valeurs par défaut sécurisées
+    if (!data || Object.keys(data).length === 0) {
+      return {
+        facture: {
+          Numéro: ["TEMP"],
+          Date: [new Date().toISOString().split('T')[0]],
+          DateEcheance: [""],
+          Type: ["facture"]
+        },
+        client: {
+          Nom: ["Client"],
+          Adresse: [""],
+          Ville: [""],
+          Email: [""]
+        },
+        items: {
+          Designation: [],
+          Quantite: [],
+          "Prix Unitaire": [],
+          TVA: [],
+          "Montant HT": [],
+          "Montant TVA": [],
+          "Prix Total": []
+        },
+        totals: {
+          "Total HT": ["0,00"],
+          "Total TVA": ["0,00"],
+          "Total TTC": ["0,00"]
+        }
+      };
+    }
+
+    // Transformez et nettoyez les données
+    const transformed = transformToLegacyFormat(data);
+
+    // S'assurer que toutes les valeurs sont définies
+    return {
+      facture: {
+        Numéro: transformed.facture.Numéro || [""],
+        Date: transformed.facture.Date || [new Date().toISOString().split('T')[0]],
+        DateEcheance: transformed.facture.DateEcheance || [""],
+        Type: transformed.facture.Type || ["facture"]
+      },
+      client: {
+        Nom: transformed.client?.Nom || [""],
+        Adresse: transformed.client?.Adresse || [""],
+        Ville: transformed.client?.Ville || [""],
+        Email: transformed.client?.Email || [""]
+      },
+      items: transformed.items || {
+        Designation: [],
+        Quantite: [],
+        "Prix Unitaire": [],
+        TVA: [],
+        "Montant HT": [],
+        "Montant TVA": [],
+        "Prix Total": []
+      },
+      totals: transformed.totals || {
+        "Total HT": ["0,00"],
+        "Total TVA": ["0,00"],
+        "Total TTC": ["0,00"]
+      }
+    };
   };
 
   const invoiceCompatible = {

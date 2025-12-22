@@ -29,6 +29,17 @@ const InvoicePDF = ({
     logoFileName: ""
   }
 }) => {
+  // VÉRIFICATION DE SÉCURITÉ - Si data est null ou undefined
+  if (!data) {
+    return (
+      <Document>
+        <Page size="A4">
+          <Text>Document non disponible</Text>
+        </Page>
+      </Document>
+    );
+  }
+
   // Fonction pour charger le logo de l'entreprise
   const getCompanyLogo = () => {
     if (!companyInfo.logoFileName) {
@@ -80,8 +91,8 @@ const InvoicePDF = ({
   };
 
   const splitItemsIntoPages = (items) => {
-    // Vérification de sécurité
-    if (!items || !items.Designation || !Array.isArray(items.Designation)) {
+    // Vérification de sécurité améliorée
+    if (!items || typeof items !== 'object') {
       console.warn("Items data is missing or invalid:", items);
       return [{
         Designation: [],
@@ -91,12 +102,19 @@ const InvoicePDF = ({
         "Prix Total": []
       }];
     }
+    const safeItems = {
+      Designation: items.Designation || [],
+      Quantite: items.Quantite || [],
+      "Prix Unitaire": items["Prix Unitaire"] || [],
+      TVA: items.TVA || [],
+      "Prix Total": items["Prix Total"] || []
+    };
 
     const itemsPerPage = 12;
-    const totalItems = items.Designation.length;
+    const totalItems = safeItems.Designation.length;
 
     if (totalItems <= itemsPerPage) {
-      return [items];
+      return [safeItems];
     }
 
     const pages = [];
@@ -104,11 +122,11 @@ const InvoicePDF = ({
 
     for (let i = 0; i < fullPagesCount * itemsPerPage; i += itemsPerPage) {
       const pageItems = {
-        Designation: items.Designation.slice(i, i + itemsPerPage),
-        Quantite: items.Quantite?.slice(i, i + itemsPerPage) || [],
-        "Prix Unitaire": items["Prix Unitaire"]?.slice(i, i + itemsPerPage) || [],
-        TVA: items.TVA?.slice(i, i + itemsPerPage) || [],
-        "Prix Total": items["Prix Total"]?.slice(i, i + itemsPerPage) || [],
+        Designation: safeItems.Designation.slice(i, i + itemsPerPage),
+        Quantite: safeItems.Quantite?.slice(i, i + itemsPerPage) || [],
+        "Prix Unitaire": safeItems["Prix Unitaire"]?.slice(i, i + itemsPerPage) || [],
+        TVA: safeItems.TVA?.slice(i, i + itemsPerPage) || [],
+        "Prix Total": safeItems["Prix Total"]?.slice(i, i + itemsPerPage) || [],
       };
       pages.push(pageItems);
     }
@@ -117,11 +135,11 @@ const InvoicePDF = ({
     if (remaining > 0) {
       const start = fullPagesCount * itemsPerPage;
       const pageItems = {
-        Designation: items.Designation.slice(start),
-        Quantite: items.Quantite?.slice(start) || [],
-        "Prix Unitaire": items["Prix Unitaire"]?.slice(start) || [],
-        TVA: items.TVA?.slice(start) || [],
-        "Prix Total": items["Prix Total"]?.slice(start) || [],
+        Designation: safeItems.Designation.slice(start),
+        Quantite: safeItems.Quantite?.slice(start) || [],
+        "Prix Unitaire": safeItems["Prix Unitaire"]?.slice(start) || [],
+        TVA: safeItems.TVA?.slice(start) || [],
+        "Prix Total": safeItems["Prix Total"]?.slice(start) || [],
       };
       pages.push(pageItems);
     }

@@ -173,7 +173,6 @@
   border-radius: var(--border-radius-sm);
   font-size: 0.95rem;
   transition: var(--transition);
-  background-color: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
 
