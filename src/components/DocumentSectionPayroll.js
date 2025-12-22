@@ -40,7 +40,7 @@ const PayrollSection = ({
   const [sendingEmails, setSendingEmails] = useState({});
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // États pour le scroll infini
   const [visibleItems, setVisibleItems] = useState([]);
   const [hasMore, setHasMore] = useState(false);
@@ -50,7 +50,7 @@ const PayrollSection = ({
   const loaderRef = useRef(null);
   const observerRef = useRef(null);
   const containerRef = useRef(null);
-  
+
   // Références pour détecter les changements
   const prevItemsLengthRef = useRef(0);
   const prevSearchTermRef = useRef(searchTerm);
@@ -61,12 +61,12 @@ const PayrollSection = ({
     if (loadingMore || !hasMore || items.length === 0) {
       return;
     }
-    
+
     setLoadingMore(true);
-    
+
     setTimeout(() => {
       const nextPage = page + 1;
-      
+
       // Trier les items par ordre descendant (numéro ou date)
       const sortedItems = [...items].sort((a, b) => {
         if (sortBy === 'numero') {
@@ -80,23 +80,23 @@ const PayrollSection = ({
         }
         return 0;
       });
-      
+
       // Calculer les indices
       const startIndex = nextPage * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const nextItems = sortedItems.slice(startIndex, endIndex);
-      
+
       if (nextItems.length > 0) {
         setVisibleItems(prev => [...prev, ...nextItems]);
         setPage(nextPage);
-        
+
         // Vérifier s'il reste des éléments à charger
         const nextHasMore = sortedItems.length > (nextPage + 1) * itemsPerPage;
         setHasMore(nextHasMore);
       } else {
         setHasMore(false);
       }
-      
+
       setLoadingMore(false);
     }, 300);
   }, [page, loadingMore, hasMore, items, itemsPerPage, sortBy]);
@@ -133,7 +133,7 @@ const PayrollSection = ({
   useEffect(() => {
     const checkResponsive = () => {
       const width = window.innerWidth;
-      
+
       if (width <= 992) {
         setIsMobile(true);
         // Forcer le mode carte sur mobile
@@ -159,7 +159,7 @@ const PayrollSection = ({
     setPage(0);
     setVisibleItems([]);
     setLoadingMore(false);
-    
+
     if (items.length > 0) {
       // Trier par ordre descendant
       const sortedItems = [...items].sort((a, b) => {
@@ -174,22 +174,22 @@ const PayrollSection = ({
         }
         return 0;
       });
-      
+
       // Prendre les premiers items
       const initialItems = sortedItems.slice(0, itemsPerPage);
       setVisibleItems(initialItems);
-      
+
       // Vérifier s'il y a plus à charger
       const shouldHaveMore = sortedItems.length > itemsPerPage;
       setHasMore(shouldHaveMore);
-      
+
       prevItemsLengthRef.current = items.length;
       prevSearchTermRef.current = searchTerm;
     } else {
       setVisibleItems([]);
       setHasMore(false);
     }
-    
+
     // Réinitialiser le scroll
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
@@ -206,7 +206,7 @@ const PayrollSection = ({
   useEffect(() => {
     const itemsLengthChanged = prevItemsLengthRef.current !== items.length;
     const searchTermChanged = prevSearchTermRef.current !== searchTerm;
-    
+
     // Initialiser seulement si les items ou le terme de recherche changent
     if (itemsLengthChanged || searchTermChanged) {
       initializeInfiniteScroll();
@@ -218,12 +218,12 @@ const PayrollSection = ({
     if (!hasMore || loadingMore) {
       return;
     }
-    
+
     // Nettoyer l'ancien observer
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -237,9 +237,9 @@ const PayrollSection = ({
         threshold: 0.1
       }
     );
-    
+
     observerRef.current = observer;
-    
+
     // Attacher l'observer avec un délai
     const attachObserver = () => {
       if (loaderRef.current) {
@@ -248,9 +248,9 @@ const PayrollSection = ({
         setTimeout(attachObserver, 100);
       }
     };
-    
+
     attachObserver();
-    
+
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
@@ -280,7 +280,7 @@ const PayrollSection = ({
         }
         return 0;
       });
-      
+
       const currentHasMore = sortedItems.length > visibleItems.length;
       if (currentHasMore !== hasMore) {
         setHasMore(currentHasMore);
@@ -326,7 +326,7 @@ const PayrollSection = ({
   // Filtrage et tri des items visibles
   const filteredItems = useMemo(() => {
     if (visibleItems.length === 0) return [];
-    
+
     const safeSearch = (searchTerm || '').toLowerCase();
 
     const filtered = visibleItems.filter(item => {
@@ -476,9 +476,9 @@ const PayrollSection = ({
                   onShowInfo={showInfoModal}
                 />
               ))}
-              
+
               {/* Élément loader */}
-              <div 
+              <div
                 ref={loaderRef}
                 key={`loader-payroll-${page}-${viewMode}`}
                 className="infinite-scroll-loader"
@@ -507,11 +507,13 @@ const PayrollSection = ({
                     </small>
                   </div>
                 ) : filteredItems.length > 0 ? (
-                  <div className="no-more-data">
-                    <span className="check-icon">✓</span> 
-                    <span className="no-more-text">
-                      Tous les bulletins sont chargés ({filteredItems.length} bulletins)
-                    </span>
+                  <div className="no-more-data-div">
+                    <div className="no-more-data">
+                      <span className="check-icon">✓</span>
+                      <span className="no-more-text">
+                        Tous les bulletins sont chargés ({filteredItems.length} bulletins)
+                      </span>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -600,9 +602,9 @@ const PayrollSection = ({
                       onShowInfo={showInfoModal}
                     />
                   ))}
-                  
+
                   {/* Ligne loader */}
-                  <tr 
+                  <tr
                     ref={loaderRef}
                     key={`loader-row-payroll-${page}-${viewMode}`}
                     className="loading-row"
@@ -632,11 +634,13 @@ const PayrollSection = ({
                           </small>
                         </div>
                       ) : filteredItems.length > 0 ? (
-                        <div className="no-more-data">
-                          <span className="check-icon">✓</span> 
-                          <span className="no-more-text">
-                            Tous les bulletins sont chargés ({filteredItems.length} bulletins)
-                          </span>
+                        <div className="no-more-data-div">
+                          <div className="no-more-data">
+                            <span className="check-icon">✓</span>
+                            <span className="no-more-text">
+                              Tous les bulletins sont chargés ({filteredItems.length} bulletins)
+                            </span>
+                          </div>
                         </div>
                       ) : null}
                     </td>

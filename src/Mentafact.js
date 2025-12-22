@@ -383,25 +383,28 @@ const Mentafact = () => {
     }
 
     try {
-      // 1. Suppression dans Firestore
-      await deleteDoc(
-        doc(db, `companies/${currentUser.companyId}/clients`, clientId)
-      );
+      // Utilisez clientService.deleteClient au lieu de deleteDoc directement
+      const result = await clientService.deleteClient(companyId, clientId);
 
-      // 2. Mise à jour de tous les états concernés
-      setClients((prev) => prev.filter((client) => client.id !== clientId));
+      if (result.success) {
+        // 2. Mise à jour de tous les états concernés
+        setClients((prev) => prev.filter((client) => client.id !== clientId));
 
-      // 3. Réinitialiser le client sélectionné si c'est celui supprimé
-      if (selectedClient?.id === clientId) {
-        setSelectedClient(null);
-        setClientFactures([]);
-        setClientDevis([]);
-        setClientAvoirs([]);
+        // 3. Réinitialiser le client sélectionné si c'est celui supprimé
+        if (selectedClient?.id === clientId) {
+          setSelectedClient(null);
+          setClientFactures([]);
+          setClientDevis([]);
+          setClientAvoirs([]);
+        }
+
+        // 4. Feedback utilisateur
+        alert("Client supprimé avec succès");
+        return true;
+      } else {
+        alert(result.message || "Échec de la suppression");
+        return false;
       }
-
-      // 4. Feedback utilisateur
-      alert("Client supprimé avec succès");
-      return true;
     } catch (error) {
       console.error("Erreur suppression client:", error);
 

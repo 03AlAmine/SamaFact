@@ -1,9 +1,38 @@
+// pdfService.js - MISE À JOUR
 // src/services/pdfService.js
 import { pdf } from '@react-pdf/renderer';
 import InvoicePDF from '../data/bill/InvoicePDF';
+import { companyService } from './companyService'; // <-- AJOUTE CET IMPORT
 
 export const generatePdfBlob = async (facture) => {
     try {
+        // AJOUT: Récupérer les infos de l'entreprise
+        let companyInfo = {};
+        try {
+            companyInfo = await companyService.getCompanyInfo(facture.companyId);
+        } catch (error) {
+            console.warn("Impossible de charger les infos entreprise:", error);
+            // Valeurs par défaut si l'entreprise n'est pas trouvée
+            companyInfo = {
+                name: "Mon Entreprise",
+                rcNumber: "",
+                ninea: "",
+                address: "",
+                region: "",
+                country: "",
+                phone: "",
+                email: "",
+                ribCBAO: "",
+                ribBIS: "",
+                ribOther1: "",
+                ribOther1Label: "",
+                ribOther2: "",
+                ribOther2Label: "",
+                invoiceColor: "#218838",
+                logoFileName: ""
+            };
+        }
+
         // Transformation des données avec l'objet correctement placé
         const pdfData = {
             facture: {
@@ -47,6 +76,7 @@ export const generatePdfBlob = async (facture) => {
                 data={pdfData}
                 ribType={facture.ribs || ["CBAO"]}
                 objet={facture.objet || "Non spécifié"}
+                companyInfo={companyInfo} // <-- AJOUTE CETTE PROP
             />
         ).toBlob();
 

@@ -1558,7 +1558,6 @@ const InvoiceEditor = () => {
         onBack={() => navigate('/')}
         pdfData={getPdfData()}
         companyInfo={companyInfo} // ← Ajoutez cette ligne
-
       />
 
       <div className="ie-main-layout">

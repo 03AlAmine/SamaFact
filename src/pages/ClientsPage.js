@@ -201,12 +201,12 @@ const ClientsHeader = ({
                 sortOrder={sortOrder}
                 toggleSort={toggleSort}
             />
-            
+
             {/* Pagination controls */}
             <div className="pagination-controls">
                 <div className="items-per-page-selector">
-                    <select 
-                        value={itemsPerPage} 
+                    <select
+                        value={itemsPerPage}
                         onChange={onItemsPerPageChange}
                         className="items-per-page-select"
                     >
@@ -216,21 +216,21 @@ const ClientsHeader = ({
                         <option value={100}>100/page</option>
                     </select>
                 </div>
-                
+
                 <div className="pagination-navigation">
-                    <button 
+                    <button
                         onClick={() => onPageChange(currentPage - 1)}
                         disabled={currentPage === 1}
                         className="pagination-btn prev-btn"
                     >
                         <FaChevronLeft />
                     </button>
-                    
+
                     <span className="page-info">
                         Page {currentPage} sur {totalPages}
                     </span>
-                    
-                    <button 
+
+                    <button
                         onClick={() => onPageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
                         className="pagination-btn next-btn"
@@ -239,7 +239,7 @@ const ClientsHeader = ({
                     </button>
                 </div>
             </div>
-            
+
             <ActionButtons
                 onAddClient={onAddClient}
                 showAddForm={showAddForm}
@@ -348,9 +348,16 @@ const ImportButton = ({ onImport }) => (
 
 // Carte client
 const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
+    // ClientCard.js - modifiez handleAction
     const handleAction = (e, action) => {
         e.stopPropagation();
-        action(client);
+        console.log("ClientCard handleAction called for:", client);
+        if (!client || !client.id) {
+            console.error("Client object or ID is undefined:", client);
+            return;
+        }
+        // Appelez action() sans paramètre - l'ID sera géré dans ClientsPage
+        action();
     };
 
     return (
@@ -443,7 +450,11 @@ const ActionButton = ({ icon, title, onClick, className }) => (
 const ClientTableRow = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
     const handleAction = (e, action) => {
         e.stopPropagation();
-        action(client);
+        if (!client || !client.id) {
+            console.error("Client is undefined in ClientCard");
+            return;
+        }
+        action(client.id); // ← Passez l'ID
     };
 
     return (
@@ -661,7 +672,7 @@ const ClientsPage = ({
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
-    
+
     // États pour la pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -722,7 +733,7 @@ const ClientsPage = ({
     // Pagination calculs
     const totalItems = sortedClients.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
+
     // Calcul des clients à afficher pour la page actuelle
     const paginatedClients = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -734,7 +745,7 @@ const ClientsPage = ({
     const handlePageChange = useCallback((page) => {
         if (page < 1 || page > totalPages) return;
         setCurrentPage(page);
-        
+
         // Scroll vers le haut quand on change de page
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [totalPages]);
@@ -831,12 +842,16 @@ const ClientsPage = ({
                                     client={clientItem}
                                     isSelected={selectedClient?.id === clientItem.id}
                                     onSelect={handleClientSelect}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
+                                    onEdit={() => {
+                                        handleEdit(clientItem); 
+                                    }}
+                                    onDelete={() => {
+                                        handleDelete(clientItem.id); 
+                                    }}
                                 />
                             ))}
                         </div>
-                        
+
                         {/* Pagination en bas pour vue carte */}
                         {totalPages > 1 && (
                             <div className="pagination-footer">
@@ -895,7 +910,7 @@ const ClientsPage = ({
                                 ))}
                             </tbody>
                         </table>
-                        
+
                         {/* Pagination en bas pour vue tableau */}
                         {totalPages > 1 && (
                             <div className="pagination-footer">
@@ -938,15 +953,15 @@ const PaginationControls = React.memo(({
 }) => {
     const pageNumbers = [];
     const maxPagesToShow = 5;
-    
+
     // Calcul des pages à afficher
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-    
+
     if (endPage - startPage + 1 < maxPagesToShow) {
         startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
         pageNumbers.push(i);
     }
@@ -956,7 +971,7 @@ const PaginationControls = React.memo(({
             <div className="pagination-info">
                 Affichage de {startIndex + 1} à {endIndex} sur {totalItems} clients
             </div>
-            
+
             <div className="pagination-buttons">
                 <button
                     onClick={() => onPageChange(1)}
@@ -966,7 +981,7 @@ const PaginationControls = React.memo(({
                 >
                     «
                 </button>
-                
+
                 <button
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
@@ -975,7 +990,7 @@ const PaginationControls = React.memo(({
                 >
                     <FaChevronLeft />
                 </button>
-                
+
                 {startPage > 1 && (
                     <>
                         <button
@@ -987,7 +1002,7 @@ const PaginationControls = React.memo(({
                         {startPage > 2 && <span className="pagination-ellipsis">...</span>}
                     </>
                 )}
-                
+
                 {pageNumbers.map(page => (
                     <button
                         key={page}
@@ -997,7 +1012,7 @@ const PaginationControls = React.memo(({
                         {page}
                     </button>
                 ))}
-                
+
                 {endPage < totalPages && (
                     <>
                         {endPage < totalPages - 1 && <span className="pagination-ellipsis">...</span>}
@@ -1009,7 +1024,7 @@ const PaginationControls = React.memo(({
                         </button>
                     </>
                 )}
-                
+
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
@@ -1018,7 +1033,7 @@ const PaginationControls = React.memo(({
                 >
                     <FaChevronRight />
                 </button>
-                
+
                 <button
                     onClick={() => onPageChange(totalPages)}
                     disabled={currentPage === totalPages}
@@ -1028,7 +1043,7 @@ const PaginationControls = React.memo(({
                     »
                 </button>
             </div>
-            
+
             <div className="pagination-jump">
                 <span>Aller à :</span>
                 <input

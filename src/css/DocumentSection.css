@@ -1674,6 +1674,13 @@
   background: transparent !important;
 }
 
+.no-more-data-div {
+    width: 100%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .no-more-data {
   color: #666;
   font-size: 14px;

@@ -36,7 +36,7 @@ const DocumentSection = ({
   const [loading, setLoading] = useState(true);
   const [sendingEmails, setSendingEmails] = useState({});
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // États pour le scroll infini
   const [visibleItems, setVisibleItems] = useState([]);
   const [hasMore, setHasMore] = useState(false);
@@ -46,7 +46,7 @@ const DocumentSection = ({
   const loaderRef = useRef(null);
   const observerRef = useRef(null);
   const containerRef = useRef(null);
-  
+
   // Références pour détecter les changements
   const prevTypeRef = useRef(type);
   const prevItemsLengthRef = useRef(0);
@@ -58,12 +58,12 @@ const DocumentSection = ({
     if (loadingMore || !hasMore || items.length === 0) {
       return;
     }
-    
+
     setLoadingMore(true);
-    
+
     setTimeout(() => {
       const nextPage = page + 1;
-      
+
       // Trier les items par ordre descendant
       const sortedItems = [...items].sort((a, b) => {
         if (sortBy === "numero") {
@@ -73,30 +73,30 @@ const DocumentSection = ({
         }
         return new Date(b.date) - new Date(a.date);
       });
-      
+
       // Calculer les indices
       const startIndex = nextPage * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const nextItems = sortedItems.slice(startIndex, endIndex);
-      
+
       if (nextItems.length > 0) {
         setVisibleItems(prev => [...prev, ...nextItems]);
         setPage(nextPage);
-        
+
         // Vérifier s'il reste des éléments à charger
         const nextHasMore = sortedItems.length > (nextPage + 1) * itemsPerPage;
         setHasMore(nextHasMore);
       } else {
         setHasMore(false);
       }
-      
+
       setLoadingMore(false);
     }, 300);
   }, [page, loadingMore, hasMore, items, itemsPerPage, sortBy]);
 
   // Calcul du nombre total filtré
   const totalFilteredCount = useMemo(() => {
-    const count = items.filter(item => 
+    const count = items.filter(item =>
       item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.clientNom && item.clientNom.toLowerCase().includes(searchTerm.toLowerCase()))
     ).length;
@@ -124,7 +124,7 @@ const DocumentSection = ({
   useEffect(() => {
     const checkResponsive = () => {
       const width = window.innerWidth;
-      
+
       if (width <= 992) {
         setIsMobile(true);
         // 🔥 CORRECTION : Forcer le mode carte sur mobile
@@ -150,7 +150,7 @@ const DocumentSection = ({
     setPage(0);
     setVisibleItems([]);
     setLoadingMore(false);
-    
+
     if (items.length > 0) {
       // Trier par ordre descendant
       const sortedItems = [...items].sort((a, b) => {
@@ -161,21 +161,21 @@ const DocumentSection = ({
         }
         return new Date(b.date) - new Date(a.date);
       });
-      
+
       // Prendre les premiers items
       const initialItems = sortedItems.slice(0, itemsPerPage);
       setVisibleItems(initialItems);
-      
+
       // Vérifier s'il y a plus à charger
       const shouldHaveMore = sortedItems.length > itemsPerPage;
       setHasMore(shouldHaveMore);
-      
+
       prevItemsLengthRef.current = items.length;
     } else {
       setVisibleItems([]);
       setHasMore(false);
     }
-    
+
     // Réinitialiser le scroll
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
@@ -193,13 +193,13 @@ const DocumentSection = ({
   useEffect(() => {
     const typeChanged = prevTypeRef.current !== type;
     const itemsLengthChanged = prevItemsLengthRef.current !== items.length;
-    
+
     // Initialiser seulement si le type change ou si les items changent
     if (typeChanged || itemsLengthChanged) {
       initializeInfiniteScroll();
       prevTypeRef.current = type;
     }
-    
+
     // 🔥 CORRECTION : Ne pas réinitialiser quand on change juste le mode d'affichage
     // Le changement de viewMode ne doit pas affecter le scroll infini
   }, [type, items.length, initializeInfiniteScroll]);
@@ -209,12 +209,12 @@ const DocumentSection = ({
     if (!hasMore || loadingMore) {
       return;
     }
-    
+
     // Nettoyer l'ancien observer
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -228,9 +228,9 @@ const DocumentSection = ({
         threshold: 0.1
       }
     );
-    
+
     observerRef.current = observer;
-    
+
     // Attacher l'observer avec un délai pour s'assurer que le DOM est mis à jour
     const attachObserver = () => {
       if (loaderRef.current) {
@@ -240,9 +240,9 @@ const DocumentSection = ({
         setTimeout(attachObserver, 100);
       }
     };
-    
+
     attachObserver();
-    
+
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
@@ -268,7 +268,7 @@ const DocumentSection = ({
         }
         return new Date(b.date) - new Date(a.date);
       });
-      
+
       const currentHasMore = sortedItems.length > visibleItems.length;
       if (currentHasMore !== hasMore) {
         setHasMore(currentHasMore);
@@ -324,7 +324,7 @@ const DocumentSection = ({
   // Filtrage et tri
   const filteredItems = useMemo(() => {
     if (visibleItems.length === 0) return [];
-    
+
     const filtered = visibleItems.filter(
       (item) =>
         item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -334,7 +334,7 @@ const DocumentSection = ({
 
     return filtered.sort((a, b) => {
       let compareValue = 0;
-      
+
       if (sortBy === "numero") {
         const numA = parseInt(a.numero.replace(/\D/g, "")) || 0;
         const numB = parseInt(b.numero.replace(/\D/g, "")) || 0;
@@ -344,15 +344,15 @@ const DocumentSection = ({
       } else if (sortBy === "date") {
         compareValue = new Date(a.date) - new Date(b.date);
       } else if (sortBy === "totalTTC") {
-        const amountA = typeof a.totalTTC === 'string' 
-          ? parseFloat(a.totalTTC.replace(/\s/g, '').replace(',', '.')) 
+        const amountA = typeof a.totalTTC === 'string'
+          ? parseFloat(a.totalTTC.replace(/\s/g, '').replace(',', '.'))
           : a.totalTTC || 0;
-        const amountB = typeof b.totalTTC === 'string' 
-          ? parseFloat(b.totalTTC.replace(/\s/g, '').replace(',', '.')) 
+        const amountB = typeof b.totalTTC === 'string'
+          ? parseFloat(b.totalTTC.replace(/\s/g, '').replace(',', '.'))
           : b.totalTTC || 0;
         compareValue = amountA - amountB;
       }
-      
+
       return sortOrder === "asc" ? compareValue : -compareValue;
     });
   }, [visibleItems, searchTerm, sortBy, sortOrder]);
@@ -409,9 +409,9 @@ const DocumentSection = ({
       montant: typeof doc.totalTTC === "string"
         ? doc.totalTTC
         : doc.totalTTC.toLocaleString("fr-FR", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }),
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }),
       date: doc.date,
     };
 
@@ -441,9 +441,8 @@ const DocumentSection = ({
   return (
     <div
       ref={containerRef}
-      className={`document-section-container ${
-        backgroundLoaded ? "background-loaded" : ""
-      }`}
+      className={`document-section-container ${backgroundLoaded ? "background-loaded" : ""
+        }`}
     >
       <HeaderSection
         title={title}
@@ -492,9 +491,9 @@ const DocumentSection = ({
                   onShowInfo={showInfoModal}
                 />
               ))}
-              
+
               {/* Élément loader */}
-              <div 
+              <div
                 ref={loaderRef}
                 key={`loader-${type}-${page}-${viewMode}`} // 🔥 Ajout de viewMode dans la clé
                 className="infinite-scroll-loader"
@@ -516,11 +515,13 @@ const DocumentSection = ({
                     </small>
                   </div>
                 ) : filteredItems.length > 0 ? (
-                  <div className="no-more-data">
-                    <span className="check-icon">✓</span> 
-                    <span className="no-more-text">
-                      Tous les documents sont chargés ({filteredItems.length} documents)
-                    </span>
+                  <div className="no-more-data-div">
+                    <div className="no-more-data">
+                      <span className="check-icon">✓</span>
+                      <span className="no-more-text">
+                        Tous les documents sont chargés ({filteredItems.length} documents)
+                      </span>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -578,9 +579,9 @@ const DocumentSection = ({
                       onShowInfo={showInfoModal}
                     />
                   ))}
-                  
+
                   {/* Ligne loader */}
-                  <tr 
+                  <tr
                     ref={loaderRef}
                     key={`loader-row-${type}-${page}-${viewMode}`} // 🔥 Ajout de viewMode dans la clé
                     className="loading-row"
@@ -603,11 +604,13 @@ const DocumentSection = ({
                           </small>
                         </div>
                       ) : filteredItems.length > 0 ? (
-                        <div className="no-more-data">
-                          <span className="check-icon">✓</span> 
-                          <span className="no-more-text">
-                            Tous les documents sont chargés ({filteredItems.length} documents)
-                          </span>
+                        <div className="no-more-data-div">
+                          <div className="no-more-data">
+                            <span className="check-icon">✓</span>
+                            <span className="no-more-text">
+                              Tous les documents sont chargés ({filteredItems.length} documents)
+                            </span>
+                          </div>
                         </div>
                       ) : null}
                     </td>
