@@ -23,7 +23,7 @@ const AuthForm = ({ type }) => {
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
     const [showSuccess, setShowSuccess] = useState(false);
     const [username, setUsername] = useState('');
-    
+
     const toggleForm = () => {
         setActiveForm(activeForm === 'auth-active' ? '' : 'auth-active');
         setError('');
@@ -41,7 +41,6 @@ const AuthForm = ({ type }) => {
     async function handleSubmit(e, formType) {
         e.preventDefault();
 
-        // Validation pour l'inscription
         if (formType === 'register') {
             if (password !== passwordConfirm) {
                 return setError("Les mots de passe ne correspondent pas");
@@ -50,24 +49,20 @@ const AuthForm = ({ type }) => {
                 return setError("Le nom de l'entreprise est requis");
             }
         }
-        
+
         try {
             setError('');
             setLoading(true);
 
             if (formType === 'login') {
-                // Utilisez soit le username soit l'email pour la connexion
                 const identifier = username || email;
                 const user = await login(identifier, password);
                 setShowSuccess(true);
 
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
-                // Redirection selon le rôle
                 if (user.role === 'superadmin') {
                     window.location.assign('/samafact');
-                } else if (user.role === 'admin' || user.role === 'user') {
-                    window.location.assign('/');
                 } else {
                     window.location.assign('/');
                 }
@@ -82,7 +77,6 @@ const AuthForm = ({ type }) => {
             setLoading(false);
             setShowSuccess(false);
 
-            // 🔥 GESTION AMÉLIORÉE DES ERREURS - INCLUT LA DÉSACTIVATION
             if (formType === 'login') {
                 switch (err.code) {
                     case 'auth/user-not-found':
@@ -93,15 +87,19 @@ const AuthForm = ({ type }) => {
                         setError("Trop de tentatives. Réessayez plus tard");
                         break;
                     case 'auth/account-disabled':
-                    case 'ACCOUNT_DISABLED': // Erreur personnalisée
+                    case 'ACCOUNT_DISABLED':
                         setError("Votre compte a été désactivé. Contactez votre administrateur.");
                         break;
+                    case 'auth/invalid-credential':
+                        setError("Identifiants invalides");
+                        break;
                     default:
-                        // Vérifier si c'est une erreur de compte désactivé via le message
                         if (err.message && err.message.includes('désactivé')) {
                             setError(err.message);
+                        } else if (err.message && err.message.includes('permission')) {
+                            setError("Problème de permissions. Contactez l'administrateur.");
                         } else {
-                            setError("Erreur de connexion");
+                            setError(err.message || "Erreur de connexion");
                         }
                 }
             } else {
@@ -110,7 +108,6 @@ const AuthForm = ({ type }) => {
         }
     }
 
-    // 🔥 NOUVEAU : Composant pour afficher l'erreur de compte désactivé
     const renderDisabledAccountError = () => {
         if (error && error.includes('désactivé')) {
             return (
@@ -120,7 +117,7 @@ const AuthForm = ({ type }) => {
                         <strong>Compte désactivé</strong>
                         <p>{error}</p>
                         <div className="disabled-account-actions">
-                            <button 
+                            <button
                                 className="auth-btn auth-contact-admin"
                                 onClick={() => window.location.href = 'mailto:admin@mentafact.com'}
                             >
@@ -243,7 +240,6 @@ const AuthForm = ({ type }) => {
                 <div className={`auth-container ${activeForm}`}>
                     <div className="auth-form-box auth-login">
                         <form className="form-auth" onSubmit={(e) => handleSubmit(e, "login")}>
-                            {/* 🔥 REMPLACÉ : Utilise le nouveau composant d'erreur */}
                             {renderDisabledAccountError()}
 
                             <h1>Connexion</h1>

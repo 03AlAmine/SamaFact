@@ -424,7 +424,9 @@ const InvoiceDetailsSection = ({
   // Fonctions pour vérifier les permissions
   const canEditType = () => {
     // Admin, supadmin et superadmin peuvent modifier
-    return ['admin', 'supadmin', 'superadmin'].includes(currentUser?.role);
+    // return ['admin', 'supadmin', 'superadmin'].includes(currentUser?.role);
+    return true;
+
   };
 
   const canEditNumber = () => {
@@ -470,13 +472,9 @@ const InvoiceDetailsSection = ({
   };
 
   const handleTypeChange = async (newType) => {
-    // Vérifier la permission avant de modifier
-    if (!canEditType()) {
-      alert("Vous n'avez pas la permission de modifier le type de document");
-      return;
-    }
 
     try {
+      // 🔥 GÉNÉRER UN NOUVEAU NUMÉRO BASÉ SUR LE NOUVEAU TYPE
       const newNumber = await generateInvoiceNumber(new Date(data.facture.Date[0]), newType);
 
       setData({
@@ -487,6 +485,7 @@ const InvoiceDetailsSection = ({
           Numéro: [newNumber]
         }
       });
+
     } catch (error) {
       console.error("Erreur génération numéro:", error);
       setData({
@@ -498,7 +497,6 @@ const InvoiceDetailsSection = ({
       });
     }
   };
-
   return (
     <div className="ie-section">
       <div className="ie-section-header">
@@ -527,9 +525,7 @@ const InvoiceDetailsSection = ({
                 key={type.value}
                 type="button"
                 className={`ie-type-option ${data.facture.Type?.[0] === type.value ? 'active' : ''} ${!canEditType() ? 'disabled' : ''}`}
-                onClick={() => canEditType() ? handleTypeChange(type.value) : null}
-                disabled={!canEditType()}
-                title={!canEditType() ? "Vous n'avez pas la permission de modifier" : ""}
+                onClick={() => handleTypeChange(type.value)}
               >
                 <span className="ie-type-icon">{type.icon}</span>
                 <span className="ie-type-label">{type.label}</span>
@@ -539,16 +535,6 @@ const InvoiceDetailsSection = ({
               </button>
             ))}
           </div>
-          {!canEditType() && (
-            <p className="ie-field-hint" style={{
-              fontSize: '0.85rem',
-              color: 'var(--text-light)',
-              marginTop: '0.25rem',
-              fontStyle: 'italic'
-            }}>
-              Contactez un administrateur pour modifier
-            </p>
-          )}
         </div>
 
         {/* Numéro de document */}
@@ -1442,6 +1428,9 @@ const InvoiceEditor = () => {
         let invoiceData;
         let isUpdateMode = false;
 
+        // 🔥 DÉTECTER LE TYPE DE DOCUMENT PASSÉ VIA LOCATION.STATE
+        const documentType = location.state?.type || 'facture';
+
         // MODE MODIFICATION/DUPLICATION depuis location.state
         if (location.state?.facture) {
           invoiceData = invoiceService.transformFactureData(location.state.facture);
@@ -1473,11 +1462,11 @@ const InvoiceEditor = () => {
           isUpdateMode = !!location.state.facture.id && !location.state.isDuplicate;
 
           if (location.state.isDuplicate) {
-            // Pour une duplication, générer un nouveau numéro
+            // Pour une duplication, générer un nouveau numéro en utilisant le type du document
             const newNumber = await invoiceService.generateInvoiceNumber(
               currentUser.companyId,
               new Date(invoiceData.facture.Date[0] || new Date()),
-              invoiceData.facture.Type[0]
+              documentType // 🔥 Utiliser documentType
             );
             invoiceData.facture.Numéro = [newNumber];
             isUpdateMode = false;
@@ -1517,10 +1506,11 @@ const InvoiceEditor = () => {
           }
         } else {
           // MODE CRÉATION - Nouveau document
+          // 🔥 GÉNÉRER LE NUMÉRO EN FONCTION DU TYPE PASSÉ VIA LOCATION.STATE
           const invoiceNumber = await invoiceService.generateInvoiceNumber(
             currentUser.companyId,
             new Date(),
-            'facture'
+            documentType // 🔥 Utiliser documentType au lieu de 'facture'
           );
 
           invoiceData = {
@@ -1528,7 +1518,7 @@ const InvoiceEditor = () => {
               Numéro: [invoiceNumber],
               Date: [new Date().toISOString().split('T')[0]],
               DateEcheance: [new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]],
-              Type: ["facture"]
+              Type: [documentType] // 🔥 Utiliser documentType
             },
             client: { Nom: [], Adresse: [], Ville: [], Email: [] },
             items: {
@@ -1560,16 +1550,24 @@ const InvoiceEditor = () => {
 
       } catch (error) {
         console.error('❌ Erreur initialisation:', error);
-        // Créer une facture vide en cas d'erreur
+
+        // 🔥 CRÉER UN NUMÉRO TEMPORAIRE BASÉ SUR LE TYPE
+        const documentType = location.state?.type || 'facture';
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
+
+        // Créer un préfixe basé sur le type
+        let prefix = 'F';
+        if (documentType === 'devis') prefix = 'DEV';
+        if (documentType === 'avoir') prefix = 'AV';
+
         setData({
           facture: {
-            Numéro: [`F-${year}${month}-TEMP`],
+            Numéro: [`${prefix}-${year}${month}-TEMP`],
             Date: [new Date().toISOString().split('T')[0]],
             DateEcheance: [new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]],
-            Type: ["facture"]
+            Type: [documentType] // 🔥 Utiliser documentType
           },
           client: { Nom: [], Adresse: [], Ville: [], Email: [] },
           items: {
@@ -1581,12 +1579,11 @@ const InvoiceEditor = () => {
           }
         });
         setIsSaved(false);
-        setIsUpdate(false); // ← Ajouter cette ligne
+        setIsUpdate(false);
       } finally {
         setLoading(false);
       }
     };
-
     if (currentUser?.companyId) {
       initializeData(); // ← APPELEZ LA FONCTION
     } else {

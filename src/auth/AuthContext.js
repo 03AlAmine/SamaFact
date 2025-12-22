@@ -13,7 +13,7 @@ const AuthContext = createContext();
 
 const ROLES = {
   SUPERADMIN: 'superadmin',
-  SUPADMIN: 'supadmin',  // 👈 NOUVEAU
+  SUPADMIN: 'supadmin',
   ADMIN: 'admin',
   RH_DAF: 'rh_daf',
   COMPTABLE: 'comptable',
@@ -30,9 +30,9 @@ const PERMISSIONS = {
     manageDocuments: true,
     viewAll: true,
     isSuperAdmin: true,
-    isSupAdmin: true  // 👈 NOUVEAU
+    isSupAdmin: true
   },
-  [ROLES.SUPADMIN]: {  // 👈 NOUVEAU - Mêmes droits que superadmin mais limité à l'entreprise
+  [ROLES.SUPADMIN]: {
     manageCompany: true,
     manageUsers: true,
     managePayroll: true,
@@ -48,7 +48,7 @@ const PERMISSIONS = {
     managePayroll: true,
     viewAll: true,
     isSuperAdmin: false,
-    isSupAdmin: false  // 👈 NOUVEAU
+    isSupAdmin: false
   },
   [ROLES.RH_DAF]: {
     managePayroll: true,
@@ -93,11 +93,6 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const checkIntervalRef = useRef(null);
-
-  // -----------------------------
-  // 🔥 Mise à jour lastActivity
-  // -----------------------------
-
   const lastUpdateRef = useRef(Number(localStorage.getItem("lastUpdate") || 0));
 
   const updateLastActivity = async (userId) => {
@@ -114,11 +109,6 @@ export function AuthProvider({ children }) {
     );
   };
 
-
-
-  // -----------------------------
-  // 🔥 Déconnexion interne
-  // -----------------------------
   const handleLogout = async () => {
     try {
       if (currentUser) {
@@ -128,14 +118,10 @@ export function AuthProvider({ children }) {
       setCurrentUser(null);
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
       throw error;
     }
   };
 
-  // -----------------------------
-  // 🔥 Vérification d’inactivité
-  // -----------------------------
   const checkInactivity = async (user) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -143,10 +129,9 @@ export function AuthProvider({ children }) {
         const userData = userDoc.data();
         const lastActivity = userData.lastActivity?.toDate();
         const now = new Date();
-        const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 1 jour
+        const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
 
         if (lastActivity && lastActivity < oneDayAgo) {
-          console.log('🔄 Déconnexion automatique : 1 jour d’inactivité');
           await handleLogout();
           window.location.href = '/login?reason=inactivity';
           return false;
@@ -155,7 +140,6 @@ export function AuthProvider({ children }) {
       }
       return true;
     } catch (error) {
-      console.error("Erreur vérification inactivité:", error);
       return true;
     }
   };
@@ -163,14 +147,10 @@ export function AuthProvider({ children }) {
   const startInactivityChecking = (user) => {
     if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     checkIntervalRef.current = setInterval(() => {
-      checkInactivity(user).catch(console.error);
-    }, 2 * 60 * 60 * 1000); // toutes les 2 heures
-
+      checkInactivity(user);
+    }, 2 * 60 * 60 * 1000);
   };
 
-  // -----------------------------
-  // 🔥 Listener AuthState
-  // -----------------------------
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -180,7 +160,6 @@ export function AuthProvider({ children }) {
         ]);
 
         if (!userDoc.exists()) {
-          console.warn("⚠️ Le document utilisateur n'existe pas encore.");
           setCurrentUser(null);
           setLoading(false);
           return;
@@ -208,9 +187,6 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  // -----------------------------
-  // 🔥 Met à jour lastActivity quand onglet redevient actif
-  // -----------------------------
   useEffect(() => {
     if (!currentUser) return;
 
@@ -230,9 +206,6 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // -----------------------------
-  // 🔐 Auth functions
-  // -----------------------------
   async function signup(email, password, companyName, userName, username) {
     try {
       if (!companyName || !userName || !username) throw new Error("Company name, user name and username are required");
@@ -253,7 +226,7 @@ export function AuthProvider({ children }) {
         createdAt: new Date(),
         createdBy: userId,
         status: 'active',
-        supadmin: userId  // 👈 NOUVEAU - Stocke l'ID du supadmin
+        supadmin: userId
       });
 
       batch.set(doc(db, `companies/${companyId}/profiles`, userId), {
@@ -262,7 +235,7 @@ export function AuthProvider({ children }) {
         email,
         companyName,
         createdAt: new Date(),
-        role: ROLES.SUPADMIN  // 👈 CHANGE : Maintenant supadmin au lieu de admin
+        role: ROLES.SUPADMIN
       });
 
       batch.set(doc(db, 'users', userId), {
@@ -270,7 +243,7 @@ export function AuthProvider({ children }) {
         name: userName,
         companyId,
         username,
-        role: ROLES.SUPADMIN,  // 👈 CHANGE : Maintenant supadmin
+        role: ROLES.SUPADMIN,
         createdAt: new Date(),
         lastLogin: new Date(),
         lastActivity: serverTimestamp()
@@ -284,11 +257,9 @@ export function AuthProvider({ children }) {
       await batch.commit();
       return userCredential;
     } catch (error) {
-      console.error("Signup error:", error);
       throw error;
     }
   }
-
 
   async function login(identifier, password) {
     try {
@@ -302,24 +273,36 @@ export function AuthProvider({ children }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 🔥 VÉRIFICATION DU STATUT DÉSACTIVÉ
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) throw new Error("Compte non trouvé");
 
       const userData = userDoc.data();
       if (userData.disabled === true) {
-        // Déconnecter immédiatement
         await signOut(auth);
         throw new Error("Votre compte a été désactivé. Contactez votre administrateur.");
       }
 
-      await setDoc(doc(db, 'users', user.uid), {
-        lastLogin: serverTimestamp(),
-        lastActivity: serverTimestamp()
-      }, { merge: true });
+      // Mettre à jour lastLogin uniquement pour les rôles avec permission d'écriture
+      if (['superadmin', 'supadmin', 'admin', 'rh_daf'].includes(userData.role)) {
+        await setDoc(doc(db, 'users', user.uid), {
+          lastLogin: serverTimestamp(),
+          lastActivity: serverTimestamp()
+        }, { merge: true });
+      }
 
-      return { ...user, role: userData.role, companyId: userData.companyId };
+      return {
+        uid: user.uid,
+        email: user.email,
+        ...userData,
+        role: userData.role,
+        companyId: userData.companyId,
+        name: userData.name || userData.username || email.split('@')[0]
+      };
     } catch (error) {
+      // Déconnexion en cas d'erreur
+      try {
+        await signOut(auth);
+      } catch {}
       throw error;
     }
   }
@@ -327,7 +310,6 @@ export function AuthProvider({ children }) {
   function logout() { return handleLogout(); }
 
   async function createSubUser(email, password, userName, role = ROLES.LECTEUR) {
-    // 👈 EMPÊCHE LA CRÉATION DE SUPADMIN PAR UN ADMIN NORMAL
     if (!currentUser ||
       (currentUser.role !== ROLES.ADMIN &&
         currentUser.role !== ROLES.SUPADMIN &&
@@ -335,7 +317,6 @@ export function AuthProvider({ children }) {
       throw new Error("Unauthorized");
     }
 
-    // 👈 EMPÊCHE UN ADMIN NORMAL DE CRÉER UN SUPADMIN
     if (currentUser.role === ROLES.ADMIN && role === ROLES.SUPADMIN) {
       throw new Error("Vous ne pouvez pas créer un supadmin");
     }
@@ -374,13 +355,11 @@ export function AuthProvider({ children }) {
       await batch.commit();
       return userCredential;
     } catch (error) {
-      console.error("Sub-user creation error:", error);
       throw error;
     }
   }
 
   async function updateUserRole(userId, newRole) {
-    // 👈 VERIFICATIONS RENFORCÉES POUR LES RÔLES
     if (!currentUser ||
       (currentUser.role !== ROLES.ADMIN &&
         currentUser.role !== ROLES.SUPADMIN &&
@@ -388,7 +367,6 @@ export function AuthProvider({ children }) {
       throw new Error("Unauthorized");
     }
 
-    // 👈 EMPÊCHE UN ADMIN NORMAL DE CRÉER/MODIFIER EN SUPADMIN
     if (currentUser.role === ROLES.ADMIN && newRole === ROLES.SUPADMIN) {
       throw new Error("Vous ne pouvez pas attribuer le rôle supadmin");
     }
@@ -406,7 +384,6 @@ export function AuthProvider({ children }) {
       });
       await batch.commit();
     } catch (error) {
-      console.error("Role update error:", error);
       throw error;
     }
   }
@@ -420,7 +397,6 @@ export function AuthProvider({ children }) {
     return currentUser?.isSuperAdmin || currentUser?.customClaims?.superAdmin || currentUser?.role === ROLES.SUPERADMIN;
   }
 
-  // 👈 NOUVELLE FONCTION : Vérifie si c'est un supadmin
   function isSupAdmin() {
     return currentUser?.role === ROLES.SUPADMIN;
   }
@@ -446,7 +422,7 @@ export function AuthProvider({ children }) {
     checkPermission,
     ROLES,
     isSuperAdmin,
-    isSupAdmin,  // 👈 NOUVEAU - Export de la fonction
+    isSupAdmin,
     resetPassword,
     shouldDefaultToPayroll,
     canToggleModules
