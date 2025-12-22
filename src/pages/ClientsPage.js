@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
+    // Icônes existantes
     FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone,
     FaMapMarkerAlt, FaBuilding, FaPlus, FaSearch,
     FaFileInvoiceDollar, FaFileExcel, FaList, FaTh,
-    FaSortAlphaDown, FaChevronLeft, FaChevronRight
+    FaSortAlphaDown, FaChevronLeft, FaChevronRight,
+    // Nouvelles icônes pour le modal
+    FaEye, FaTimes, FaInfoCircle, FaCalendarAlt,
+    FaHistory, FaAddressBook, FaCity, FaStickyNote,
+    FaComment, FaUserTie, FaHandshake, FaTruck,
+    FaMapMarkedAlt
 } from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
 import '../css/ClientPage.css';
@@ -347,19 +353,14 @@ const ImportButton = ({ onImport }) => (
 );
 
 // Carte client
-const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
-    // ClientCard.js - modifiez handleAction
-    // Dans ClientCard - modifiez la fonction handleAction
+const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete, onView }) => {
     const handleAction = (e, action) => {
         e.stopPropagation();
-        console.log("ClientCard handleAction called for:", client);
         if (!client || !client.id) {
             console.error("Client object or ID is undefined:", client);
             return;
         }
-
-        // Appelez l'action avec l'objet client complet
-        action(client); // ← CORRECTION : passez l'objet client complet
+        action(client);
     };
 
     return (
@@ -380,6 +381,12 @@ const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
                     {client.societe && <div className="client-company">{client.societe}</div>}
                 </div>
                 <div className="client-actions">
+                    <ActionButton
+                        icon={<FaEye />}
+                        title="Voir détails"
+                        onClick={(e) => handleAction(e, onView)}
+                        className="view-btn"
+                    />
                     <ActionButton
                         icon={<FaEdit />}
                         title="Modifier"
@@ -449,14 +456,14 @@ const ActionButton = ({ icon, title, onClick, className }) => (
 );
 
 // Ligne de tableau client
-const ClientTableRow = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
+const ClientTableRow = ({ client, isSelected, onSelect, onView, onEdit, onDelete }) => {
     const handleAction = (e, action) => {
         e.stopPropagation();
         if (!client || !client.id) {
             console.error("Client is undefined in ClientCard");
             return;
         }
-        action(client); // ← CHANGEZ ICI : Passez l'objet client
+        action(client);
     };
 
     return (
@@ -488,6 +495,7 @@ const ClientTableRow = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
             </td>
             <td>
                 <TableActions
+                    onView={(e) => handleAction(e, onView)}
                     onEdit={(e) => handleAction(e, onEdit)}
                     onDelete={(e) => handleAction(e, onDelete)}
                 />
@@ -514,8 +522,14 @@ const AddressInfo = ({ client }) =>
     ) : null;
 
 // Actions du tableau
-const TableActions = ({ onEdit, onDelete }) => (
+const TableActions = ({ onView, onEdit, onDelete }) => (
     <div className="table-actions">
+        <ActionButton
+            icon={<FaEye />}
+            title="Voir détails"
+            onClick={onView}
+            className="view-btn"
+        />
         <ActionButton
             icon={<FaEdit />}
             title="Modifier"
@@ -639,6 +653,280 @@ const InvoiceRow = ({ facture, onDeleteFacture }) => (
     </tr>
 );
 
+// Composant Modal de visualisation client - Version refactorisée
+const ClientsViewModal = ({
+    client,
+    isOpen,
+    onClose,
+    onEdit,
+    onCreateInvoice
+}) => {
+    if (!isOpen || !client) return null;
+
+    // Fonction pour formater la date
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Date non spécifiée';
+        try {
+            return new Date(dateString).toLocaleDateString('fr-FR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    // Fonction pour obtenir l'icône du type
+    const getTypeIcon = (type) => {
+        switch (type) {
+            case 'client': return <FaUsers />;
+            case 'prospect': return <FaSearch />;
+            case 'partenaire': return <FaHandshake />;
+            case 'fournisseur': return <FaTruck />;
+            default: return <FaUsers />;
+        }
+    };
+
+    // Fonction pour vérifier si une valeur est vide
+    const isEmptyValue = (value) => {
+        return !value || value.trim() === '';
+    };
+
+    return (
+        <div className="clients-modal-overlay" onClick={onClose}>
+            <div className="clients-modal" onClick={e => e.stopPropagation()}>
+                {/* En-tête du modal */}
+                <div className="clients-modal-header">
+                    <h2 className="clients-modal-title">
+                        <FaEye /> Détails du Client
+                    </h2>
+                    <button
+                        className="clients-modal-close"
+                        onClick={onClose}
+                        aria-label="Fermer le modal"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                {/* Contenu du modal */}
+                <div className="clients-modal-content">
+                    {/* En-tête client */}
+                    <div className="clients-modal-client-header">
+                        <div className="clients-modal-avatar">
+                            {client.nom?.charAt(0)?.toUpperCase() || 'C'}
+                        </div>
+                        <div className="clients-modal-client-info">
+                            <h3 className="clients-modal-client-name">
+                                {client.nom || 'Nom non spécifié'}
+                            </h3>
+                            {!isEmptyValue(client.societe) && (
+                                <div className="clients-modal-client-company">
+                                    {client.societe}
+                                </div>
+                            )}
+                            <div className={`clients-modal-type-badge ${client.type || 'prospect'}`}>
+                                {getTypeIcon(client.type || 'prospect')}
+                                {client.type?.charAt(0)?.toUpperCase() + client.type?.slice(1) || 'Prospect'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sections d'informations */}
+                    <div className="clients-modal-sections-grid">
+                        {/* Section Informations générales */}
+                        <div className="clients-modal-section">
+                            <h4 className="clients-modal-section-title">
+                                <FaInfoCircle /> Informations Générales
+                            </h4>
+                            <div className="clients-modal-details-list">
+                                <div className="clients-modal-detail-item">
+                                    <span className="clients-modal-detail-icon">
+                                        <FaUserTie />
+                                    </span>
+                                    <div className="clients-modal-detail-content">
+                                        <div className="clients-modal-detail-label">Responsable</div>
+                                        <div className={`clients-modal-detail-value ${isEmptyValue(client.societe) ? 'empty' : ''}`}>
+                                            {!isEmptyValue(client.societe) ? client.societe : 'Non spécifié'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {client.dateCreation && (
+                                    <div className="clients-modal-detail-item">
+                                        <span className="clients-modal-detail-icon">
+                                            <FaCalendarAlt />
+                                        </span>
+                                        <div className="clients-modal-detail-content">
+                                            <div className="clients-modal-detail-label">Date de Création</div>
+                                            <div className="clients-modal-detail-value">
+                                                {formatDate(client.dateCreation)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {client.dateModification && (
+                                    <div className="clients-modal-detail-item">
+                                        <span className="clients-modal-detail-icon">
+                                            <FaHistory />
+                                        </span>
+                                        <div className="clients-modal-detail-content">
+                                            <div className="clients-modal-detail-label">Dernière Modification</div>
+                                            <div className="clients-modal-detail-value">
+                                                {formatDate(client.dateModification)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section Contact */}
+                        <div className="clients-modal-section">
+                            <h4 className="clients-modal-section-title">
+                                <FaAddressBook /> Contact
+                            </h4>
+                            <div className="clients-modal-details-list">
+                                <div className="clients-modal-detail-item">
+                                    <span className="clients-modal-detail-icon">
+                                        <FaEnvelope />
+                                    </span>
+                                    <div className="clients-modal-detail-content">
+                                        <div className="clients-modal-detail-label">Email</div>
+                                        <div className={`clients-modal-detail-value ${isEmptyValue(client.email) ? 'empty' : ''}`}>
+                                            {!isEmptyValue(client.email) ? client.email : 'Non spécifié'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="clients-modal-detail-item">
+                                    <span className="clients-modal-detail-icon">
+                                        <FaPhone />
+                                    </span>
+                                    <div className="clients-modal-detail-content">
+                                        <div className="clients-modal-detail-label">Téléphone</div>
+                                        <div className={`clients-modal-detail-value ${isEmptyValue(client.telephone) ? 'empty' : ''}`}>
+                                            {!isEmptyValue(client.telephone) ? client.telephone : 'Non spécifié'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section Adresse */}
+                        <div className="clients-modal-section">
+                            <h4 className="clients-modal-section-title">
+                                <FaMapMarkedAlt /> Localisation
+                            </h4>
+                            <div className="clients-modal-details-list">
+                                <div className="clients-modal-detail-item">
+                                    <span className="clients-modal-detail-icon">
+                                        <FaMapMarkerAlt />
+                                    </span>
+                                    <div className="clients-modal-detail-content">
+                                        <div className="clients-modal-detail-label">Adresse</div>
+                                        <div className={`clients-modal-detail-value ${isEmptyValue(client.adresse) ? 'empty' : ''}`}>
+                                            {!isEmptyValue(client.adresse) ? client.adresse : 'Non spécifié'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="clients-modal-detail-item">
+                                    <span className="clients-modal-detail-icon">
+                                        <FaCity />
+                                    </span>
+                                    <div className="clients-modal-detail-content">
+                                        <div className="clients-modal-detail-label">Ville & Pays</div>
+                                        <div className={`clients-modal-detail-value ${isEmptyValue(client.ville) ? 'empty' : ''}`}>
+                                            {!isEmptyValue(client.ville) ? client.ville : 'Non spécifié'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section Historique (si disponible) */}
+                        {client.anciensNoms?.length > 0 && (
+                            <div className="clients-modal-section">
+                                <h4 className="clients-modal-section-title">
+                                    <FaHistory /> Historique des Noms
+                                </h4>
+                                <div className="clients-modal-history-list">
+                                    {client.anciensNoms.map((ancien, index) => (
+                                        <div key={index} className="clients-modal-history-item">
+                                            <div className="clients-modal-history-name">
+                                                {ancien.nom || 'Nom inconnu'}
+                                            </div>
+                                            <div className="clients-modal-history-date">
+                                                {formatDate(ancien.date)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Section Notes (si disponible) */}
+                        {client.notes && !isEmptyValue(client.notes) && (
+                            <div className="clients-modal-section">
+                                <h4 className="clients-modal-section-title">
+                                    <FaStickyNote /> Notes
+                                </h4>
+                                <div className="clients-modal-details-list">
+                                    <div className="clients-modal-detail-item">
+                                        <span className="clients-modal-detail-icon">
+                                            <FaComment />
+                                        </span>
+                                        <div className="clients-modal-detail-content">
+                                            <div className="clients-modal-detail-value">
+                                                {client.notes}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Barre d'actions */}
+                    <div className="clients-modal-actions-bar">
+                        <button
+                            className="clients-modal-action-btn clients-modal-view-edit"
+                            onClick={() => {
+                                onClose();
+                                onEdit(client);
+                            }}
+                            aria-label="Modifier ce client"
+                        >
+                            <FaEdit /> Modifier
+                        </button>
+
+                        <button
+                            className="clients-modal-action-btn clients-modal-view-invoice"
+                            onClick={() => {
+                                onClose();
+                                if (onCreateInvoice) onCreateInvoice(client);
+                            }}
+                            aria-label="Créer une facture pour ce client"
+                        >
+                            <FaFileInvoiceDollar /> Créer Facture
+                        </button>
+
+                        <button
+                            className="clients-modal-action-btn clients-modal-view-close"
+                            onClick={onClose}
+                            aria-label="Fermer le modal"
+                        >
+                            <FaTimes /> Fermer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 // COMPOSANT PRINCIPAL
 const ClientsPage = ({
     clients,
@@ -678,6 +966,9 @@ const ClientsPage = ({
     // États pour la pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
+
+    const [viewModalClient, setViewModalClient] = useState(null);
+
 
     // Préchargement de l'image de fond
     useEffect(() => {
@@ -767,6 +1058,17 @@ const ClientsPage = ({
         }, 100);
     }, [loadClientInvoices]);
 
+    // Handler pour ouvrir le modal
+    const handleViewClient = useCallback((client) => {
+        console.log("Opening view modal for client:", client);
+        setViewModalClient(client);
+    }, []);
+
+    // Handler pour fermer le modal
+    const handleCloseModal = useCallback(() => {
+        setViewModalClient(null);
+    }, []);
+
     // Détermination du mode d'affichage
     const displayMode = isMobile ? 'card' : viewMode;
 
@@ -795,6 +1097,16 @@ const ClientsPage = ({
                     onChange={handleChange}
                 />
             )}
+            <ClientsViewModal
+                client={viewModalClient}
+                isOpen={!!viewModalClient}
+                onClose={handleCloseModal}
+                onEdit={(client) => {
+                    handleCloseModal();
+                    handleEdit(client);
+                }}
+                onCreateInvoice={handleCreateInvoice}
+            />
 
             {/* Section principale */}
             <div
@@ -850,6 +1162,8 @@ const ClientsPage = ({
                                     onDelete={() => {
                                         handleDelete(clientItem.id);
                                     }}
+                                    onView={handleViewClient}
+
                                 />
                             ))}
                         </div>
@@ -908,6 +1222,8 @@ const ClientsPage = ({
                                         onSelect={handleClientSelect}
                                         onEdit={handleEdit}
                                         onDelete={handleDelete}
+                                        onView={handleViewClient}
+
                                     />
                                 ))}
                             </tbody>
