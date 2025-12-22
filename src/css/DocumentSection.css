@@ -193,6 +193,10 @@
     height: 40px;
     justify-content: center;
   }
+  .swiper-nav-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -806,7 +810,7 @@
   transform: translateY(-50%);
   width: 24px;
   height: 24px;
-  background: white;
+  background: var(--primary-color);
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   display: flex;
@@ -815,7 +819,7 @@
   cursor: pointer;
   z-index: 10;
   transition: all 0.3s ease;
-  color: var(--primary-color);
+  color: white;
   border: 1px solid #e2e8f0;
   opacity: 0;
   visibility: hidden;
@@ -1675,10 +1679,10 @@
 }
 
 .no-more-data-div {
-    width: 100%;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .no-more-data {
@@ -1767,4 +1771,78 @@
   .cards-grid {
     gap: 12px;
   }
+}
+/* DocumentActions.css - Mettre à jour les styles de navigation */
+
+/* Pour la vue carte */
+.document-card:hover .swiper-nav-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Pour la vue table */
+tr:hover .swiper-nav-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Ajuster la position pour la carte */
+.card-actions .swiper-nav-btn {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;
+}
+
+/* Ajuster la position pour la table */
+.table-actions .swiper-nav-btn {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;
+}
+
+/* Style spécifique pour la navigation dans les cartes */
+.card-actions .swiper-prev {
+  left: 5px;
+}
+
+.card-actions .swiper-next {
+  right: 5px;
+}
+
+/* Style spécifique pour la navigation dans les tables */
+.table-actions .swiper-prev {
+  left: 5px;
+}
+
+.table-actions .swiper-next {
+  right: 5px;
+}
+
+/* Animation pour l'apparition des boutons de navigation */
+.document-card:hover .swiper-nav-btn,
+tr:hover .swiper-nav-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* S'assurer que les boutons restent visibles quand on les survole directement */
+.swiper-nav-btn:hover {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+/* Ajoutez ceci pour une transition plus douce */
+.document-card,
+tr {
+  transition: all 0.3s ease;
+}
+
+/* État de survol amélioré pour les cartes */
+.document-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* État de survol amélioré pour les lignes */
+tr:hover {
+  background-color: var(--hover-bg) !important;
 }

@@ -349,6 +349,7 @@ const ImportButton = ({ onImport }) => (
 // Carte client
 const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
     // ClientCard.js - modifiez handleAction
+    // Dans ClientCard - modifiez la fonction handleAction
     const handleAction = (e, action) => {
         e.stopPropagation();
         console.log("ClientCard handleAction called for:", client);
@@ -356,8 +357,9 @@ const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
             console.error("Client object or ID is undefined:", client);
             return;
         }
-        // Appelez action() sans paramètre - l'ID sera géré dans ClientsPage
-        action();
+
+        // Appelez l'action avec l'objet client complet
+        action(client); // ← CORRECTION : passez l'objet client complet
     };
 
     return (
@@ -454,7 +456,7 @@ const ClientTableRow = ({ client, isSelected, onSelect, onEdit, onDelete }) => {
             console.error("Client is undefined in ClientCard");
             return;
         }
-        action(client.id); // ← Passez l'ID
+        action(client); // ← CHANGEZ ICI : Passez l'objet client
     };
 
     return (
@@ -843,10 +845,10 @@ const ClientsPage = ({
                                     isSelected={selectedClient?.id === clientItem.id}
                                     onSelect={handleClientSelect}
                                     onEdit={() => {
-                                        handleEdit(clientItem); 
+                                        handleEdit(clientItem);
                                     }}
                                     onDelete={() => {
-                                        handleDelete(clientItem.id); 
+                                        handleDelete(clientItem.id);
                                     }}
                                 />
                             ))}

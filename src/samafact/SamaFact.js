@@ -11,14 +11,14 @@ import { FiSettings, FiUsers, FiPieChart, FiBarChart2, FiHome } from 'react-icon
 
 import { CompanyTable, UserTable } from './Tables';
 import './SamaFact.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { message } from 'antd';
 import { userService } from '../services/userService';
-
 
 const SamaFact = () => {
   const { currentUser, isSuperAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // États principaux
   const [data, setData] = useState({
@@ -41,7 +41,7 @@ const SamaFact = () => {
   // États UI
   const [ui, setUi] = useState({
     searchTerm: '',
-    activeTab: 'companies',
+    activeTab: 'dashboard', // Changé de 'companies' à 'dashboard'
     selectedCompany: null,
     showCompanyModal: false,
     showUserModal: false,
@@ -78,6 +78,38 @@ const SamaFact = () => {
       confirmPassword: ''
     }
   });
+
+  // Synchroniser l'onglet actif avec l'URL
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/companies') || path === '/companies') {
+      setUi(prev => ({ ...prev, activeTab: 'companies' }));
+    } else if (path.includes('/users') || path === '/users') {
+      setUi(prev => ({ ...prev, activeTab: 'users' }));
+    } else if (path === '/' || path.includes('/dashboard')) {
+      setUi(prev => ({ ...prev, activeTab: 'dashboard' }));
+    }
+  }, [location]);
+
+  // Fonctions de navigation
+  const navigateToTab = (tab) => {
+    setUi(prev => ({ ...prev, activeTab: tab }));
+    
+    // Naviguer vers la route correspondante
+    switch(tab) {
+      case 'dashboard':
+        navigate('/');
+        break;
+      case 'companies':
+        navigate('/companies');
+        break;
+      case 'users':
+        navigate('/users');
+        break;
+      default:
+        navigate('/');
+    }
+  };
 
   // Chargement des données
   useEffect(() => {
@@ -118,7 +150,7 @@ const SamaFact = () => {
       email: doc.data().email || '',
       industry: doc.data().industry || '',
       status: doc.data().status || 'active',
-      logoFileName: doc.data().logoFileName || null, // ← Ajouter ce champ
+      logoFileName: doc.data().logoFileName || null,
       createdAt: doc.data().createdAt?.toDate() || new Date(),
       usersCount: usersData.filter(user => user.companyId === doc.id).length
     }));
@@ -211,13 +243,12 @@ const SamaFact = () => {
     }
   };
 
-  // Dans SamaFact.js - handleAddCompany
   const handleAddCompany = async (e) => {
     e.preventDefault();
     try {
       const companyData = {
         ...forms.companyForm,
-        logoFileName: forms.companyForm.logoFileName || null, // Ajouter le nom du logo
+        logoFileName: forms.companyForm.logoFileName || null,
         updatedAt: new Date(),
       };
 
@@ -251,6 +282,7 @@ const SamaFact = () => {
       message.error("Erreur lors de l'opération");
     }
   };
+
   const handleCreateUser = async (userData) => {
     try {
       if (ui.modalMode === 'edit' && ui.selectedItem) {
@@ -347,24 +379,21 @@ const SamaFact = () => {
   };
 
   const openModal = (type, item = null) => {
-    // Si on est en mode édition (item existe), pré-remplir le formulaire
     if (item) {
       if (type.toLowerCase() === 'user') {
-        // Pour un utilisateur
         setForms(prev => ({
           ...prev,
           userForm: {
             name: item.name || '',
             username: item.username || '',
             email: item.email || '',
-            password: '', // Ne pas pré-remplir le mot de passe
+            password: '',
             role: item.role || 'user',
             companyId: item.companyId || '',
             permissions: item.permissions || {}
           }
         }));
       } else if (type.toLowerCase() === 'company') {
-        // Pour une entreprise
         setForms(prev => ({
           ...prev,
           companyForm: {
@@ -376,7 +405,6 @@ const SamaFact = () => {
         }));
       }
     } else {
-      // Mode ajout - réinitialisation
       if (type.toLowerCase() === 'user') {
         setForms(prev => ({
           ...prev,
@@ -411,12 +439,13 @@ const SamaFact = () => {
       modalMode: item ? 'edit' : 'add'
     }));
   };
+
   const openPasswordModal = (type, item) => {
     setUi(prev => ({
       ...prev,
       showPasswordModal: true,
-      selectedItem: item, // item devrait être un objet ici
-      modalType: type // vous pouvez ajouter ceci si besoin
+      selectedItem: item,
+      modalType: type
     }));
   };
 
@@ -436,7 +465,6 @@ const SamaFact = () => {
     const matchesRole = ui.filters.role === 'all' || user.role === ui.filters.role;
     return matchesSearch && matchesRole;
   });
-
 
   const getRoleLabel = (role) => {
     switch (role) {
@@ -459,7 +487,6 @@ const SamaFact = () => {
     }
   };
 
-
   if (!isSuperAdmin()) {
     return navigate('/access-denied');
   }
@@ -474,19 +501,16 @@ const SamaFact = () => {
 
         <nav className="sidebar-nav">
           <button
-            className={`nav-item ${ui.activeTab === "users" ? "active" : ""}`}
-            onClick={() => navigate("/")}
+            className={`nav-item ${ui.activeTab === "dashboard" ? "active" : ""}`}
+            onClick={() => navigateToTab("dashboard")}
           >
             <FiHome className="nav-icon" />
             <span>SamaF@ct</span>
           </button>
 
           <button
-            className={`nav-item ${ui.activeTab === "companies" ? "active" : ""
-              }`}
-            onClick={() =>
-              setUi((prev) => ({ ...prev, activeTab: "companies" }))
-            }
+            className={`nav-item ${ui.activeTab === "companies" ? "active" : ""}`}
+            onClick={() => navigateToTab("companies")}
           >
             <FaBuilding className="nav-icon" />
             <span>Entreprises</span>
@@ -494,7 +518,7 @@ const SamaFact = () => {
 
           <button
             className={`nav-item ${ui.activeTab === "users" ? "active" : ""}`}
-            onClick={() => setUi((prev) => ({ ...prev, activeTab: "users" }))}
+            onClick={() => navigateToTab("users")}
           >
             <FiUsers className="nav-icon" />
             <span>Utilisateurs</span>
@@ -531,11 +555,17 @@ const SamaFact = () => {
         <header className="dashboard-topbar">
           <div className="topbar-title">
             <h2>
-              {ui.activeTab === "companies" ? (
+              {ui.activeTab === "dashboard" && (
+                <>
+                  <FiHome /> Tableau de bord
+                </>
+              )}
+              {ui.activeTab === "companies" && (
                 <>
                   <FaBuilding /> Gestion des Entreprises
                 </>
-              ) : (
+              )}
+              {ui.activeTab === "users" && (
                 <>
                   <FiUsers /> Gestion des Utilisateurs
                 </>
@@ -543,7 +573,9 @@ const SamaFact = () => {
             </h2>
             <p className="breadcrumb">
               Dashboard /{" "}
-              {ui.activeTab === "companies" ? "Entreprises" : "Utilisateurs"}
+              {ui.activeTab === "dashboard" && "Tableau de bord"}
+              {ui.activeTab === "companies" && "Entreprises"}
+              {ui.activeTab === "users" && "Utilisateurs"}
             </p>
           </div>
 
@@ -552,10 +584,13 @@ const SamaFact = () => {
               <FaSearch className="search-icon" />
               <input
                 type="text"
-                placeholder={`Rechercher ${ui.activeTab === "companies"
-                  ? "une entreprise..."
-                  : "un utilisateur..."
-                  }`}
+                placeholder={
+                  ui.activeTab === "dashboard" 
+                    ? "Rechercher..." 
+                    : ui.activeTab === "companies"
+                    ? "Rechercher une entreprise..."
+                    : "Rechercher un utilisateur..."
+                }
                 value={ui.searchTerm}
                 onChange={(e) =>
                   setUi((prev) => ({ ...prev, searchTerm: e.target.value }))
@@ -563,205 +598,214 @@ const SamaFact = () => {
               />
             </div>
 
-            <button
-              className="primary-btn"
-              onClick={() =>
-                openModal(ui.activeTab === "companies" ? "Company" : "User")
-              }
-            >
-              <FaPlus />
-              <span>
-                Ajouter{" "}
-                {ui.activeTab === "companies"
-                  ? "une entreprise"
-                  : "un utilisateur"}
-              </span>
-            </button>
+            {ui.activeTab !== "dashboard" && (
+              <button
+                className="primary-btn"
+                onClick={() =>
+                  openModal(ui.activeTab === "companies" ? "Company" : "User")
+                }
+              >
+                <FaPlus />
+                <span>
+                  Ajouter{" "}
+                  {ui.activeTab === "companies"
+                    ? "une entreprise"
+                    : "un utilisateur"}
+                </span>
+              </button>
+            )}
           </div>
         </header>
 
-        {/* Stats Cards */}
-        <section className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon bg-blue">
-              <FaBuilding />
-            </div>
-            <div className="stat-info">
-              <h3>Entreprises</h3>
-              <div className="stat-numbers">
-                <span className="main-value">{data.stats.totalCompanies}</span>
-                <span className="secondary-value">
-                  {data.stats.activeCompanies} actives
-                </span>
+        {/* Contenu conditionnel basé sur l'onglet actif */}
+        {ui.activeTab === "dashboard" && (
+          <>
+            {/* Stats Cards */}
+            <section className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon bg-blue">
+                  <FaBuilding />
+                </div>
+                <div className="stat-info">
+                  <h3>Entreprises</h3>
+                  <div className="stat-numbers">
+                    <span className="main-value">{data.stats.totalCompanies}</span>
+                    <span className="secondary-value">
+                      {data.stats.activeCompanies} actives
+                    </span>
+                  </div>
+                  <div className="stat-trend positive">
+                    <FaChartLine /> +{data.stats.monthlyGrowth} ce mois
+                  </div>
+                </div>
               </div>
-              <div className="stat-trend positive">
-                <FaChartLine /> +{data.stats.monthlyGrowth} ce mois
-              </div>
-            </div>
-          </div>
 
-          <div className="stat-card">
-            <div className="stat-icon bg-purple">
-              <FaUsers />
-            </div>
-            <div className="stat-info">
-              <h3>Utilisateurs</h3>
-              <div className="stat-numbers">
-                <span className="main-value">{data.stats.totalUsers}</span>
-                <span className="secondary-value">
-                  {data.stats.adminsCount} admins
-                </span>
+              <div className="stat-card">
+                <div className="stat-icon bg-purple">
+                  <FaUsers />
+                </div>
+                <div className="stat-info">
+                  <h3>Utilisateurs</h3>
+                  <div className="stat-numbers">
+                    <span className="main-value">{data.stats.totalUsers}</span>
+                    <span className="secondary-value">
+                      {data.stats.adminsCount} admins
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="stat-card">
-            <div className="stat-icon bg-orange">
-              <FaBell />
-            </div>
-            <div className="stat-info">
-              <h3>Activité</h3>
-              <div className="stat-numbers">
-                <span className="main-value">30</span>
-                <span className="secondary-value">jours</span>
+              <div className="stat-card">
+                <div className="stat-icon bg-orange">
+                  <FaBell />
+                </div>
+                <div className="stat-info">
+                  <h3>Activité</h3>
+                  <div className="stat-numbers">
+                    <span className="main-value">30</span>
+                    <span className="secondary-value">jours</span>
+                  </div>
+                  <div className="stat-trend">5 nouvelles entreprises</div>
+                </div>
               </div>
-              <div className="stat-trend">5 nouvelles entreprises</div>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* Charts Section */}
-        <section className="charts-section">
-          <div className="chart-card">
-            <div className="chart-header">
+            {/* Charts Section */}
+            <section className="charts-section">
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>
+                    <FiBarChart2 /> Entreprises créées par mois
+                  </h3>
+                  <select className="chart-filter">
+                    <option>Cette année</option>
+                    <option>6 derniers mois</option>
+                    <option>30 derniers jours</option>
+                  </select>
+                </div>
+                <div className="chart-container">
+                  <BarChart data={data.charts.companiesByMonth} />
+                </div>
+              </div>
+
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>
+                    <FiPieChart /> Répartition des utilisateurs
+                  </h3>
+                </div>
+                <div className="chart-container">
+                  <PieChart data={data.charts.usersByRole} />
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* Section Tables pour les onglets Companies et Users */}
+        {(ui.activeTab === "companies" || ui.activeTab === "users") && (
+          <section className="data-section">
+            <div className="section-header">
               <h3>
-                <FiBarChart2 /> Entreprises créées par mois
+                {ui.activeTab === "companies"
+                  ? "Liste des entreprises"
+                  : "Liste des utilisateurs"}
               </h3>
-              <select className="chart-filter">
-                <option>Cette année</option>
-                <option>6 derniers mois</option>
-                <option>30 derniers jours</option>
-              </select>
-            </div>
-            <div className="chart-container">
-              <BarChart data={data.charts.companiesByMonth} />
-            </div>
-          </div>
 
-          <div className="chart-card">
-            <div className="chart-header">
-              <h3>
-                <FiPieChart /> Répartition des utilisateurs
-              </h3>
-            </div>
-            <div className="chart-container">
-              <PieChart data={data.charts.usersByRole} />
-            </div>
-          </div>
-        </section>
+              <div className="section-filters">
+                {ui.activeTab === "companies" ? (
+                  <select
+                    value={ui.filters.status}
+                    onChange={(e) =>
+                      setUi((prev) => ({
+                        ...prev,
+                        filters: { ...prev.filters, status: e.target.value },
+                      }))
+                    }
+                  >
+                    {["all", "active", "suspended"].map((status) => (
+                      <option key={status} value={status}>
+                        {status === "all"
+                          ? "Tous les statuts"
+                          : status === "active"
+                            ? "Actives"
+                            : "Suspendues"}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={ui.filters.role}
+                    onChange={(e) =>
+                      setUi((prev) => ({
+                        ...prev,
+                        filters: { ...prev.filters, role: e.target.value },
+                      }))
+                    }
+                  >
+                    {[
+                      "all",
+                      "superadmin",
+                      "admin",
+                      "charge_compte",
+                      "comptable",
+                      "lecteur",
+                      "user",
+                    ].map((role) => (
+                      <option key={role} value={role}>
+                        {getRoleLabel(role)}
+                      </option>
+                    ))}
+                  </select>
+                )}
 
-        {/* Data Table Section */}
-        <section className="data-section">
-          <div className="section-header">
-            <h3>
-              {ui.activeTab === "companies"
-                ? "Liste des entreprises"
-                : "Liste des utilisateurs"}
-            </h3>
-
-            <div className="section-filters">
-              {ui.activeTab === "companies" ? (
                 <select
-                  value={ui.filters.status}
+                  value={ui.filters.dateRange}
                   onChange={(e) =>
                     setUi((prev) => ({
                       ...prev,
-                      filters: { ...prev.filters, status: e.target.value },
+                      filters: { ...prev.filters, dateRange: e.target.value },
                     }))
                   }
                 >
-                  {["all", "active", "suspended"].map((status) => (
-                    <option key={status} value={status}>
-                      {status === "all"
-                        ? "Tous les statuts"
-                        : status === "active"
-                          ? "Actives"
-                          : "Suspendues"}
+                  {["all", "month", "year"].map((range) => (
+                    <option key={range} value={range}>
+                      {range === "all"
+                        ? "Toutes les dates"
+                        : range === "month"
+                          ? "Ce mois-ci"
+                          : "Cette année"}
                     </option>
                   ))}
                 </select>
-              ) : (
-                <select
-                  value={ui.filters.role}
-                  onChange={(e) =>
-                    setUi((prev) => ({
-                      ...prev,
-                      filters: { ...prev.filters, role: e.target.value },
-                    }))
-                  }
-                >
-                  {[
-                    "all",
-                    "superadmin",
-                    "admin",
-                    "charge_compte",
-                    "comptable",
-                    "lecteur",
-                    "user",
-                  ].map((role) => (
-                    <option key={role} value={role}>
-                      {getRoleLabel(role)}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <select
-                value={ui.filters.dateRange}
-                onChange={(e) =>
-                  setUi((prev) => ({
-                    ...prev,
-                    filters: { ...prev.filters, dateRange: e.target.value },
-                  }))
-                }
-              >
-                {["all", "month", "year"].map((range) => (
-                  <option key={range} value={range}>
-                    {range === "all"
-                      ? "Toutes les dates"
-                      : range === "month"
-                        ? "Ce mois-ci"
-                        : "Cette année"}
-                  </option>
-                ))}
-              </select>
+              </div>
             </div>
-          </div>
 
-          {ui.activeTab === 'companies' ? (
-            <CompanyTable
-              companies={filteredCompanies}
-              users={data.users || []}
-              onDelete={handleDelete}
-              onToggleStatus={handleToggleStatus}
-              onEdit={(type, item) => openModal(type, item)} // type et item
-              onPasswordReset={(type, item) => openPasswordModal(type, item)} // type et item
-              getRoleLabel={getRoleLabel}
-            />
-          ) : (
-            <UserTable
-              users={filteredUsers}
-              companies={data.companies}
-              onDelete={handleDelete}
-              onEdit={(type, item) => openModal(type, item)} // type et item
-              onPasswordReset={(type, item) => openPasswordModal(type, item)} // type et item
-              getRoleLabel={getRoleLabel}
-            />
-          )}
-        </section>
+            {ui.activeTab === 'companies' ? (
+              <CompanyTable
+                companies={filteredCompanies}
+                users={data.users || []}
+                onDelete={handleDelete}
+                onToggleStatus={handleToggleStatus}
+                onEdit={(type, item) => openModal(type, item)}
+                onPasswordReset={(type, item) => openPasswordModal(type, item)}
+                getRoleLabel={getRoleLabel}
+              />
+            ) : (
+              <UserTable
+                users={filteredUsers}
+                companies={data.companies}
+                onDelete={handleDelete}
+                onEdit={(type, item) => openModal(type, item)}
+                onPasswordReset={(type, item) => openPasswordModal(type, item)}
+                getRoleLabel={getRoleLabel}
+              />
+            )}
+          </section>
+        )}
       </main>
 
-      {/* Modals (restent identiques) */}
+      {/* Modals */}
       <CompanyModal
         visible={ui.showCompanyModal}
         onClose={() => setUi((prev) => ({ ...prev, showCompanyModal: false }))}

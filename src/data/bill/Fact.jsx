@@ -97,8 +97,7 @@ const transformToLegacyFormat = (invoiceData) => {
   };
 };
 
-// Composant Header AMÉLIORÉ
-// EditorHeader - Modifiez pour accepter companyInfo
+// EditorHeader 
 const EditorHeader = ({
   invoice,
   onSave,
@@ -108,7 +107,8 @@ const EditorHeader = ({
   onTogglePreview,
   onBack,
   pdfData,
-  companyInfo // ← Ajoutez ce paramètre
+  companyInfo,
+  isUpdate
 }) => {
   return (
     <header className="ie-header">
@@ -148,7 +148,7 @@ const EditorHeader = ({
         {/* Bouton Enregistrer */}
         <button
           onClick={() => onSave()}
-          disabled={saving}
+          disabled={saving || (isSaved && !isUpdate)} // ← AJOUTEZ LA CONDITION
           className="ie-btn-save ie-button"
         >
           {saving ? (
@@ -205,14 +205,6 @@ const HorizontalNavigation = ({ activeSection, onSectionChange, invoice }) => {
 
     },
     {
-      id: 'details',
-      label: '📄 Détails',
-      completed: !!invoice?.number && !!invoice?.date,
-      description: 'Informations document',
-      quote: 'Les détails donnent vie à l’œuvre.'
-
-    },
-    {
       id: 'items',
       label: '📦 Articles',
       completed: invoice?.items?.length > 0,
@@ -226,7 +218,15 @@ const HorizontalNavigation = ({ activeSection, onSectionChange, invoice }) => {
       completed: true,
       description: 'Paramètres',
       quote: 'Ajuster, c’est perfectionner.'
-    }
+    },
+    {
+      id: 'details',
+      label: '📄 Détails',
+      completed: !!invoice?.number && !!invoice?.date,
+      description: 'Informations document',
+      quote: 'Les détails donnent vie à l’œuvre.'
+
+    },
   ];
   const currentSection = sections.find(s => s.id === activeSection);
   const [rippleKey, setRippleKey] = React.useState(0);
@@ -399,14 +399,42 @@ const ClientSection = ({ clients = [], selectedClient, onClientChange, error }) 
 };
 
 // Section Détails
-const InvoiceDetailsSection = ({ data, setData, errors, generateInvoiceNumber }) => {
+const InvoiceDetailsSection = ({
+  data,
+  setData,
+  errors,
+  generateInvoiceNumber,
+  currentUser // ← AJOUTEZ CE PARAMETRE
+}) => {
   const documentTypes = [
     { value: 'facture', label: 'Facture', icon: '📄' },
     { value: 'devis', label: 'Devis', icon: '📝' },
     { value: 'avoir', label: 'Avoir', icon: '🔄' }
   ];
 
+  // Fonctions pour vérifier les permissions
+  const canEditType = () => {
+    // Admin, supadmin et superadmin peuvent modifier
+    return ['admin', 'supadmin', 'superadmin'].includes(currentUser?.role);
+  };
+
+  const canEditNumber = () => {
+    // Uniquement supadmin et superadmin peuvent modifier le numéro
+    return ['supadmin', 'superadmin'].includes(currentUser?.role);
+  };
+
+  const canEditDates = () => {
+    // Admin, supadmin et superadmin peuvent modifier
+    return ['admin', 'supadmin', 'superadmin'].includes(currentUser?.role);
+  };
+
   const handleDateChange = async (e) => {
+    // Vérifier la permission avant de modifier
+    if (!canEditDates()) {
+      alert("Vous n'avez pas la permission de modifier la date");
+      return;
+    }
+
     const newDate = e.target.value;
 
     try {
@@ -433,6 +461,12 @@ const InvoiceDetailsSection = ({ data, setData, errors, generateInvoiceNumber })
   };
 
   const handleTypeChange = async (newType) => {
+    // Vérifier la permission avant de modifier
+    if (!canEditType()) {
+      alert("Vous n'avez pas la permission de modifier le type de document");
+      return;
+    }
+
     try {
       const newNumber = await generateInvoiceNumber(new Date(data.facture.Date[0]), newType);
 
@@ -461,9 +495,21 @@ const InvoiceDetailsSection = ({ data, setData, errors, generateInvoiceNumber })
       <div className="ie-section-header">
         <h2>Détails du document</h2>
         <p>Configurez les informations principales</p>
+        {/* Indicateur de permissions */}
+        <div className="ie-permissions-info" style={{
+          marginTop: '0.5rem',
+          fontSize: '0.85rem',
+          color: 'var(--text-light)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <i className="fas fa-lock" style={{ fontSize: '0.8rem' }}></i>
+        </div>
       </div>
 
       <div className="ie-details-grid">
+        {/* Type de document */}
         <div className="ie-form-group">
           <label>Type de document *</label>
           <div className="ie-type-selector">
@@ -471,56 +517,163 @@ const InvoiceDetailsSection = ({ data, setData, errors, generateInvoiceNumber })
               <button
                 key={type.value}
                 type="button"
-                className={`ie-type-option ${data.facture.Type?.[0] === type.value ? 'active' : ''}`}
-                onClick={() => handleTypeChange(type.value)}
+                className={`ie-type-option ${data.facture.Type?.[0] === type.value ? 'active' : ''} ${!canEditType() ? 'disabled' : ''}`}
+                onClick={() => canEditType() ? handleTypeChange(type.value) : null}
+                disabled={!canEditType()}
+                title={!canEditType() ? "Vous n'avez pas la permission de modifier" : ""}
               >
                 <span className="ie-type-icon">{type.icon}</span>
                 <span className="ie-type-label">{type.label}</span>
+                {!canEditType() && (
+                  <span className="ie-readonly-badge">Lecture seule</span>
+                )}
               </button>
             ))}
           </div>
+          {!canEditType() && (
+            <p className="ie-field-hint" style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-light)',
+              marginTop: '0.25rem',
+              fontStyle: 'italic'
+            }}>
+              Contactez un administrateur pour modifier
+            </p>
+          )}
         </div>
 
+        {/* Numéro de document */}
         <div className="ie-form-group">
           <label>Numéro de document *</label>
-          <input
-            type="text"
-            value={data.facture.Numéro?.[0] || ''}
-            onChange={(e) => setData({
-              ...data,
-              facture: {
-                ...data.facture,
-                Numéro: [e.target.value]
-              }
-            })}
-            className={errors?.number ? 'error' : ''}
-            placeholder="FACT-2024-001"
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              value={data.facture.Numéro?.[0] || ''}
+              onChange={(e) => {
+
+                setData({
+                  ...data,
+                  facture: {
+                    ...data.facture,
+                    Numéro: [e.target.value]
+                  }
+                });
+              }}
+              className={`ie-input ${errors?.number ? 'error' : ''} ${!canEditNumber() ? 'disabled' : ''}`}
+              placeholder="FACT-2024-001"
+              disabled={!canEditNumber()}
+              readOnly={!canEditNumber()}
+              style={{
+                backgroundColor: !canEditNumber() ? 'var(--background-light)' : 'white',
+                cursor: !canEditNumber() ? 'not-allowed' : 'text'
+              }}
+            />
+            {!canEditNumber() && (
+              <div className="ie-input-lock" style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+                fontSize: '0.9rem'
+              }}>
+                <i className="fas fa-lock"></i>
+              </div>
+            )}
+          </div>
           {errors?.number && <span className="ie-field-error">{errors.number}</span>}
         </div>
 
+        {/* Date d'émission */}
         <div className="ie-form-group">
           <label>Date d'émission *</label>
-          <input
-            type="date"
-            value={data.facture.Date?.[0] || ''}
-            onChange={handleDateChange}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="date"
+              value={data.facture.Date?.[0] || ''}
+              onChange={handleDateChange}
+              className={`ie-input ${!canEditDates() ? 'disabled' : ''}`}
+              disabled={!canEditDates()}
+              readOnly={!canEditDates()}
+              style={{
+                backgroundColor: !canEditDates() ? 'var(--background-light)' : 'white',
+                cursor: !canEditDates() ? 'not-allowed' : 'text'
+              }}
+            />
+            {!canEditDates() && (
+              <div className="ie-input-lock" style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+                fontSize: '0.9rem'
+              }}>
+                <i className="fas fa-lock"></i>
+              </div>
+            )}
+          </div>
+          {!canEditDates() && (
+            <p className="ie-field-hint" style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-light)',
+              marginTop: '0.25rem'
+            }}>
+              Contactez un administrateur pour modifier
+            </p>
+          )}
         </div>
 
+        {/* Date d'échéance */}
         <div className="ie-form-group">
           <label>Date d'échéance</label>
-          <input
-            type="date"
-            value={data.facture.DateEcheance?.[0] || ''}
-            onChange={(e) => setData({
-              ...data,
-              facture: {
-                ...data.facture,
-                DateEcheance: [e.target.value]
-              }
-            })}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="date"
+              value={data.facture.DateEcheance?.[0] || ''}
+              onChange={(e) => {
+                if (!canEditDates()) {
+                  alert("Vous n'avez pas la permission de modifier la date d'échéance");
+                  return;
+                }
+                setData({
+                  ...data,
+                  facture: {
+                    ...data.facture,
+                    DateEcheance: [e.target.value]
+                  }
+                });
+              }}
+              className={`ie-input ${!canEditDates() ? 'disabled' : ''}`}
+              disabled={!canEditDates()}
+              readOnly={!canEditDates()}
+              style={{
+                backgroundColor: !canEditDates() ? 'var(--background-light)' : 'white',
+                cursor: !canEditDates() ? 'not-allowed' : 'text'
+              }}
+            />
+            {!canEditDates() && (
+              <div className="ie-input-lock" style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+                fontSize: '0.9rem'
+              }}>
+                <i className="fas fa-lock"></i>
+              </div>
+            )}
+          </div>
+          {!canEditDates() && (
+            <p className="ie-field-hint" style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-light)',
+              marginTop: '0.25rem'
+            }}>
+              Contactez un administrateur pour modifier
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -528,7 +681,7 @@ const InvoiceDetailsSection = ({ data, setData, errors, generateInvoiceNumber })
 };
 
 // Section Articles
-const ItemsSection = ({ data, setData, error }) => {
+const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [currentItem, setCurrentItem] = useState({
     description: '',
@@ -752,8 +905,21 @@ const ItemsSection = ({ data, setData, error }) => {
         <p>Ajoutez les produits et services facturés</p>
       </div>
 
-      {error && <div className="ie-error-message">{error}</div>}
 
+      <div className="ie-setting-group">
+        <h3>Objet du document</h3>
+        <div className="ie-form-group">
+          <input
+            type="text"
+            value={objet}
+            onChange={(e) => setObjet(e.target.value)}
+            placeholder="Objet de la facture..."
+            className="ie-input"
+          />
+        </div>
+      </div>
+
+      {error && <div className="ie-error-message">{error}</div>}
       {(currentItem.quantity && currentItem.unitPrice) && (
         <div className="ie-realtime-preview">
           <div className="ie-preview-card">
@@ -1020,19 +1186,6 @@ const SettingsSection = ({ selectedRibs, setSelectedRibs, objet, setObjet, showS
 
       <div className="ie-settings-grid">
         <div className="ie-setting-group">
-          <h3>Objet du document</h3>
-          <div className="ie-form-group">
-            <input
-              type="text"
-              value={objet}
-              onChange={(e) => setObjet(e.target.value)}
-              placeholder="Objet de la facture..."
-              className="ie-input"
-            />
-          </div>
-        </div>
-
-        <div className="ie-setting-group">
           <h3>Coordonnées bancaires</h3>
           <div className="ie-rib-selector">
             <label className="ie-rib-option">
@@ -1189,6 +1342,8 @@ const InvoiceEditor = () => {
   const [objet, setObjet] = useState("");
   const [showSignature, setShowSignature] = useState(true);
 
+  const [isUpdate, setIsUpdate] = useState(false);
+
   // Chargement initial des données
   useEffect(() => {
     const loadClients = async () => {
@@ -1260,14 +1415,13 @@ const InvoiceEditor = () => {
       }
     };
 
-    const initializeData = async () => { // ← DÉFINISSEZ LA FONCTION ICI
+    const initializeData = async () => {
       try {
         setLoading(true);
 
         // Chargez les clients et les données de l'entreprise en parallèle
         const [clientsData] = await Promise.all([
           loadClients(),
-          // loadCompanyInfo() - on l'appellera séparément
         ]);
         setClients(clientsData);
 
@@ -1275,14 +1429,14 @@ const InvoiceEditor = () => {
         await loadCompanyInfo();
 
         let invoiceData;
+        let isUpdateMode = false; // ← AJOUTEZ CETTE VARIABLE
 
         // MODE MODIFICATION/DUPLICATION depuis location.state
         if (location.state?.facture) {
-          // Utilisez transformFactureData du service existant
           invoiceData = invoiceService.transformFactureData(location.state.facture);
           setIsSaved(!!location.state.facture.id);
+          isUpdateMode = !!location.state.facture.id; // ← METTRE À JOUR
 
-          // Récupérez les états supplémentaires
           setSelectedClientId(location.state.facture.clientId || "");
           setSelectedRibs(location.state.facture.ribs || []);
           setObjet(location.state.facture.objet || "");
@@ -1294,8 +1448,8 @@ const InvoiceEditor = () => {
           if (result.success) {
             invoiceData = invoiceService.transformFactureData(result.data);
             setIsSaved(true);
+            isUpdateMode = true; // ← C'EST UNE MODIFICATION
 
-            // Récupérez les états supplémentaires
             setSelectedClientId(result.data.clientId || "");
             setSelectedRibs(result.data.ribs || []);
             setObjet(result.data.objet || "");
@@ -1328,6 +1482,7 @@ const InvoiceEditor = () => {
             }
           };
           setIsSaved(false);
+          isUpdateMode = false; // ← C'EST UNE NOUVELLE FACTURE
 
           // Si un client est passé via location.state
           if (location.state?.client) {
@@ -1343,6 +1498,9 @@ const InvoiceEditor = () => {
         }
 
         setData(invoiceData);
+        setIsUpdate(isUpdateMode); // ← METTRE À JOUR L'ÉTAT
+
+
 
       } catch (error) {
         console.error('❌ Erreur initialisation:', error);
@@ -1380,6 +1538,11 @@ const InvoiceEditor = () => {
   }, [id, currentUser?.companyId, location.state]);
 
   const saveInvoice = async () => {
+    if (isSaved && !isUpdate) {
+      alert("Cette facture est déjà enregistrée. Créez une nouvelle facture si nécessaire.");
+      return;
+    }
+
     if (!validateInvoice()) return;
 
     setSaving(true);
@@ -1558,6 +1721,8 @@ const InvoiceEditor = () => {
         onBack={() => navigate('/')}
         pdfData={getPdfData()}
         companyInfo={companyInfo} // ← Ajoutez cette ligne
+        isUpdate={isUpdate} // ← AJOUTEZ CETTE LIGNE
+
       />
 
       <div className="ie-main-layout">
@@ -1611,6 +1776,8 @@ const InvoiceEditor = () => {
                 generateInvoiceNumber={(date, type) =>
                   invoiceService.generateInvoiceNumber(currentUser.companyId, date, type)
                 }
+                currentUser={currentUser}
+
               />
             )}
 
@@ -1619,6 +1786,8 @@ const InvoiceEditor = () => {
                 data={data}
                 setData={setData}
                 error={errors.items}
+                objet={objet}
+                setObjet={setObjet}
               />
             )}
 

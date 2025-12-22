@@ -364,16 +364,57 @@ const Mentafact = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    const result = await clientService.updateClient(
-      companyId,
-      editingClient.id,
-      editingClient
-    );
-    if (result.success) {
-      alert(result.message);
-      cancelEdit();
-    } else {
-      alert(result.message);
+
+    try {
+      const isNameChanged = editingClient?.nom !== client.nom;
+      let anciensNoms = [...(editingClient.anciensNoms || [])];
+
+      // Si le nom change, l'ajouter à l'historique
+      if (isNameChanged && editingClient?.nom) {
+        anciensNoms.push({
+          nom: editingClient.nom,
+          date: new Date().toISOString(),
+          userId: currentUser.uid
+        });
+      }
+
+      const updatedClient = {
+        ...editingClient,
+        anciensNoms,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Mettre à jour le client dans Firestore
+      const result = await clientService.updateClient(
+        companyId,
+        editingClient.id,
+        updatedClient
+      );
+
+      if (result.success) {
+        // Mettre à jour l'état local
+        setClients(prevClients =>
+          prevClients.map(c =>
+            c.id === editingClient.id ? updatedClient : c
+          )
+        );
+
+        alert(`Client "${updatedClient.nom}" mis à jour avec succès ✅`);
+
+        if (isNameChanged) {
+          alert(
+            `Note : Le nom a été changé de "${editingClient.nom}" à "${updatedClient.nom}".\n` +
+            `Les nouvelles factures utiliseront le nouveau nom, mais les anciennes garderont l'ancien nom.`
+          );
+        }
+
+        cancelEdit();
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Erreur mise à jour client:', error);
+      alert('Erreur lors de la mise à jour du client');
     }
   };
 
@@ -422,6 +463,22 @@ const Mentafact = () => {
   };
 
   const handleEdit = (client) => {
+    console.log("handleEdit called with client:", client);
+
+    // Vérifier si le nom va changer
+    if (editingClient?.nom !== client.nom) {
+      const confirmMessage = `Vous allez modifier le nom du client de "${editingClient?.nom || client.nom}" à "${client.nom}".\n\n` +
+        `⚠️ Important :\n` +
+        `• Les nouvelles factures utiliseront le nouveau nom\n` +
+        `• Les anciennes factures garderont l'ancien nom\n` +
+        `• Souhaitez-vous continuer ?`;
+
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    }
+
+    // Mettre à jour l'état d'édition
     setEditingClient({ ...client });
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -429,6 +486,13 @@ const Mentafact = () => {
 
   // Annuler l'édition d'un client
   const cancelEdit = () => {
+    // Demander confirmation si des changements ont été faits
+    if (editingClient && (editingClient.nom !== client.nom || editingClient.email !== client.email)) {
+      if (!window.confirm("Voulez-vous annuler les modifications ?")) {
+        return;
+      }
+    }
+
     setEditingClient(null);
     setIsEditing(false);
   };
