@@ -1383,7 +1383,9 @@ const InvoiceEditor = () => {
           setCompanyInfo({
             name: companyData.name || 'Nom de l\'entreprise',
             logo: companyData.logo || '',
-            logoFileName: companyData.logoFileName || '', // ← AJOUTEZ CETTE LIGNE
+            logoFileName: companyData.logoFileName || '',
+            // AJOUT: Récupérer la signature
+            signatureFileName: companyData.signatureFileName || '',
             rcNumber: companyData.rcNumber || '',
             ninea: companyData.ninea || '',
             address: companyData.address || '',
@@ -1398,7 +1400,6 @@ const InvoiceEditor = () => {
             ribOther1Label: companyData.ribOther1Label || '',
             ribOther2: companyData.ribOther2 || '',
             ribOther2Label: companyData.ribOther2Label || '',
-            // AJOUTEZ CES CHAMPS CRITIQUES :
             invoiceColor: companyData.invoiceColor || '#218838',
             invoiceFont: companyData.invoiceFont || 'Helvetica',
             invoiceTemplate: companyData.invoiceTemplate || 'classic',

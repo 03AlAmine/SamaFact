@@ -1,9 +1,9 @@
 import React from 'react';
 import { Page, Text, View, Document, Image } from '@react-pdf/renderer';
 import n2words from 'n2words';
-import sign from '../../assets/sign.png';
 import { createPdfStyles } from './styles/pdfStyles';
-import defaultLogo from '../../assets/LIS.png'; // Logo par défaut
+import defaultLogo from '../../assets/logos/Mf.png'; // Logo par défaut
+import defaultSignature from '../../assets/signatures/signature_mf.png'; // Signature par défaut
 
 const InvoicePDF = ({
   data,
@@ -26,7 +26,9 @@ const InvoicePDF = ({
     ribOther2: "",
     ribOther2Label: "",
     invoiceColor: "#218838",
-    logoFileName: ""
+    logoFileName: "",
+    signatureFileName: "" // AJOUT: Champ pour la signature
+
   }
 }) => {
   // VÉRIFICATION DE SÉCURITÉ - Si data est null ou undefined
@@ -56,8 +58,26 @@ const InvoicePDF = ({
     }
   };
 
+  const getCompanySignature = () => {
+    // Si aucune signature configurée, utiliser la signature par défaut
+    if (!companyInfo.signatureFileName) {
+      return defaultSignature;
+    }
+
+    try {
+      // Essayer de charger la signature spécifique
+      const signature = require(`../../assets/signatures/${companyInfo.signatureFileName}`);
+      return signature;
+    } catch (error) {
+      console.warn(`Signature ${companyInfo.signatureFileName} non trouvée, utilisation de la signature par défaut`);
+      return defaultSignature;
+    }
+  };
+
   // Logo de l'entreprise
   const companyLogo = getCompanyLogo();
+  // Signature de l'entreprise (AJOUT)
+  const companySignature = getCompanySignature();
 
   // Créez les styles dynamiques AVEC la couleur de l'entreprise
   const pdfStyles = createPdfStyles(companyInfo.invoiceColor || "#218838");
@@ -291,7 +311,8 @@ const InvoicePDF = ({
             <View style={pdfStyles.signatureContainer}>
               <Image
                 style={pdfStyles.signatureImage}
-                src={sign} alt="Aucune signature"
+                src={companySignature} // Utilisez la signature dynamique
+                alt="Signature de l'entreprise"
               />
             </View>
           )}
@@ -453,7 +474,8 @@ const InvoicePDF = ({
         <View style={pdfStyles.signatureContainer}>
           <Image
             style={pdfStyles.signatureImage}
-            src={sign} alt="Aucune signature"
+            src={companySignature} // Utilisez la signature dynamique
+            alt="Signature de l'entreprise"
           />
         </View>
       )}

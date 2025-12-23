@@ -19,6 +19,13 @@ export const CompanyModal = ({
         'Samatech.jpg',
     ];
 
+    const availableSignatures = [
+        'signature_lis.png',
+        'signature_ncs.png',
+        'signature_samatech.png',
+        'signature_default.png',
+    ];
+
     const handleSubmit = (e) => {
         e.preventDefault();
         onSubmit(e);
@@ -34,6 +41,16 @@ export const CompanyModal = ({
             return null;
         }
     };
+    const getSignaturePreview = (fileName) => {
+        if (!fileName) return null;
+
+        try {
+            return require(`../assets/signatures/${fileName}`);
+        } catch (error) {
+            return null;
+        }
+    };
+
 
     // Gestionnaire d'erreur pour l'image
     const handleImageError = (e) => {
@@ -156,6 +173,69 @@ export const CompanyModal = ({
                         </div>
 
                         <div className="form-group">
+                            <label htmlFor="company-signature">Signature de l'entreprise</label>
+                            <div className="logo-input-group">
+                                <input
+                                    id="company-signature"
+                                    type="text"
+                                    className="form-control logo-input"
+                                    value={company.signatureFileName || ''}
+                                    onChange={(e) => onChange('signatureFileName', e.target.value)}
+                                    placeholder="ex: signature-entreprise.png"
+                                />
+
+                                {/* Liste déroulante des signatures disponibles */}
+                                <select
+                                    className="form-control logo-select"
+                                    value=""
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            onChange('signatureFileName', e.target.value);
+                                        }
+                                    }}
+                                >
+                                    <option value="">Choisir une signature existante...</option>
+                                    {availableSignatures.map((signature, index) => (
+                                        <option key={index} value={signature}>
+                                            {signature}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <small className="form-text text-muted">
+                                Nom du fichier signature. Le fichier doit être placé dans /assets/signatures/
+                            </small>
+
+                            {/* Aperçu de la signature */}
+                            {company.signatureFileName && (
+                                <div className="logo-preview mt-2">
+                                    <p className="mb-1">Aperçu de la signature :</p>
+                                    <div className="preview-container">
+                                        {getSignaturePreview(company.signatureFileName) ? (
+                                            <>
+                                                <img
+                                                    src={getSignaturePreview(company.signatureFileName)}
+                                                    alt="Aperçu signature"
+                                                    className="logo-preview-image"
+                                                    onError={handleImageError}
+                                                    style={{ maxHeight: '100px', border: '1px solid #ddd' }}
+                                                />
+                                                <div className="logo-not-found" style={{ display: 'none' }}>
+                                                    <span className="text-danger">⚠️ Signature non trouvée</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="logo-not-found">
+                                                <span className="text-danger">⚠️ Signature non trouvée</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+
+                        <div className="form-group">
                             <label htmlFor="company-status">Statut</label>
                             <select
                                 id="company-status"
@@ -228,17 +308,43 @@ export const UserModal = ({
     loading = false
 }) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [localUser, setLocalUser] = useState(user);
+
     const showCompanyField = !isSuperAdmin || user.role !== ROLES.SUPERADMIN;
     const availableCompanies = isSuperAdmin
         ? companies
         : companies.filter(c => c.id === currentUser?.companyId);
 
+    // Mettre à jour localUser quand les props changent
     useEffect(() => {
-        if (mode === 'add' && user.role) {
-            const perms = getPermissionsForRole(user.role);
+        setLocalUser(user);
+    }, [user]);
+
+    // Gérer la mise à jour des permissions quand le rôle change
+    useEffect(() => {
+        if (mode === 'add' && localUser.role) {
+            const perms = getPermissionsForRole(localUser.role);
+            // Mettre à jour localement d'abord
+            setLocalUser(prev => ({ ...prev, permissions: perms }));
+            // Puis notifier le parent
             onChange('permissions', perms);
         }
-    }, [mode, onChange, user.role]);
+    }, [localUser.role, mode, onChange]); // Retirer onChange des dépendances
+
+    const handleLocalChange = (field, value) => {
+        const updatedUser = { ...localUser, [field]: value };
+        setLocalUser(updatedUser);
+
+        // Pour les champs autres que permissions, notifier immédiatement le parent
+        if (field !== 'permissions') {
+            onChange(field, value);
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(localUser);
+    };
 
     if (!visible) return null;
 
@@ -250,18 +356,15 @@ export const UserModal = ({
                     <button className="modal-close" onClick={onClose} aria-label="Fermer">&times;</button>
                 </div>
                 <div className="modal-body">
-                    <form onSubmit={(e) => {
-                        e.preventDefault();
-                        onSubmit(user);
-                    }}>
+                    <form onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label htmlFor="user-name">Nom complet</label>
                             <input
                                 id="user-name"
                                 type="text"
                                 className="form-control"
-                                value={user.name || ''}
-                                onChange={(e) => onChange("name", e.target.value)}
+                                value={localUser.name || ''}
+                                onChange={(e) => handleLocalChange("name", e.target.value)}
                                 required
                                 autoFocus
                             />
@@ -272,8 +375,8 @@ export const UserModal = ({
                                 id="user-pseudo"
                                 type="text"
                                 className="form-control"
-                                value={user.username || ''}
-                                onChange={(e) => onChange("username", e.target.value)}
+                                value={localUser.username || ''}
+                                onChange={(e) => handleLocalChange("username", e.target.value)}
                                 required
                             />
                         </div>
@@ -284,8 +387,8 @@ export const UserModal = ({
                                 id="user-email"
                                 type="email"
                                 className="form-control"
-                                value={user.email || ''}
-                                onChange={(e) => onChange("email", e.target.value)}
+                                value={localUser.email || ''}
+                                onChange={(e) => handleLocalChange("email", e.target.value)}
                                 required
                             />
                         </div>
@@ -298,8 +401,8 @@ export const UserModal = ({
                                         id="user-password"
                                         type={showPassword ? "text" : "password"}
                                         className="form-control"
-                                        value={user.password || ""}
-                                        onChange={(e) => onChange("password", e.target.value)}
+                                        value={localUser.password || ""}
+                                        onChange={(e) => handleLocalChange("password", e.target.value)}
                                         required
                                         minLength="6"
                                         style={{ paddingRight: "40px" }}
@@ -321,7 +424,7 @@ export const UserModal = ({
                                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                                     </button>
                                 </div>
-                                <PasswordStrengthIndicator password={user.password} />
+                                <PasswordStrengthIndicator password={localUser.password} />
                             </div>
                         )}
 
@@ -331,8 +434,8 @@ export const UserModal = ({
                                 <select
                                     id="user-company"
                                     className="form-control"
-                                    value={user.companyId || ''}
-                                    onChange={(e) => onChange("companyId", e.target.value)}
+                                    value={localUser.companyId || ''}
+                                    onChange={(e) => handleLocalChange("companyId", e.target.value)}
                                     required
                                     disabled={availableCompanies.length === 1}
                                 >
@@ -359,8 +462,8 @@ export const UserModal = ({
                             <select
                                 id="user-role"
                                 className="form-control"
-                                value={user.role || ''}
-                                onChange={(e) => onChange("role", e.target.value)}
+                                value={localUser.role || ''}
+                                onChange={(e) => handleLocalChange("role", e.target.value)}
                             >
                                 <option value="admin">Administrateur</option>
                                 <option value="comptable">Comptable</option>
@@ -384,7 +487,7 @@ export const UserModal = ({
                             <button
                                 type="submit"
                                 className="btn btn-primary"
-                                disabled={loading || (showCompanyField && !user.companyId)}
+                                disabled={loading || (showCompanyField && !localUser.companyId)}
                             >
                                 {loading ? (
                                     <span className="spinner-border spinner-border-sm" />
@@ -401,7 +504,6 @@ export const UserModal = ({
         </div>
     );
 };
-
 UserModal.propTypes = {
     visible: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,

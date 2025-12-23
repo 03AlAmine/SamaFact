@@ -1,6 +1,7 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaLinkedin, FaBuilding, FaUser, FaInfoCircle, FaEyeSlash, FaEye, FaBan } from 'react-icons/fa';
 import './AuthForm.css';
 import logo from '../assets/Logo_Mf.png';
@@ -19,7 +20,6 @@ const AuthForm = ({ type }) => {
     const [isAdminVerified, setIsAdminVerified] = useState(false);
     const { login, signup } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
     const [activeForm, setActiveForm] = useState(type === 'register' ? 'auth-active' : '');
     const [showSuccess, setShowSuccess] = useState(false);
     const [username, setUsername] = useState('');

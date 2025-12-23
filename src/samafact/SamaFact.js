@@ -11,14 +11,11 @@ import { FiSettings, FiUsers, FiPieChart, FiBarChart2, FiHome } from 'react-icon
 
 import { CompanyTable, UserTable } from './Tables';
 import './SamaFact.css';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { message } from 'antd';
 import { userService } from '../services/userService';
 
 const SamaFact = () => {
   const { currentUser, isSuperAdmin, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // États principaux
   const [data, setData] = useState({
@@ -62,7 +59,9 @@ const SamaFact = () => {
       name: '',
       email: '',
       industry: '',
-      status: 'active',
+      logoFileName: '', 
+      signatureFileName: '', 
+      status: 'active'
     },
     userForm: {
       name: '',
@@ -78,38 +77,6 @@ const SamaFact = () => {
       confirmPassword: ''
     }
   });
-
-  // Synchroniser l'onglet actif avec l'URL
-  useEffect(() => {
-    const path = location.pathname;
-    if (path.includes('/companies') || path === '/companies') {
-      setUi(prev => ({ ...prev, activeTab: 'companies' }));
-    } else if (path.includes('/users') || path === '/users') {
-      setUi(prev => ({ ...prev, activeTab: 'users' }));
-    } else if (path === '/' || path.includes('/dashboard')) {
-      setUi(prev => ({ ...prev, activeTab: 'dashboard' }));
-    }
-  }, [location]);
-
-  // Fonctions de navigation
-  const navigateToTab = (tab) => {
-    setUi(prev => ({ ...prev, activeTab: tab }));
-    
-    // Naviguer vers la route correspondante
-    switch(tab) {
-      case 'dashboard':
-        navigate('/');
-        break;
-      case 'companies':
-        navigate('/companies');
-        break;
-      case 'users':
-        navigate('/users');
-        break;
-      default:
-        navigate('/');
-    }
-  };
 
   // Chargement des données
   useEffect(() => {
@@ -142,7 +109,7 @@ const SamaFact = () => {
     loadData();
   }, [isSuperAdmin]);
 
-  // Dans SamaFact.js - processCompanies
+  // Fonctions de traitement des données
   const processCompanies = (companiesSnapshot, usersData) => {
     return companiesSnapshot.docs.map(doc => ({
       id: doc.id,
@@ -150,7 +117,8 @@ const SamaFact = () => {
       email: doc.data().email || '',
       industry: doc.data().industry || '',
       status: doc.data().status || 'active',
-      logoFileName: doc.data().logoFileName || null,
+      logoFileName: doc.data().logoFileName || '',
+      signatureFileName: doc.data().signatureFileName || '',
       createdAt: doc.data().createdAt?.toDate() || new Date(),
       usersCount: usersData.filter(user => user.companyId === doc.id).length
     }));
@@ -248,6 +216,7 @@ const SamaFact = () => {
     try {
       const companyData = {
         ...forms.companyForm,
+        signatureFileName: forms.companyForm.signatureFileName || null,
         logoFileName: forms.companyForm.logoFileName || null,
         updatedAt: new Date(),
       };
@@ -274,7 +243,8 @@ const SamaFact = () => {
           email: '',
           industry: '',
           status: 'active',
-          logoFileName: ''
+          logoFileName: '',
+          signatureFileName: ''
         }
       }));
     } catch (error) {
@@ -401,6 +371,8 @@ const SamaFact = () => {
             email: item.email || '',
             industry: item.industry || '',
             status: item.status || 'active',
+            logoFileName: item.logoFileName || '', // Ajoutez ce champ
+            signatureFileName: item.signatureFileName || '' // Ajoutez ce champ
           }
         }));
       }
@@ -426,6 +398,8 @@ const SamaFact = () => {
             email: '',
             industry: '',
             status: 'active',
+            logoFileName: '',
+            signatureFileName: ''
           }
         }));
       }
@@ -487,8 +461,13 @@ const SamaFact = () => {
     }
   };
 
+  // Fonction de navigation simple (sans URL)
+  const navigateToTab = (tab) => {
+    setUi(prev => ({ ...prev, activeTab: tab }));
+  };
+
   if (!isSuperAdmin()) {
-    return navigate('/access-denied');
+    return <div>Accès refusé. Seuls les super administrateurs peuvent accéder à cette page.</div>;
   }
 
   return (
@@ -585,11 +564,11 @@ const SamaFact = () => {
               <input
                 type="text"
                 placeholder={
-                  ui.activeTab === "dashboard" 
-                    ? "Rechercher..." 
+                  ui.activeTab === "dashboard"
+                    ? "Rechercher..."
                     : ui.activeTab === "companies"
-                    ? "Rechercher une entreprise..."
-                    : "Rechercher un utilisateur..."
+                      ? "Rechercher une entreprise..."
+                      : "Rechercher un utilisateur..."
                 }
                 value={ui.searchTerm}
                 onChange={(e) =>
