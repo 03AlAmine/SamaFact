@@ -194,15 +194,15 @@ body::before {
   /* background: linear-gradient(135deg, var(--primary-light), transparent); */
 }
 
-
-
-.table-container, .clients-table {
+.table-container,
+.clients-table {
   position: relative;
   padding-left: 5px; /* espace pour la border */
 }
 
 /* Border left élégante */
-.table-container::before, .clients-table::before {
+.table-container::before,
+.clients-table::before {
   content: "";
   position: absolute;
   top: 0;
@@ -218,11 +218,8 @@ body::before {
     rgba(255, 193, 7, 0.9)
   );
 
-  box-shadow:
-    0 0 6px rgba(67, 97, 238, 0.35),
-    0 0 10px rgba(255, 193, 7, 0.25);
+  box-shadow: 0 0 6px rgba(67, 97, 238, 0.35), 0 0 10px rgba(255, 193, 7, 0.25);
 }
-
 
 table thead tr {
   position: relative;
@@ -249,10 +246,8 @@ table thead tr::after {
   box-shadow: 0 0 4px rgba(67, 97, 238, 0.25), 0 0 6px rgba(255, 193, 7, 0.2);
 }
 
-
 table tbody tr {
   position: relative;
-
 }
 
 table tbody tr::after {
@@ -275,9 +270,6 @@ table tbody tr::after {
 
   pointer-events: none;
 }
-
-
-
 
 /* Sort options */
 .sort-options {

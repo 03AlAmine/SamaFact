@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   FaUsers, FaEdit, FaTrash, FaBuilding, FaPlus, FaSearch,
   FaFileAlt, FaFileExcel, FaList, FaTh,
-  FaSortAlphaDown, FaIdCard, FaMoneyBillWave, FaCalendarAlt, FaEye
+  FaSortAlphaDown, FaIdCard, FaMoneyBillWave, FaCalendarAlt, FaEye,
+  FaChevronLeft, FaChevronRight
 } from "react-icons/fa";
 import empty_employee from '../assets/empty_employe.png';
 import '../css/EmployeePage.css';
@@ -10,6 +11,620 @@ import { EmployeeDetailsModal } from '../components/dialogs/EmployeeModal';
 import { Modal, Button } from "antd";
 import LoadingState from '../components/common/LoadingState';
 
+// COMPOSANTS RÉUTILISABLES
+const EmptyState = ({ onAddEmployee }) => (
+  <div className="empty-state">
+    <img src={empty_employee} alt="Aucun employé" className="empty-image" />
+    <h3>Aucun employé trouvé</h3>
+    <p>Commencez par créer votre premier employé</p>
+    <button className="primary-btn" onClick={onAddEmployee}>
+      <FaPlus /> Ajouter un employé
+    </button>
+  </div>
+);
+
+// FormField réutilisable
+const FormField = ({ label, required, ...props }) => (
+  <div className="form-group">
+    <label htmlFor={props.name} className="form-label">
+      {label} {required && <span className="required">*</span>}
+    </label>
+    <input id={props.name} className="form-input" {...props} />
+  </div>
+);
+
+const FormSelect = ({ label, options, ...props }) => (
+  <div className="form-group">
+    <label htmlFor={props.name} className="form-label">{label}</label>
+    <select id={props.name} className="form-input" {...props}>
+      {options.map(option => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+// Formulaires employé
+const EmployeeForm = ({
+  isEditing,
+  formData,
+  onSubmit,
+  onCancel,
+  onChange,
+  onEditChange
+}) => {
+  const primesFields = [
+    { name: "indemniteTransport", label: "Indemnité transport", value: formData.indemniteTransport || 26000 },
+    { name: "primePanier", label: "Prime panier", value: formData.primePanier || 0 },
+    { name: "indemniteResponsabilite", label: "Ind. responsabilité", value: formData.indemniteResponsabilite || 0 },
+    { name: "indemniteDeplacement", label: "Ind. déplacement", value: formData.indemniteDeplacement || 0 }
+  ];
+
+  return (
+    <form onSubmit={onSubmit} className="employee-form">
+      <div className="form-header">
+        <h2 className="form-title">
+          {isEditing ? <FaEdit /> : <FaPlus />}
+          {isEditing ? "Modifier l'employé" : "Ajouter un nouvel employé"}
+        </h2>
+        {!isEditing && (
+          <button type="button" className="primary-btn" onClick={onCancel}>
+            <FaPlus /> Fermer
+          </button>
+        )}
+      </div>
+
+      <div className="form-row">
+        <FormField
+          label="Nom"
+          name="nom"
+          value={formData.nom}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="Diop"
+        />
+        <FormField
+          label="Prénom"
+          name="prenom"
+          value={formData.prenom}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="Moussa"
+        />
+        <FormField
+          label="Adresse"
+          name="adresse"
+          value={formData.adresse}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="Dakar, Sénégal"
+        />
+      </div>
+
+      <div className="form-row">
+        <FormField
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="moussa@entreprise.com"
+        />
+        <FormField
+          label="Poste"
+          name="poste"
+          value={formData.poste}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="Développeur"
+        />
+        <FormField
+          label="Département"
+          name="departement"
+          value={formData.departement}
+          onChange={isEditing ? onEditChange : onChange}
+          placeholder="IT"
+        />
+      </div>
+
+      <div className="form-row">
+        <FormField
+          label="Matricule"
+          name="matricule"
+          value={formData.matricule}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="EMP001"
+        />
+        <FormSelect
+          label="Contrat"
+          name="typeContrat"
+          value={formData.typeContrat || "CDI"}
+          onChange={isEditing ? onEditChange : onChange}
+          options={[
+            { value: "CDI", label: "CDI" },
+            { value: "CDD", label: "CDD" },
+            { value: "Stage", label: "Stage" },
+            { value: "Freelance", label: "Freelance" }
+          ]}
+        />
+        <FormField
+          label="Date embauche"
+          name="dateEmbauche"
+          type="date"
+          value={formData.dateEmbauche || ""}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+        />
+      </div>
+
+      <div className="form-row">
+        <FormField
+          label="Salaire brut"
+          name="salaireBase"
+          type="number"
+          value={formData.salaireBase}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+        />
+        <FormField
+          label="Catégorie"
+          name="categorie"
+          value={formData.categorie}
+          onChange={isEditing ? onEditChange : onChange}
+          required
+          placeholder="Cadre"
+        />
+        <FormField
+          label="Nbre parts"
+          name="nbreofParts"
+          type="number"
+          value={formData.nbreofParts || 1}
+          onChange={isEditing ? onEditChange : onChange}
+        />
+      </div>
+
+      <div className="form-section-title">
+        <FaMoneyBillWave /> Primes et Indemnités
+      </div>
+
+      <div className="form-row">
+        {primesFields.slice(0, 2).map(field => (
+          <FormField
+            key={field.name}
+            label={field.label}
+            name={field.name}
+            type="number"
+            value={field.value}
+            onChange={isEditing ? onEditChange : onChange}
+          />
+        ))}
+      </div>
+
+      <div className="form-row">
+        {primesFields.slice(2).map(field => (
+          <FormField
+            key={field.name}
+            label={field.label}
+            name={field.name}
+            type="number"
+            value={field.value}
+            onChange={isEditing ? onEditChange : onChange}
+          />
+        ))}
+      </div>
+
+      {isEditing ? (
+        <div className="form-actions">
+          <button type="button" onClick={onCancel} className="cancel-btn">
+            Annuler
+          </button>
+          <button type="submit" className="update-btn">
+            Mettre à jour
+          </button>
+        </div>
+      ) : (
+        <button type="submit" className="submit-btn">
+          Ajouter l'employé
+        </button>
+      )}
+    </form>
+  );
+};
+
+// En-tête employés
+const EmployeesHeader = ({
+  employeesCount,
+  viewMode,
+  setViewMode,
+  searchTerm,
+  setSearchTerm,
+  sortBy,
+  sortOrder,
+  toggleSort,
+  onAddEmployee,
+  showAddForm,
+  onImport,
+  isMobile,
+  currentPage,
+  totalPages,
+  onPageChange,
+  itemsPerPage,
+  onItemsPerPageChange
+}) => (
+  <div className="section-header header-employee">
+    <div className="header-left">
+      <h2 className="section-title">
+        <FaUsers /> Employés ({employeesCount})
+      </h2>
+      <ViewControls viewMode={viewMode} setViewMode={setViewMode} isMobile={isMobile} />
+      <SearchBox searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+    </div>
+
+    <div className="header-right">
+      <SortOptions sortBy={sortBy} sortOrder={sortOrder} toggleSort={toggleSort} />
+
+      {/* Contrôles pagination */}
+      <div className="pagination-controls">
+        <div className="items-per-page-selector">
+          <select value={itemsPerPage} onChange={onItemsPerPageChange} className="items-per-page-select">
+            <option value={10}>10/page</option>
+            <option value={20}>20/page</option>
+            <option value={50}>50/page</option>
+            <option value={100}>100/page</option>
+          </select>
+        </div>
+
+        <div className="pagination-navigation">
+          <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-btn prev-btn">
+            <FaChevronLeft />
+          </button>
+          <span className="page-info">Page {currentPage} sur {totalPages}</span>
+          <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="pagination-btn next-btn">
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
+
+      <ActionButtons onAddEmployee={onAddEmployee} showAddForm={showAddForm} onImport={onImport} />
+    </div>
+  </div>
+);
+
+const ViewControls = ({ viewMode, setViewMode, isMobile }) => (
+  <div className="view-controls">
+    <button onClick={() => setViewMode('card')} className={`view-btn ${viewMode === 'card' ? 'active' : ''}`} disabled={isMobile}>
+      <FaTh /> {isMobile && <span className="auto-badge">Auto</span>}
+    </button>
+    <button onClick={() => setViewMode('list')} className={`view-btn ${viewMode === 'list' ? 'active' : ''}`} disabled={isMobile}>
+      <FaList /> {isMobile && <span className="auto-badge">Auto</span>}
+    </button>
+  </div>
+);
+
+const SearchBox = ({ searchTerm, setSearchTerm }) => (
+  <div className="search-box">
+    <FaSearch className="search-icon" />
+    <input type="text" placeholder="Rechercher un employé..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+  </div>
+);
+
+const SortOptions = ({ sortBy, sortOrder, toggleSort }) => (
+  <div className="sort-options">
+    <div className="sort-label">Trier par:</div>
+    <SortButton field="nom" label="Nom" sortBy={sortBy} sortOrder={sortOrder} toggleSort={toggleSort} />
+    <SortButton field="poste" label="Poste" sortBy={sortBy} sortOrder={sortOrder} toggleSort={toggleSort} />
+    <SortButton field="dateEmbauche" label="Embauche" sortBy={sortBy} sortOrder={sortOrder} toggleSort={toggleSort} />
+  </div>
+);
+
+const SortButton = ({ field, label, sortBy, sortOrder, toggleSort }) => (
+  <button onClick={() => toggleSort(field)} className={`sort-btn ${sortBy === field ? 'active' : ''}`}>
+    <FaSortAlphaDown /> {label}
+    {sortBy === field && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+  </button>
+);
+
+const ActionButtons = ({ onAddEmployee, showAddForm, onImport }) => (
+  <>
+    <button className="primary-btn" onClick={onAddEmployee}>
+      <FaPlus /> {showAddForm ? "Fermer" : "Ajouter"}
+    </button>
+    <ImportButton onImport={onImport} />
+  </>
+);
+
+const ImportButton = ({ onImport }) => (
+  <label htmlFor="file-upload" className="import-btn">
+    <FaFileExcel /> Importer
+    <input id="file-upload" type="file" accept=".xlsx, .xls, .csv" onChange={onImport} style={{ display: 'none' }} />
+  </label>
+);
+
+// Carte employé
+const EmployeeCard = ({ employee, isSelected, onSelect, onEdit, onDelete, onView, onTracking }) => {
+  const handleAction = (e, action) => {
+    e.stopPropagation();
+    action(employee);
+  };
+
+  return (
+    <div className={`employee-card ${isSelected ? 'active' : ''}`} onClick={() => onSelect(employee.id)}>
+      <div className={`employee-type-badge ${employee.typeContrat}`}>
+        {employee.typeContrat}
+      </div>
+
+      <div className="employee-header">
+        <div className="employee-avatar">
+          {employee.prenom?.charAt(0).toUpperCase()}{employee.nom?.charAt(0).toUpperCase()}
+        </div>
+        <div className="employee-info">
+          <div className="employee-name">{employee.prenom} {employee.nom}</div>
+          <div className="employee-position">{employee.poste}</div>
+        </div>
+        <div className="employee-actions">
+          <ActionButton icon={<FaEye />} title="Voir détails" onClick={(e) => handleAction(e, onView)} className="view-btn" />
+          <ActionButton icon={<FaEdit />} title="Modifier" onClick={(e) => handleAction(e, onEdit)} className="edit-btn" />
+          <ActionButton icon={<FaTrash />} title="Supprimer" onClick={(e) => handleAction(e, onDelete)} className="delete-btn" />
+          <ActionButton icon={<FaCalendarAlt />} title="Suivi" onClick={(e) => handleAction(e, onTracking)} className="tracking-btn" />
+        </div>
+      </div>
+
+      <EmployeeDetails employee={employee} />
+    </div>
+  );
+};
+
+const EmployeeDetails = ({ employee }) => (
+  <div className="employee-details">
+    <DetailItem icon={<FaIdCard />} value={employee.matricule} />
+    <DetailItem icon={<FaCalendarAlt />} value={employee.dateEmbauche ? new Date(employee.dateEmbauche).toLocaleDateString() : 'Non définie'} />
+    <DetailItem icon={<FaMoneyBillWave />} value={employee.salaireBase?.toLocaleString() + ' FCFA'} />
+    <DetailItem icon={<FaBuilding />} value={employee.departement} />
+  </div>
+);
+
+const DetailItem = ({ icon, value }) => value ? (
+  <div className="employee-detail">
+    {React.cloneElement(icon, { className: "detail-icon" })}
+    <span className="detail-value">{value}</span>
+  </div>
+) : null;
+
+const ActionButton = ({ icon, title, onClick, className }) => (
+  <button onClick={onClick} className={`action-btn ${className}`} title={title}>
+    {icon}
+  </button>
+);
+
+// Ligne tableau employé
+const EmployeeTableRow = ({ employee, isSelected, onSelect, onView, onEdit, onDelete, onTracking }) => {
+  const handleAction = (e, action) => {
+    e.stopPropagation();
+    action(employee);
+  };
+
+  return (
+    <tr className={isSelected ? 'active' : ''} onClick={() => onSelect(employee.id)}>
+      <td>
+        <div className="cell-content">
+          <div className="employee-avatar-small">
+            {employee.prenom?.charAt(0).toUpperCase()}{employee.nom?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="employee-name">{employee.prenom} {employee.nom}</div>
+            <div className="employee-department">{employee.departement}</div>
+          </div>
+        </div>
+      </td>
+      <td>{employee.poste}</td>
+      <td>{employee.matricule}</td>
+      <td>{employee.salaireBase?.toLocaleString()} FCFA</td>
+      <td>
+        <div className={`employee-badge ${employee.typeContrat}`}>
+          {employee.typeContrat}
+        </div>
+      </td>
+      <td>
+        <TableActions
+          onView={(e) => handleAction(e, onView)}
+          onEdit={(e) => handleAction(e, onEdit)}
+          onDelete={(e) => handleAction(e, onDelete)}
+          onTracking={(e) => handleAction(e, onTracking)}
+        />
+      </td>
+    </tr>
+  );
+};
+
+const TableActions = ({ onView, onEdit, onDelete, onTracking }) => (
+  <div className="table-actions">
+    <ActionButton icon={<FaEye />} title="Voir détails" onClick={onView} className="view-btn" />
+    <ActionButton icon={<FaEdit />} title="Modifier" onClick={onEdit} className="edit-btn" />
+    <ActionButton icon={<FaTrash />} title="Supprimer" onClick={onDelete} className="delete-btn" />
+    <ActionButton icon={<FaCalendarAlt />} title="Suivi" onClick={onTracking} className="tracking-btn" />
+  </div>
+);
+
+// Section fiches de paie
+const EmployeePayrollsSection = ({ selectedEmployee, onCreatePayroll, sectionRef }) => {
+  if (!selectedEmployee) return null;
+
+  return (
+    <div className="payrolls-section">
+      <div className="payrolls-header" ref={sectionRef}>
+        <h2 className="section-title">
+          <FaFileAlt /> Fiches de paie de {selectedEmployee.prenom} {selectedEmployee.nom}
+        </h2>
+        <div className="payrolls-actions">
+          <button onClick={onCreatePayroll} className="create-payroll-btn">
+            <FaPlus /> Générer une fiche
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal Suivi
+const TrackingModal = React.memo(({ visible, onCancel, onSubmit, employee, trackingData }) => {
+  const [localTrackingData, setLocalTrackingData] = useState(trackingData);
+
+  useEffect(() => setLocalTrackingData(trackingData), [trackingData]);
+
+  const handleLocalChange = (e) => {
+    const { name, value } = e.target;
+    setLocalTrackingData(prev => ({ ...prev, [name]: Number(value) }));
+  };
+
+  const handleLocalSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(localTrackingData);
+  };
+
+  const fields = [
+    { name: "joursConges", label: "Jours congés disponibles" },
+    { name: "joursCongesUtilises", label: "Congés utilisés" },
+    { name: "joursAbsence", label: "Jours absence" },
+    { name: "avanceSalaire", label: "Avance salaire (FCFA)" }
+  ];
+
+  return (
+    <Modal
+      title={`Suivi congés/absences - ${employee?.prenom} ${employee?.nom}`}
+      open={visible}
+      onCancel={onCancel}
+      footer={[
+        <Button key="cancel" onClick={onCancel}>Annuler</Button>,
+        <Button key="submit" type="primary" onClick={handleLocalSubmit}>Enregistrer</Button>
+      ]}
+      width={800}
+      className="employee-form-modal"
+    >
+      <div className="employee-form">
+        <div className="form-section-title">
+          <FaCalendarAlt /> Suivi des congés et absences
+        </div>
+
+        <div className="form-row">
+          {fields.slice(0, 2).map(field => (
+            <FormField
+              key={field.name}
+              label={field.label}
+              name={field.name}
+              type="number"
+              value={localTrackingData[field.name]}
+              onChange={handleLocalChange}
+              min="0"
+            />
+          ))}
+        </div>
+
+        <div className="form-row">
+          {fields.slice(2).map(field => (
+            <FormField
+              key={field.name}
+              label={field.label}
+              name={field.name}
+              type="number"
+              value={localTrackingData[field.name]}
+              onChange={handleLocalChange}
+              min="0"
+            />
+          ))}
+        </div>
+      </div>
+    </Modal>
+  );
+});
+
+// Pagination
+const PaginationControls = React.memo(({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  itemsPerPage,
+  startIndex,
+  endIndex
+}) => {
+  const pageNumbers = [];
+  const maxPagesToShow = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+  let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+  if (endPage - startPage + 1 < maxPagesToShow) {
+    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
+
+  return (
+    <div className="pagination-container">
+      <div className="pagination-info">
+        Affichage de {startIndex + 1} à {endIndex} sur {totalItems} employés
+      </div>
+
+      <div className="pagination-buttons">
+        <button onClick={() => onPageChange(1)} disabled={currentPage === 1} className="pagination-btn first-btn">«</button>
+        <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-btn prev-btn">
+          <FaChevronLeft />
+        </button>
+
+        {startPage > 1 && (
+          <>
+            <button onClick={() => onPageChange(1)} className={`pagination-btn page-btn ${currentPage === 1 ? 'active' : ''}`}>1</button>
+            {startPage > 2 && <span className="pagination-ellipsis">...</span>}
+          </>
+        )}
+
+        {pageNumbers.map(page => (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            className={`pagination-btn page-btn ${currentPage === page ? 'active' : ''}`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="pagination-ellipsis">...</span>}
+            <button onClick={() => onPageChange(totalPages)} className={`pagination-btn page-btn ${currentPage === totalPages ? 'active' : ''}`}>
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="pagination-btn next-btn">
+          <FaChevronRight />
+        </button>
+        <button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} className="pagination-btn last-btn">»</button>
+      </div>
+
+      <div className="pagination-jump">
+        <span>Aller à :</span>
+        <input
+          type="number"
+          min="1"
+          max={totalPages}
+          value={currentPage}
+          onChange={(e) => {
+            const page = parseInt(e.target.value, 10);
+            if (page >= 1 && page <= totalPages) onPageChange(page);
+          }}
+          className="page-jump-input"
+        />
+      </div>
+    </div>
+  );
+});
+
+// COMPOSANT PRINCIPAL
 const EmployeesPage = ({
   filteredEmployees,
   searchTerm,
@@ -27,7 +642,6 @@ const EmployeesPage = ({
   handleUpdateSuivi,
   cancelEdit,
   handleCreatePayroll,
-  handleDeletePayroll,
   handleImportEmployees,
   importProgress,
   setImportProgress,
@@ -39,21 +653,36 @@ const EmployeesPage = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false); // ← Ajouter cet état
+  const [isMobile, setIsMobile] = useState(false);
 
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  // Précharger l'image de fond
+  // États modaux
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
+  const [isTrackingModalVisible, setIsTrackingModalVisible] = useState(false);
+  const [trackingData, setTrackingData] = useState({
+    joursConges: 0,
+    joursCongesUtilises: 0,
+    joursAbsence: 0,
+    avanceSalaire: 0
+  });
+
+  // Préchargement background
   useEffect(() => {
     const img = new Image();
     img.src = "/bg-client.jpg";
-    img.onload = () => {
-      setBackgroundLoaded(true);
-    };
-    img.onerror = () => {
-      console.error("Erreur de chargement de l'image de fond");
-      setBackgroundLoaded(true); // Continuer même si l'image échoue
-    };
+    img.onload = img.onerror = () => setBackgroundLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (backgroundLoaded) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [backgroundLoaded]);
 
   useEffect(() => {
     const checkIsMobile = () => setIsMobile(window.innerWidth <= 1199);
@@ -62,79 +691,61 @@ const EmployeesPage = ({
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Gérer le chargement global
-  useEffect(() => {
-    // Attendre que l'image de fond soit chargée
-    if (backgroundLoaded) {
-      const timer = setTimeout(() => {
-        setLoading(false);
-      }, 500); // Réduit à 0.5s pour plus de fluidité
+  useEffect(() => setCurrentPage(1), [searchTerm, sortBy, sortOrder]);
 
-      return () => clearTimeout(timer);
-    }
-  }, [backgroundLoaded]);
+  const handleFileUpload = useCallback((e) => {
+    if (!e.target.files?.length) return;
+    handleImportEmployees?.(e);
+  }, [handleImportEmployees]);
 
-  const handleFileUpload = (e) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    if (handleImportEmployees) handleImportEmployees(e);
-  };
+  const toggleSort = useCallback((field) => {
+    setSortBy(current => current === field ? current : field);
+    setSortOrder(current => sortBy === field ? (current === 'asc' ? 'desc' : 'asc') : 'asc');
+  }, [sortBy]);
 
-  const toggleSort = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-  };
+  const sortedEmployees = useMemo(() => {
+    return [...filteredEmployees].sort((a, b) => {
+      let compareValue = 0;
+      if (sortBy === 'nom') compareValue = a.nom.localeCompare(b.nom);
+      else if (sortBy === 'poste') compareValue = a.poste.localeCompare(b.poste);
+      else if (sortBy === 'dateEmbauche') compareValue = new Date(a.dateEmbauche) - new Date(b.dateEmbauche);
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+  }, [filteredEmployees, sortBy, sortOrder]);
 
-  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
-    let compareValue;
-    if (sortBy === 'nom') {
-      compareValue = a.nom.localeCompare(b.nom);
-    } else if (sortBy === 'poste') {
-      compareValue = a.poste.localeCompare(b.poste);
-    } else if (sortBy === 'dateEmbauche') {
-      compareValue = new Date(a.dateEmbauche) - new Date(b.dateEmbauche);
-    }
-    return sortOrder === 'asc' ? compareValue : -compareValue;
-  });
+  const totalItems = sortedEmployees.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  const handleEmployeeClick = (employeeId) => {
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedEmployees.slice(startIndex, endIndex);
+  }, [sortedEmployees, currentPage, itemsPerPage]);
+
+  const handlePageChange = useCallback((page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [totalPages]);
+
+  const handleItemsPerPageChange = useCallback((e) => {
+    setItemsPerPage(parseInt(e.target.value, 10));
+    setCurrentPage(1);
+  }, []);
+
+  const handleEmployeeSelect = useCallback((employeeId) => {
     loadEmployeePayrolls(employeeId);
     setTimeout(() => {
-      payrollsSectionRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      payrollsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
-  };
+  }, [loadEmployeePayrolls]);
 
-
-  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
-  const [isTrackingModalVisible, setIsTrackingModalVisible] = useState(false);
-
-  const handleViewDetails = (employee) => {
+  const handleViewDetails = useCallback((employee) => {
     setSelectedEmployeeDetails(employee);
     setIsInfoModalVisible(true);
-  };
+  }, []);
 
-
-  const handleInfoModalCancel = () => {
-    setIsInfoModalVisible(false);
-  };
-
-
-  const [trackingData, setTrackingData] = useState({
-    joursConges: 0,
-    joursCongesUtilises: 0,
-    joursAbsence: 0,
-    avanceSalaire: 0
-  });
-
-  // Ouvrir le modal avec les données actuelles
-  const handleOpenTrackingModal = (employee) => {
+  const handleOpenTrackingModal = useCallback((employee) => {
     setSelectedEmployeeDetails(employee);
     setTrackingData({
       joursConges: employee.joursConges || 0,
@@ -143,956 +754,177 @@ const EmployeesPage = ({
       avanceSalaire: employee.avanceSalaire || 0
     });
     setIsTrackingModalVisible(true);
-  };
+  }, []);
 
-  // Soumettre les modifications
-  const handleSubmitTracking = async (updatedData) => {
+  const handleSubmitTracking = useCallback(async (updatedData) => {
     try {
-      const updatedEmployee = {
-        ...selectedEmployeeDetails,
-        ...updatedData
-      };
-
+      const updatedEmployee = { ...selectedEmployeeDetails, ...updatedData };
       await handleUpdateSuivi(updatedEmployee);
-      // Ne pas fermer le modal ici - laissez le contrôle à l'utilisateur
     } catch (error) {
       console.error("Erreur mise à jour suivi:", error);
     }
-  };
-  // Gestion des changements
-  const handleTrackingChange = (e) => {
-    const { name, value } = e.target;
-    setTrackingData(prev => ({
-      ...prev,
-      [name]: Number(value)
-    }));
-  };
+  }, [selectedEmployeeDetails, handleUpdateSuivi]);
 
   const displayMode = isMobile ? 'card' : viewMode;
 
   if (loading) return <LoadingState />;
 
-
-  const TrackingModal = React.memo(({
-    visible,
-    onCancel,
-    onSubmit,
-    employee,
-    trackingData,
-    onTrackingChange
-  }) => {
-    // Utilisez un état local pour éviter les rerenders inutiles
-    const [localTrackingData, setLocalTrackingData] = useState(trackingData);
-
-    // Mettre à jour l'état local quand les props changent
-    useEffect(() => {
-      setLocalTrackingData(trackingData);
-    }, [trackingData]);
-
-    const handleLocalChange = (e) => {
-      const { name, value } = e.target;
-      setLocalTrackingData(prev => ({
-        ...prev,
-        [name]: Number(value)
-      }));
-    };
-
-    const handleLocalSubmit = (e) => {
-      e.preventDefault();
-      onSubmit(localTrackingData); // Passez directement les données
-    };
-
-    return (
-      <Modal
-        title={`Suivi congés/absences - ${employee?.prenom} ${employee?.nom}`}
-        open={visible}
-        onCancel={onCancel}
-        footer={[
-          <Button key="cancel" onClick={onCancel}>Annuler</Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={handleLocalSubmit}
-          >
-            Enregistrer
-          </Button>
-        ]}
-        width={800}
-        className="employee-form-modal"
-        destroyOnHidden
-        forceRender
-      >
-        <div className="employee-form">
-          <div className="form-section-title">
-            <FaCalendarAlt style={{ marginRight: "10px" }} />
-            Suivi des congés et absences
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Jours congés disponibles</label>
-              <input
-                name="joursConges"
-                type="number"
-                value={localTrackingData.joursConges}
-                onChange={handleLocalChange}
-                className="form-input"
-                min="0"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Congés utilisés</label>
-              <input
-                name="joursCongesUtilises"
-                type="number"
-                value={localTrackingData.joursCongesUtilises}
-                onChange={handleLocalChange}
-                className="form-input"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Jours absence</label>
-              <input
-                name="joursAbsence"
-                type="number"
-                value={localTrackingData.joursAbsence}
-                onChange={handleLocalChange}
-                className="form-input"
-                min="0"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Avance salaire (FCFA)</label>
-              <input
-                name="avanceSalaire"
-                type="number"
-                value={localTrackingData.avanceSalaire}
-                onChange={handleLocalChange}
-                className="form-input"
-                min="0"
-              />
-            </div>
-          </div>
-        </div>
-      </Modal>
-    );
-  });
-
   return (
     <>
-      {editingEmployee ? (
-        <form onSubmit={handleUpdate} className="employee-form">
-          <h2 className="form-title">
-            <FaEdit style={{ marginRight: "10px" }} />
-            Modifier l'employé
-          </h2>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-nom" className="form-label">Nom <span className="required">*</span></label>
-              <input
-                id="edit-nom"
-                name="nom"
-                value={editingEmployee.nom}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-prenom" className="form-label">Prénom <span className="required">*</span></label>
-              <input
-                id="edit-prenom"
-                name="prenom"
-                value={editingEmployee.prenom}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-adresse" className="form-label">Adresse <span className="required">*</span></label>
-              <input
-                id="edit-adresse"
-                name="adresse"
-                value={editingEmployee.adresse}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-email" className="form-label">Email <span className="required">*</span></label>
-              <input
-                id="edit-email"
-                name="email"
-                value={editingEmployee.email}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="edit-poste" className="form-label">Poste <span className="required">*</span></label>
-              <input
-                id="edit-poste"
-                name="poste"
-                value={editingEmployee.poste}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-departement" className="form-label">Département</label>
-              <input
-                id="edit-departement"
-                name="departement"
-                value={editingEmployee.departement}
-                onChange={handleEditChange}
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-matricule" className="form-label">Matricule <span className="required">*</span></label>
-              <input
-                id="edit-matricule"
-                name="matricule"
-                value={editingEmployee.matricule}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-typeContrat" className="form-label">Type de contrat</label>
-              <select
-                id="edit-typeContrat"
-                name="typeContrat"
-                value={editingEmployee.typeContrat}
-                onChange={handleEditChange}
-                className="form-input"
-              >
-                <option value="CDI">CDI</option>
-                <option value="CDD">CDD</option>
-                <option value="Stage">Stage</option>
-                <option value="Freelance">Freelance</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-dateEmbauche" className="form-label">Date d'embauche <span className="required">*</span></label>
-              <input
-                id="edit-dateEmbauche"
-                name="dateEmbauche"
-                type="date"
-                value={editingEmployee.dateEmbauche || ""}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-salaire" className="form-label">Salaire brut <span className="required">*</span></label>
-              <input
-                id="edit-salaire"
-                name="salaireBase"
-                type="number"
-                value={editingEmployee.salaireBase}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-categorie" className="form-label">Catégorie <span className="required">*</span></label>
-              <input
-                id="edit-categorie"
-                name="categorie"
-                value={editingEmployee.categorie}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-nbreofParts" className="form-label">Nombre de parts </label>
-              <input
-                id="edit-nbreofParts"
-                name="nbreofParts"
-                type="number"
-                value={editingEmployee.nbreofParts}
-                onChange={handleEditChange}
-                required
-                className="form-input"
-              />
-            </div>
-
-          </div>
-
-          <div className="form-section-title">
-            <FaMoneyBillWave style={{ marginRight: "10px" }} />
-            Primes et Indemnités Fixes
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-indemniteTransport" className="form-label">
-                Indemnité de transport (FCFA)
-              </label>
-              <input
-                id="edit-indemniteTransport"
-                name="indemniteTransport"
-                type="number"
-                value={editingEmployee.indemniteTransport || 26000}
-                onChange={handleEditChange}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-primePanier" className="form-label">
-                Prime de panier (FCFA)
-              </label>
-              <input
-                id="edit-primePanier"
-                name="primePanier"
-                type="number"
-                value={editingEmployee.primePanier || 0}
-                onChange={handleEditChange}
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-indemniteResponsabilite" className="form-label">
-                Indemnité de responsabilité (FCFA)
-              </label>
-              <input
-                id="edit-indemniteResponsabilite"
-                name="indemniteResponsabilite"
-                type="number"
-                value={editingEmployee.indemniteResponsabilite || 0}
-                onChange={handleEditChange}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-indemniteDeplacement" className="form-label">
-                Indemnité de déplacement (FCFA)
-              </label>
-              <input
-                id="edit-indemniteDeplacement"
-                name="indemniteDeplacement"
-                type="number"
-                value={editingEmployee.indemniteDeplacement || 0}
-                onChange={handleEditChange}
-                className="form-input"
-              />
-            </div>
-
-
-          </div>
-
-          <div className="form-actions">
-            <button type="button" onClick={cancelEdit} className="cancel-btn">
-              Annuler
-            </button>
-            <button type="submit" className="update-btn">
-              Mettre à jour
-            </button>
-          </div>
-        </form>
-      ) : (
-        showAddForm && (
-          <form onSubmit={handleSubmit} className="employee-form">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 className="form-title">
-                <FaPlus style={{ marginRight: "10px" }} />
-                Ajouter un nouvel employé
-              </h2>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="nom" className="form-label">Nom <span className="required">*</span></label>
-                <input
-                  id="nom"
-                  name="nom"
-                  value={employee.nom}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prenom" className="form-label">Prénom <span className="required">*</span></label>
-                <input
-                  id="prenom"
-                  name="prenom"
-                  value={employee.prenom}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="adresse" className="form-label">Adresse <span className="required">*</span></label>
-                <input
-                  id="adresse"
-                  name="adresse"
-                  value={employee.adresse}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-
-              <div className="form-group">
-                <label htmlFor="email" className="form-label">Email <span className="required">*</span></label>
-                <input
-                  id="email"
-                  name="email"
-                  value={employee.email}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="poste" className="form-label">Poste <span className="required">*</span></label>
-                <input
-                  id="poste"
-                  name="poste"
-                  value={employee.poste}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="departement" className="form-label">Département</label>
-                <input
-                  id="departement"
-                  name="departement"
-                  value={employee.departement}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="matricule" className="form-label">Matricule <span className="required">*</span></label>
-                <input
-                  id="matricule"
-                  name="matricule"
-                  value={employee.matricule}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="typeContrat" className="form-label">Type de contrat</label>
-                <select
-                  id="typeContrat"
-                  name="typeContrat"
-                  value={employee.typeContrat}
-                  onChange={handleChange}
-                  className="form-input"
-                >
-                  <option value="CDI">CDI</option>
-                  <option value="CDD">CDD</option>
-                  <option value="Stage">Stage</option>
-                  <option value="Freelance">Freelance</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="dateEmbauche" className="form-label">Date d'embauche <span className="required">*</span></label>
-                <input
-                  id="dateEmbauche"
-                  name="dateEmbauche"
-                  type="date"
-                  value={employee.dateEmbauche}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="salaireBase" className="form-label">Salaire brut <span className="required">*</span></label>
-                <input
-                  id="salaireBase"
-                  name="salaireBase"
-                  type="number"
-                  value={employee.salaireBase}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="categorie" className="form-label">Catégorie <span className="required">*</span></label>
-                <input
-                  id="categorie"
-                  name="categorie"
-                  value={employee.categorie}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="nbreofParts" className="form-label">Nombre de parts </label>
-                <input
-                  id="nbreofParts"
-                  name="nbreofParts"
-                  type="number"
-                  value={employee.nbreofParts || 1}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-section-title">
-              <FaMoneyBillWave style={{ marginRight: "10px" }} />
-              Primes et Indemnités Fixes
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="indemniteTransport" className="form-label">
-                  Indemnité de transport (FCFA)
-                </label>
-                <input
-                  id="indemniteTransport"
-                  name="indemniteTransport"
-                  type="number"
-                  value={employee.indemniteTransport || 26000}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="primePanier" className="form-label">
-                  Prime de panier (FCFA)
-                </label>
-                <input
-                  id="primePanier"
-                  name="primePanier"
-                  type="number"
-                  value={employee.primePanier || 0}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="indemniteResponsabilite" className="form-label">
-                  Indemnité de responsabilité (FCFA)
-                </label>
-                <input
-                  id="indemniteResponsabilite"
-                  name="indemniteResponsabilite"
-                  type="number"
-                  value={employee.indemniteResponsabilite || 0}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="indemniteDeplacement" className="form-label">
-                  Indemnité de déplacement (FCFA)
-                </label>
-                <input
-                  id="indemniteDeplacement"
-                  name="indemniteDeplacement"
-                  type="number"
-                  value={employee.indemniteDeplacement || 0}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="submit-btn">
-              Ajouter l'employé
-            </button>
-          </form>
-        )
+      {/* Formulaires */}
+      {editingEmployee && (
+        <EmployeeForm
+          isEditing={true}
+          formData={editingEmployee}
+          onSubmit={handleUpdate}
+          onCancel={cancelEdit}
+          onEditChange={handleEditChange}
+        />
       )}
 
-      <div
-        className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}
-      >
-        <div className="header-employee">
-          <div className="header-left">
-            <h2 className="section-title">
-              <FaUsers style={{ marginRight: "10px" }} />
-              Employés ({sortedEmployees.length})
-            </h2>
+      {showAddForm && !editingEmployee && (
+        <EmployeeForm
+          isEditing={false}
+          formData={employee}
+          onSubmit={handleSubmit}
+          onCancel={() => setShowAddForm(false)}
+          onChange={handleChange}
+        />
+      )}
 
-            <div className="view-controls">
-              <button
-                onClick={() => setViewMode('card')}
-                className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
-                title="Vue cartes"
-                disabled={isMobile} // ← Ajouter disabled sur mobile
-              >
-                <FaTh />
-                {/*   {isMobile && <span className="auto-badge">Auto</span>} {/* ← Badge Auto */}
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                title="Vue liste"
-                disabled={isMobile} // ← Ajouter disabled sur mobile
-              >
-                <FaList />
-                {/*   {isMobile && <span className="auto-badge">Auto</span>} {/* ← Badge Auto */}
-              </button>
-            </div>
-          </div>
-
-          <div className="header-right">
-            <div className="search-box">
-              <FaSearch className="search-icon" />
-              <input
-                type="text"
-                placeholder="Rechercher un employé..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="sort-options">
-              <div className="sort-label">Trier par:</div>
-              <button
-                onClick={() => toggleSort('nom')}
-                className={`sort-btn ${sortBy === 'nom' ? 'active' : ''}`}
-              >
-                <FaSortAlphaDown /> Nom
-                {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-              </button>
-              <button
-                onClick={() => toggleSort('poste')}
-                className={`sort-btn ${sortBy === 'poste' ? 'active' : ''}`}
-              >
-                <FaSortAlphaDown /> Poste
-                {sortBy === 'poste' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-              </button>
-            </div>
-
-            <button
-              className="primary-btn"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              <FaPlus /> {showAddForm ? "Fermer" : "Ajouter"}
-            </button>
-
-            <label htmlFor="file-upload" className="import-btn">
-              <FaFileExcel /> Importer
-              <input
-                id="file-upload"
-                type="file"
-                accept=".xlsx, .xls, .csv"
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-        </div>
+      {/* Section principale */}
+      <div className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}>
+        <EmployeesHeader
+          employeesCount={totalItems}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          toggleSort={toggleSort}
+          onAddEmployee={() => setShowAddForm(!showAddForm)}
+          showAddForm={showAddForm}
+          onImport={handleFileUpload}
+          isMobile={isMobile}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
 
         {importProgress && (
           <div className="import-progress">
             <div>{importProgress}</div>
             {importProgress.includes("réussis") && (
-              <button onClick={() => setImportProgress(null)} className="close-btn">
-                Fermer
-              </button>
+              <button onClick={() => setImportProgress(null)} className="close-btn">Fermer</button>
             )}
           </div>
         )}
 
-        {sortedEmployees.length === 0 ? (
-          <div className="empty-state">
-            <img src={empty_employee} alt="Aucun employé" className="empty-image" />
-            <h3>Aucun employé trouvé</h3>
-            <p>Commencez par créer votre premier employé</p>
-            <button
-              className="primary-btn"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              <FaPlus /> Ajouter un employé
-            </button>
-          </div>
-        ) : displayMode === 'card' ? ( // ← Changer viewMode par displayMode
-          <div className="employees-grid">
-            {sortedEmployees.map((e) => (
-              <div
-                key={e.id}
-                className={`employee-card ${selectedEmployee?.id === e.id ? 'active' : ''}`}
-                onClick={() => handleEmployeeClick(e.id)}
-              >
-                <div className={`employee-type-badge ${e.typeContrat}`}>
-                  {e.typeContrat}
-                </div>
+        {totalItems === 0 ? (
+          <EmptyState onAddEmployee={() => setShowAddForm(true)} />
+        ) : displayMode === 'card' ? (
+          <>
+            <div className="employees-grid">
+              {paginatedEmployees.map(emp => (
+                <EmployeeCard
+                  key={emp.id}
+                  employee={emp}
+                  isSelected={selectedEmployee?.id === emp.id}
+                  onSelect={handleEmployeeSelect}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onView={handleViewDetails}
+                  onTracking={handleOpenTrackingModal}
+                />
+              ))}
+            </div>
 
-                <div className="employee-header">
-                  <div className="employee-avatar">
-                    {e.prenom.charAt(0).toUpperCase()}{e.nom.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="employee-info">
-                    <div className="employee-name">{e.prenom} {e.nom}</div>
-                    <div className="employee-position">{e.poste}</div>
-                  </div>
-                  <div className="employee-actions">
-                    <button
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        handleEdit(e);
-                      }}
-                      className="action-btn edit-btn"
-                      title="Modifier"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        handleDelete(e.id);
-                      }}
-                      className="action-btn delete-btn"
-                      title="Supprimer"
-                    >
-                      <FaTrash />
-                    </button>
-                    <button
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        handleViewDetails(e);
-                      }}
-                      className="action-btn view-btn"
-                      title="Voir détails"
-                    >
-                      <FaEye />
-                    </button>
-                    <button
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        handleOpenTrackingModal(e); // Passer e au lieu de employee
-                      }}
-                      className="action-btn tracking-btn"
-                    >
-                      <FaCalendarAlt />
-                    </button>
-
-
-                  </div>
-                </div>
-                <div className="employee-details">
-                  <div className="employee-detail">
-                    <FaIdCard className="detail-icon" />
-                    <span className="detail-value">{e.matricule}</span>
-                  </div>
-
-                  <div className="employee-detail">
-                    <FaCalendarAlt className="detail-icon" />
-                    <span className="detail-value">
-                      {e.dateEmbauche ? new Date(e.dateEmbauche).toLocaleDateString() : 'Non définie'}
-                    </span>
-                  </div>
-
-                  <div className="employee-detail">
-                    <FaMoneyBillWave className="detail-icon" />
-                    <span className="detail-value">
-                      {e.salaireBase?.toLocaleString()} FCFA
-                    </span>
-                  </div>
-
-                  <div className="employee-detail">
-                    <FaBuilding className="detail-icon" />
-                    <span className="detail-value">{e.departement}</span>
-                  </div>
-                </div>
+            {totalPages > 1 && (
+              <div className="pagination-footer">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  startIndex={(currentPage - 1) * itemsPerPage}
+                  endIndex={Math.min(currentPage * itemsPerPage, totalItems)}
+                />
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
-          <div className="employees-table-container">
-            <table className="employees-table">
-              <thead>
-                <tr>
-                  <th
-                    onClick={() => toggleSort('nom')}
-                    className={sortBy === 'nom' ? 'active' : ''}
-                  >
-                    <div className="th-content">
-                      Nom
-                      {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => toggleSort('poste')}
-                    className={sortBy === 'poste' ? 'active' : ''}
-                  >
-                    <div className="th-content">
-                      Poste
-                      {sortBy === 'poste' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                    </div>
-                  </th>
-                  <th>Matricule</th>
-                  <th>Salaire</th>
-                  <th>Contrat</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedEmployees.map((e) => (
-                  <tr
-                    key={e.id}
-                    className={selectedEmployee?.id === e.id ? 'active' : ''}
-                    onClick={() => handleEmployeeClick(e.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>
-                      <div className="cell-content">
-                        <div className="employee-avatar-small">
-                          {e.prenom.charAt(0).toUpperCase()}{e.nom.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="employee-name">{e.prenom} {e.nom}</div>
-                          <div className="employee-department">{e.departement}</div>
-                        </div>
+          <>
+            <div className="employees-table-container">
+              <table className="employees-table">
+                <thead>
+                  <tr>
+                    <th onClick={() => toggleSort('nom')} className={sortBy === 'nom' ? 'active' : ''}>
+                      <div className="th-content">
+                        Nom
+                        {sortBy === 'nom' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                       </div>
-                    </td>
-                    <td>{e.poste}</td>
-                    <td>{e.matricule}</td>
-                    <td>{e.salaireBase?.toLocaleString()} FCFA</td>
-                    <td>
-                      <div className={`employee-badge ${e.typeContrat}`}>
-                        {e.typeContrat}
+                    </th>
+                    <th onClick={() => toggleSort('poste')} className={sortBy === 'poste' ? 'active' : ''}>
+                      <div className="th-content">
+                        Poste
+                        {sortBy === 'poste' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                       </div>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          onClick={(evt) => {
-                            evt.stopPropagation();
-                            handleEdit(e);
-                          }}
-                          className="action-btn edit-btn"
-                          title="Modifier"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={(evt) => {
-                            evt.stopPropagation();
-                            handleDelete(e.id);
-                          }}
-                          className="action-btn delete-btn"
-                          title="Supprimer"
-                        >
-                          <FaTrash />
-                        </button>
-                        <button
-                          onClick={(evt) => {
-                            evt.stopPropagation();
-                            handleViewDetails(e);
-                          }}
-                          className="action-btn view-btn"
-                          title="Voir détails"
-                        >
-                          <FaEye />
-                        </button>
-                        <button
-                          onClick={(evt) => {
-                            evt.stopPropagation();
-                            handleOpenTrackingModal(e); // Passer e au lieu de employee
-                          }}
-                          className="action-btn tracking-btn"
-                        >
-                          <FaCalendarAlt />
-                        </button>
-
-                      </div>
-                    </td>
+                    </th>
+                    <th>Matricule</th>
+                    <th>Salaire</th>
+                    <th>Contrat</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {paginatedEmployees.map(emp => (
+                    <EmployeeTableRow
+                      key={emp.id}
+                      employee={emp}
+                      isSelected={selectedEmployee?.id === emp.id}
+                      onSelect={handleEmployeeSelect}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onView={handleViewDetails}
+                      onTracking={handleOpenTrackingModal}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="pagination-footer">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  startIndex={(currentPage - 1) * itemsPerPage}
+                  endIndex={Math.min(currentPage * itemsPerPage, totalItems)}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {selectedEmployee && (
-        <div className="payrolls-section" ref={payrollsSectionRef}>
-          <div className="payrolls-header">
-            <h2 className="section-title">
-              <FaFileAlt /> Fiches de paie de {selectedEmployee.prenom} {selectedEmployee.nom}
-            </h2>
-            <div className="payrolls-actions">
-              <button onClick={handleCreatePayroll} className="create-payroll-btn">
-                <FaPlus /> Générer une fiche
-              </button>
-            </div>
-          </div>
+      {/* Section fiches de paie */}
+      <EmployeePayrollsSection
+        selectedEmployee={selectedEmployee}
+        onCreatePayroll={handleCreatePayroll}
+        sectionRef={payrollsSectionRef}
+      />
 
-          {/* Section des fiches de paie à implémenter ici */}
-        </div>
-      )}
-
-
+      {/* Modaux */}
       <EmployeeDetailsModal
         isVisible={isInfoModalVisible}
-        onCancel={handleInfoModalCancel}
+        onCancel={() => setIsInfoModalVisible(false)}
         employee={selectedEmployeeDetails}
       />
       <TrackingModal
@@ -1100,14 +932,13 @@ const EmployeesPage = ({
         onCancel={() => setIsTrackingModalVisible(false)}
         onSubmit={(data) => {
           handleSubmitTracking(data);
-          setIsTrackingModalVisible(false); // Fermer seulement après soumission
+          setIsTrackingModalVisible(false);
         }}
         employee={selectedEmployeeDetails}
         trackingData={trackingData}
-        onTrackingChange={handleTrackingChange}
       />
     </>
   );
 };
 
-export default EmployeesPage;
+export default React.memo(EmployeesPage);

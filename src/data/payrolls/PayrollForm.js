@@ -1,15 +1,34 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
 import { db } from '../../firebase';
 import { collection, getDocs, query } from 'firebase/firestore';
 import PayrollPDF from './PayrollPDF';
-import './Payroll.css';
 import { useAuth } from '../../auth/AuthContext';
-import { FaArrowLeft, FaEye, FaEyeSlash, FaSave, FaDownload, FaSpinner } from "react-icons/fa";
+import {
+    FaArrowLeft,
+    FaEye,
+    FaSave,
+    FaDownload,
+    FaSpinner,
+    FaCalculator,
+    FaFileInvoice,
+    FaMoneyBillWave,
+    FaChartPie,
+    FaCalendarAlt,
+    FaUser,
+    FaPercentage,
+    FaCoins,
+    FaBell,
+    FaChevronRight,
+    FaChevronLeft,
+    FaTimes,
+
+} from "react-icons/fa";
 import { payrollService } from '../../services/payrollService';
 import PDFPreviewDynamic from '../../components/views/PDFPreviewDynamic';
 import Notification from '../../components/other/Notification';
+import './Payroll.css';
 
 const PayrollForm = () => {
     const { currentUser } = useAuth();
@@ -18,54 +37,122 @@ const PayrollForm = () => {
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
-    const [showPreview, setShowPreview] = useState(false);
+    const [showPdfModal, setShowPdfModal] = useState(false); // Nouvel état pour la modal
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
     const [payrollNumber, setPayrollNumber] = useState("");
-    const [showEmployeInfo, setShowEmployeInfo] = useState(true);
+    const [showEmployeeInfo, setShowEmployeeInfo] = useState(true);
     const [lastSavedCalculations, setLastSavedCalculations] = useState(null);
-    const [isDuplicating, setIsDuplicating] = useState(location.state?.isDuplicate || false);
-    const [duplicationComplete, setDuplicationComplete] = useState(false);
+    const [isDuplicating] = useState(location.state?.isDuplicate || false);
+    const [activeTab, setActiveTab] = useState('employee');
+    const [pdfBlob, setPdfBlob] = useState(null);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const formRef = useRef(null);
 
+    const tabs = [
+        { id: 'employee', label: 'Employé', icon: <FaUser /> },
+        { id: 'period', label: 'Période', icon: <FaCalendarAlt /> },
+        { id: 'remuneration', label: 'Rémunération', icon: <FaMoneyBillWave /> },
+        { id: 'deductions', label: 'Retenues', icon: <FaPercentage /> },
+        { id: 'bonuses', label: 'Primes', icon: <FaCoins /> },
+        { id: 'summary', label: 'Récapitulatif', icon: <FaChartPie /> }
+    ];
+
+    // Fonction pour afficher la modal
+    const handleShowPdfModal = () => {
+        setShowPdfModal(true);
+        // Désactiver le scroll du body quand la modal est ouverte
+        document.body.style.overflow = 'hidden';
+    };
+
+    // Fonction pour fermer la modal
+    const handleClosePdfModal = () => {
+        setShowPdfModal(false);
+        // Réactiver le scroll du body
+        document.body.style.overflow = 'auto';
+    };
+
+    // Fermer la modal avec la touche Escape
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && showPdfModal) {
+                handleClosePdfModal();
+            }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [showPdfModal]);
 
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
-        setTimeout(() => setNotification({ show: false, message: '', type: '' }), 3000);
+        setTimeout(() => setNotification({ show: false, message: '', type: '' }), 4000);
     };
 
-    const togglePreview = () => {
-        const newState = !showPreview;
-        setShowPreview(newState);
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
-        if (newState) {
-            setTimeout(() => {
-                window.scrollTo({
-                    top: document.body.scrollHeight,
-                    behavior: 'smooth'
-                });
-            }, 300);
+    const scrollToSection = (tabId) => {
+        const element = document.getElementById(`section-${tabId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
-    // Fonction utilitaire pour obtenir le premier et dernier jour du mois
+    useEffect(() => {
+        if (activeTab) {
+            scrollToSection(activeTab);
+        }
+    }, [activeTab]);
+
+    const generatePDFBlob = async () => {
+        const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
+        const doc = (
+            <PayrollPDF
+                employee={selectedEmployee}
+                formData={{ ...formData, numero: payrollNumber }}
+                calculations={calculations}
+                companyInfo={{
+                    name: "LEADER INTERIM & SERVICES",
+                    address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
+                    phone: "33-820-88-46 / 78-434-30-16",
+                    email: "infos@leaderinterime.com",
+                    rc: "SN 2015 B24288",
+                    ninea: "0057262212 A2"
+                }}
+            />
+        );
+
+        try {
+            const blob = await pdf(doc).toBlob();
+            setPdfBlob(blob);
+        } catch (error) {
+            console.error("Erreur génération PDF:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedEmployeeId && employees.length > 0) {
+            generatePDFBlob();
+        }
+    }, [selectedEmployeeId, employees]);
+
     const getCurrentMonthDateRange = () => {
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
         return {
             du: firstDay.toISOString().split('T')[0],
             au: lastDay.toISOString().split('T')[0]
         };
     };
 
-    // Fonction pour calculer automatiquement l'IR selon le barème 2013
     const calculateIR = useCallback((brutFiscal, nbreofParts) => {
         const revenu = brutFiscal / nbreofParts;
         let ir = 0;
 
-        // Barème corrigé basé sur les valeurs réelles du PDF
         if (revenu > 500000) {
             ir = revenu * 0.40 - 118750;
         } else if (revenu > 400000) {
@@ -92,17 +179,14 @@ const PayrollForm = () => {
         return Math.round(ir * nbreofParts);
     }, []);
 
-    // Fonction pour calculer automatiquement le TRIMF
     const calculateTRIMF = useCallback((brutFiscal) => {
         const brut = parseFloat(brutFiscal) || 0;
-
         if (brut <= 85000) return 300;
         if (brut <= 133000) return 400;
         if (brut < 1000000) return 500;
         return 1500;
     }, []);
 
-    // États pour le formulaire de paie
     const [formData, setFormData] = useState({
         periode: getCurrentMonthDateRange(),
         remuneration: {
@@ -131,16 +215,13 @@ const PayrollForm = () => {
         }
     });
 
-    // Calculs dérivés avec useMemo pour éviter les recalculs inutiles
     const calculations = useMemo(() => {
-        // Rémunération
         const salaireBase = parseFloat(formData.remuneration.salaireBase) || 0;
         const sursalaire = parseFloat(formData.remuneration.sursalaire) || 0;
         const indemniteDeplacement = parseFloat(formData.remuneration.indemniteDeplacement) || 0;
         const autresIndemnites = parseFloat(formData.remuneration.autresIndemnites) || 0;
         const avantagesNature = parseFloat(formData.remuneration.avantagesNature) || 0;
 
-        // Primes
         const transport = parseFloat(formData.primes.transport) || 0;
         const panier = parseFloat(formData.primes.panier) || 0;
         const repas = parseFloat(formData.primes.repas) || 0;
@@ -148,33 +229,27 @@ const PayrollForm = () => {
         const responsabilite = parseFloat(formData.primes.responsabilite) || 0;
         const autresPrimes = parseFloat(formData.primes.autresPrimes) || 0;
 
-        // Retenues
         const retenueSalaire = parseFloat(formData.retenues.retenueSalaire) || 0;
         const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
         const avances = parseFloat(formData.retenues.avances) || 0;
         const trimf = parseFloat(formData.retenues.trimf) || 0;
 
-        // Calculs
         const brutSocial = salaireBase + sursalaire + indemniteDeplacement + autresIndemnites;
         const brutFiscal = brutSocial + avantagesNature;
 
-        // Cotisations salariales (IPRES)
         const ipresRG = brutSocial * 0.056;
-        const ipresRC = 0; // brutSocial * 0.024;
+        const ipresRC = 0;
         const cfce = brutFiscal * 0.03;
 
-        // Cotisations patronales
         const ipresRGP = brutSocial * 0.084;
         const ipresRCP = 0 * 0.036;
         const allocationFamiliale = 63000 * 0.07;
         const accidentTravail = 63000 * 0.01;
 
-        // Calcul de l'IR
         const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
         const nbreofParts = selectedEmployee.nbreofParts || 1;
         const ir = calculateIR(brutFiscal, nbreofParts);
 
-        // Totaux
         const totalRetenuesPris = retenueSalaire + qpartipm + avances;
         const totalRetenues = retenueSalaire + qpartipm + avances + ipresRG + ipresRC + trimf + ir;
         const totalCotisationsEmp = ipresRG + ipresRC + trimf + ir;
@@ -183,13 +258,11 @@ const PayrollForm = () => {
         const totalCotisationsPatronales = ipresRGP + ipresRCP;
         const totalCotisations = totalCotisationsEmp + totalCotisationsEmployeur;
 
-        // Salaire Net
         const remunerationNette = brutSocial - totalRetenuesPris;
         const totalPrimes = transport + panier + repas + anciennete + responsabilite + autresPrimes;
         const salaireNetAPayer = remunerationNette + totalPrimes;
-        const tooqpartipm = qpartipm * 2
+        const tooqpartipm = qpartipm * 2;
         const totalfiscales = trimf + cfce + ir;
-
 
         return {
             brutSocial,
@@ -222,15 +295,12 @@ const PayrollForm = () => {
         };
     }, [formData, selectedEmployeeId, employees, calculateIR]);
 
-    // Mettre à jour les retenues basées sur les calculs - CORRECTION ICI
     useEffect(() => {
-        // Éviter la boucle infinie en vérifiant si les calculs ont changé
         if (JSON.stringify(calculations) === JSON.stringify(lastSavedCalculations)) {
             return;
         }
 
         const trimfValue = calculateTRIMF(calculations.brutFiscal);
-
         setFormData(prev => ({
             ...prev,
             retenues: {
@@ -240,39 +310,28 @@ const PayrollForm = () => {
                 ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
             }
         }));
-
         setLastSavedCalculations(calculations);
     }, [calculations, calculateTRIMF, lastSavedCalculations]);
 
-    // Initialisation des données
     useEffect(() => {
         const initializeData = async () => {
             try {
                 if (location.state && location.state.payroll) {
                     const payroll = location.state.payroll;
-                    const isDuplicate = location.state.isDuplicate || false;
+                    const convertFirestoreDate = (date) => {
+                        if (!date) return new Date().toISOString().split('T')[0];
+                        return date.toDate ? date.toDate().toISOString().split('T')[0] : date;
+                    };
 
-                    // METTRE À JOUR L'ÉTAT DE DUPLICATION
-                    setIsDuplicating(isDuplicate);
-
-                    // Mettre à jour l'employé sélectionné
                     setSelectedEmployeeId(payroll.employeeId || '');
 
-                    // Pour la duplication, générer un nouveau numéro
-                    if (isDuplicate) {
+                    if (isDuplicating) {
                         const numero = await payrollService.generatePayrollNumber(currentUser.companyId);
                         setPayrollNumber(numero);
                     } else {
                         setPayrollNumber(payroll.numero || '');
                     }
 
-                    // Fonction pour convertir les dates Firestore
-                    const convertFirestoreDate = (date) => {
-                        if (!date) return new Date().toISOString().split('T')[0];
-                        return date.toDate ? date.toDate().toISOString().split('T')[0] : date;
-                    };
-
-                    // Mettre à jour les données du formulaire
                     setFormData({
                         periode: {
                             du: convertFirestoreDate(payroll.periode?.du),
@@ -304,8 +363,7 @@ const PayrollForm = () => {
                         }
                     });
 
-                    // NE PAS METTRE isSaved À TRUE POUR LA DUPLICATION
-                    if (!isDuplicate) {
+                    if (!isDuplicating) {
                         setIsSaved(true);
                     }
                 } else {
@@ -314,10 +372,7 @@ const PayrollForm = () => {
                 }
             } catch (error) {
                 console.error("Erreur initialisation:", error);
-                const now = new Date();
-                const year = now.getFullYear();
-                setPayrollNumber(`PAY-${year}-TEMP`);
-                showNotification("Erreur lors de l'initialisation des données", "error");
+                showNotification("Erreur lors de l'initialisation", "error");
             } finally {
                 setLoading(false);
             }
@@ -326,9 +381,8 @@ const PayrollForm = () => {
         if (currentUser?.companyId) {
             initializeData();
         }
-    }, [location.state, currentUser?.companyId]);
+    }, [location.state, currentUser?.companyId, isDuplicating]);
 
-    // Chargement des employés
     useEffect(() => {
         const fetchEmployees = async () => {
             if (!currentUser?.companyId) return;
@@ -346,22 +400,18 @@ const PayrollForm = () => {
                 setEmployees(employeesData);
             } catch (error) {
                 console.error("Error fetching employees: ", error);
-                showNotification("Erreur lors du chargement des employés", "error");
+                showNotification("Erreur chargement employés", "error");
             }
         };
 
         fetchEmployees();
     }, [currentUser]);
 
-    // Mettre à jour le salaire de base quand l'employé est sélectionné
     useEffect(() => {
-        // Ne pas exécuter cette mise à jour si on est en mode édition ou duplication
         const isEditing = location.state?.payroll?.id && selectedEmployeeId === location.state.payroll.employeeId;
         const isDuplicating = location.state?.isDuplicate;
 
-        if (isEditing || isDuplicating) {
-            return;
-        }
+        if (isEditing || isDuplicating) return;
 
         if (selectedEmployeeId) {
             const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
@@ -393,28 +443,6 @@ const PayrollForm = () => {
         }
     }, [selectedEmployeeId, employees, location.state?.payroll, location.state?.isDuplicate]);
 
-    // Sauvegarde du bulletin
-    const savePayrollToFirestore = async (payrollData, isUpdate = false) => {
-        if (!currentUser?.companyId) {
-            throw new Error("Company ID not available");
-        }
-
-        // Utiliser l'état isDuplicating
-        if (isUpdate && location.state?.payroll?.id && !isDuplicating) {
-            return payrollService.updatePayroll(
-                currentUser.companyId,
-                location.state.payroll.id,
-                payrollData
-            );
-        } else {
-            return payrollService.addPayroll(
-                currentUser.companyId,
-                currentUser.uid,
-                payrollData
-            );
-        }
-    };
-
     const handleSave = async () => {
         if (!selectedEmployeeId) {
             showNotification("Veuillez sélectionner un employé", "warning");
@@ -424,7 +452,7 @@ const PayrollForm = () => {
         const isEditing = !!location.state?.payroll?.id && !isDuplicating;
 
         if (isSaved && !isEditing && !isDuplicating) {
-            showNotification("Ce bulletin est déjà enregistré. Créez un nouveau bulletin si nécessaire.", "warning");
+            showNotification("Bulletin déjà enregistré", "warning");
             return;
         }
 
@@ -444,27 +472,23 @@ const PayrollForm = () => {
                 selectedEmployee
             );
 
-            const { success, message } = await savePayrollToFirestore(
-                payrollData,
-                isEditing
+            const saveFunction = isEditing && !isDuplicating ?
+                payrollService.updatePayroll :
+                payrollService.addPayroll;
+
+            const { success, message } = await saveFunction(
+                currentUser.companyId,
+                isEditing ? location.state.payroll.id : currentUser.uid,
+                payrollData
             );
 
             if (success) {
-                if (!isDuplicating) {
-                    setIsSaved(true);
-                } else {
-                    // POUR LA DUPLICATION RÉUSSIE, METTRE À JOUR L'ÉTAT
-                    setDuplicationComplete(true);
-                    setIsSaved(true); // Maintenant on peut mettre isSaved à true
-                }
-
+                setIsSaved(true);
                 showNotification(message, "success");
 
-                /*  if (isDuplicating) {
-                      setTimeout(() => {
-                          navigate('/');
-                      }, 2000);
-                  } */
+                setTimeout(() => {
+                    scrollToTop();
+                }, 500);
             } else {
                 showNotification(message, "error");
             }
@@ -489,8 +513,12 @@ const PayrollForm = () => {
         }));
     };
 
-    const handleEmployeeChange = (e) => {
-        setSelectedEmployeeId(e.target.value);
+    const handleInputFocus = (e) => {
+        e.target.parentElement.classList.add('payroll-input-focused');
+    };
+
+    const handleInputBlur = (e) => {
+        e.target.parentElement.classList.remove('payroll-input-focused');
     };
 
     const formatCurrency = (value) => {
@@ -501,24 +529,47 @@ const PayrollForm = () => {
     const formatFirestoreDate = (timestamp) => {
         if (!timestamp) return 'N/A';
         if (timestamp.toDate) {
-            return timestamp.toDate().toLocaleDateString();
+            return timestamp.toDate().toLocaleDateString('fr-FR');
         }
         return timestamp;
     };
 
+    const handleQuickSave = async () => {
+        if (isSaved) return;
+        await handleSave();
+    };
+
+    const renderStatCard = (title, value, icon, color = 'primary') => {
+        return (
+            <div className={`payroll-stat-card payroll-stat-${color}`}>
+                <div className="payroll-stat-icon">{icon}</div>
+                <div className="payroll-stat-content">
+                    <div className="payroll-stat-title">{title}</div>
+                    <div className="payroll-stat-value">{formatCurrency(value)}</div>
+                </div>
+            </div>
+        );
+    };
+
     if (!currentUser) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-                <p>Veuillez vous connecter pour accéder à cette page</p>
+            <div className="payroll-auth-required">
+                <div className="payroll-auth-message">
+                    <FaBell className="payroll-auth-icon" />
+                    <h3>Connexion requise</h3>
+                    <p>Veuillez vous connecter pour accéder à cette page</p>
+                </div>
             </div>
         );
     }
 
     if (loading) {
         return (
-            <div className="loading-container-all">
-                <div className="loading-spinner-all">⏳</div>
-                <div>Chargement...</div>
+            <div className="payroll-loading-screen">
+                <div className="payroll-loading-spinner">
+                    <FaSpinner className="payroll-spinner-icon" />
+                </div>
+                <p>Chargement du bulletin...</p>
             </div>
         );
     }
@@ -526,393 +577,536 @@ const PayrollForm = () => {
     const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
 
     return (
-        <div className="dashboard-layoute">
-            {notification.show && (
-                <Notification
-                    message={notification.message}
-                    type={notification.type}
-                    onClose={() => setNotification({ show: false, message: '', type: '' })}
-                />
-            )}
-
-            <div className="floating-buttons">
-                <button
-                    className="floating-show-button"
-                    onClick={togglePreview}
-                >
-                    {showPreview ? (
-                        <>
-                            <FaEyeSlash className="button-icon" />
-                            <span className="button-text">Masquer</span>
-                        </>
-                    ) : (
-                        <>
-                            <FaEye className="button-icon" />
-                            <span className="button-text">Aperçu</span>
-                        </>
-                    )}
-                </button>
-
-                <button
-                    className="floating-back-button"
-                    onClick={() => navigate(-1)}
-                >
-                    <FaArrowLeft className="button-icon" />
-                    <span className="button-text">Quitter</span>
-                </button>
-            </div>
-
-
-            <div className="container">
-                <div className='pre-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h1 className="header">Bulletin de Paie</h1>
+        <div className="payroll-premium-container">
+            {/* Sidebar Navigation */}
+            <div className={`payroll-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                <div className="payroll-sidebar-header">
                     <button
-                        className="button primary-button"
-                        onClick={togglePreview}
+                        className="payroll-sidebar-toggle"
+                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                     >
-                        {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
+                        {sidebarCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
+                    </button>
+                    {!sidebarCollapsed && (
+                        <div className="payroll-sidebar-title">
+                            <FaFileInvoice />
+                            <span>Édition Bulletin</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="payroll-sidebar-nav">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            className={`payroll-sidebar-tab ${activeTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                            title={tab.label}
+                        >
+                            <span className="payroll-sidebar-tab-icon">{tab.icon}</span>
+                            {!sidebarCollapsed && (
+                                <span className="payroll-sidebar-tab-label">{tab.label}</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="payroll-sidebar-footer">
+                    <button
+                        className="payroll-sidebar-action"
+                        onClick={handleQuickSave}
+                        disabled={isSaving || isSaved}
+                    >
+                        <FaSave />
+                        {!sidebarCollapsed && <span>{isSaved ? 'Enregistré' : 'Enregistrer'}</span>}
                     </button>
                 </div>
+            </div>
 
-                <div className="section">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2>Informations du client</h2>
-                        <button
-                            className="first-btn"
-                            onClick={() => setShowEmployeInfo(!showEmployeInfo)}
-                            style={{ fontSize: '0.9rem' }}
-                        >
-                            {showEmployeInfo ? "Masquer" : "Afficher"}
-                        </button>
-                    </div>
-                    {showEmployeInfo && (
-                        <>
-                            <div className="form-group">
-                                <label className="label">Employé</label>
-                                <select
-                                    value={selectedEmployeeId}
-                                    onChange={handleEmployeeChange}
-                                    className="select"
-                                    required
+            {/* Main Content */}
+            <div className="payroll-main-content">
+                {/* Header */}
+                <header className="payroll-header">
+                    <div className="payroll-header-content">
+                        <div className="payroll-header-title">
+                            <h1>
+                                <FaFileInvoice className="payroll-header-icon" />
+                                Bulletin de Paie {payrollNumber && `- ${payrollNumber}`}
+                            </h1>
+                            <div className="payroll-header-subtitle">
+                                {selectedEmployeeId ?
+                                    `${selectedEmployee.nom} ${selectedEmployee.prenom}` :
+                                    'Sélectionnez un employé'}
+                            </div>
+                        </div>
+
+                        <div className="payroll-header-actions">
+                            <button
+                                className="payroll-header-btn payroll-preview-btn"
+                                onClick={handleShowPdfModal}
+                                disabled={!selectedEmployeeId}
+                            >
+                                <FaEye /> Aperçu PDF
+                            </button>
+
+                            {(isSaved || isDuplicating) && (
+                                <PDFDownloadLink
+                                    document={
+                                        <PayrollPDF
+                                            employee={selectedEmployee}
+                                            formData={{ ...formData, numero: payrollNumber }}
+                                            calculations={calculations}
+                                            companyInfo={{
+                                                name: "LEADER INTERIM & SERVICES",
+                                                address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
+                                                phone: "33-820-88-46 / 78-434-30-16",
+                                                email: "infos@leaderinterime.com",
+                                                rc: "SN 2015 B24288",
+                                                ninea: "0057262212 A2"
+                                            }}
+                                        />
+                                    }
+                                    fileName={`bulletin_paie_${selectedEmployee.nom}_${selectedEmployee.prenom}_${formData.periode.du}_${formData.periode.au}.pdf`}
                                 >
-                                    <option value="">Sélectionner un employé</option>
-                                    {employees.map(employee => (
-                                        <option key={employee.id} value={employee.id}>
-                                            {employee.nom} {employee.prenom} - {employee.poste} (Mat: {employee.matricule})
-                                        </option>
-                                    ))}
-                                </select>
+                                    {({ loading: pdfLoading }) => (
+                                        <button
+                                            className="payroll-header-btn payroll-download-btn"
+                                            disabled={pdfLoading}
+                                        >
+                                            {pdfLoading ? <FaSpinner className="spinner" /> : <FaDownload />}
+                                            Télécharger PDF
+                                        </button>
+                                    )}
+                                </PDFDownloadLink>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Stats Bar */}
+                    {selectedEmployeeId && (
+                        <div className="payroll-stats-bar">
+                            {renderStatCard("Brut Fiscal", calculations.brutFiscal, <FaMoneyBillWave />, "primary")}
+                            {renderStatCard("Net à Payer", calculations.salaireNetAPayer, <FaCalculator />, "success")}
+                            {renderStatCard("Retenues", calculations.totalRetenuesPris, <FaPercentage />, "warning")}
+                            {renderStatCard("Primes", calculations.totalPrimes, <FaCoins />, "info")}
+                        </div>
+                    )}
+                </header>
+
+                {/* Form Sections */}
+                <div className="payroll-form-sections" ref={formRef}>
+                    {/* Section: Employé */}
+                    <section id="section-employee" className="payroll-form-section">
+                        <div className="payroll-section-header">
+                            <FaUser className="payroll-section-icon" />
+                            <h2>Informations Employé</h2>
+                            <button
+                                className="payroll-section-toggle"
+                                onClick={() => setShowEmployeeInfo(!showEmployeeInfo)}
+                            >
+                                {showEmployeeInfo ? 'Masquer' : 'Afficher'}
+                            </button>
+                        </div>
+
+                        {showEmployeeInfo && (
+                            <div className="payroll-form-grid">
+                                <div className="payroll-form-group">
+                                    <label className="payroll-label">
+                                        <FaUser className="payroll-input-icon" />
+                                        Sélectionner un employé
+                                    </label>
+                                    <select
+                                        value={selectedEmployeeId}
+                                        onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                                        className="payroll-select payroll-select-employee"
+                                        required
+                                    >
+                                        <option value="">Choisir un employé...</option>
+                                        {employees.map(employee => (
+                                            <option key={employee.id} value={employee.id}>
+                                                {employee.nom} {employee.prenom} - {employee.poste} (Mat: {employee.matricule})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedEmployeeId && (
+                                    <div className="payroll-employee-card">
+                                        <div className="payroll-employee-header">
+                                            <div className="payroll-employee-avatar">
+                                                {selectedEmployee.nom?.charAt(0)}{selectedEmployee.prenom?.charAt(0)}
+                                            </div>
+                                            <div className="payroll-employee-info">
+                                                <h3>{selectedEmployee.nom} {selectedEmployee.prenom}</h3>
+                                                <p className="payroll-employee-position">{selectedEmployee.poste}</p>
+                                            </div>
+                                        </div>
+                                        <div className="payroll-employee-details">
+                                            <div className="payroll-detail-item">
+                                                <span className="payroll-detail-label">Matricule:</span>
+                                                <span className="payroll-detail-value">{selectedEmployee.matricule}</span>
+                                            </div>
+                                            <div className="payroll-detail-item">
+                                                <span className="payroll-detail-label">Date d'embauche:</span>
+                                                <span className="payroll-detail-value">{formatFirestoreDate(selectedEmployee.dateEmbauche)}</span>
+                                            </div>
+                                            <div className="payroll-detail-item">
+                                                <span className="payroll-detail-label">Type de contrat:</span>
+                                                <span className="payroll-detail-value">{selectedEmployee.typeContrat}</span>
+                                            </div>
+                                            <div className="payroll-detail-item">
+                                                <span className="payroll-detail-label">Nombre de parts:</span>
+                                                <span className="payroll-detail-value">{selectedEmployee.nbreofParts}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Section: Période */}
+                    <section id="section-period" className="payroll-form-section">
+                        <div className="payroll-section-header">
+                            <FaCalendarAlt className="payroll-section-icon" />
+                            <h2>Période de Paie</h2>
+                        </div>
+                        <div className="payroll-form-grid payroll-form-grid-2">
+                            <div className="payroll-form-group">
+                                <label className="payroll-label">Date de début</label>
+                                <div className="payroll-input-wrapper">
+                                    <FaCalendarAlt className="payroll-input-icon" />
+                                    <input
+                                        type="date"
+                                        name="periode.du"
+                                        value={formData.periode.du}
+                                        onChange={handleChange}
+                                        onFocus={handleInputFocus}
+                                        onBlur={handleInputBlur}
+                                        className="payroll-input"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="payroll-form-group">
+                                <label className="payroll-label">Date de fin</label>
+                                <div className="payroll-input-wrapper">
+                                    <FaCalendarAlt className="payroll-input-icon" />
+                                    <input
+                                        type="date"
+                                        name="periode.au"
+                                        value={formData.periode.au}
+                                        onChange={handleChange}
+                                        onFocus={handleInputFocus}
+                                        onBlur={handleInputBlur}
+                                        className="payroll-input"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Section: Rémunération */}
+                    <section id="section-remuneration" className="payroll-form-section">
+                        <div className="payroll-section-header">
+                            <FaMoneyBillWave className="payroll-section-icon" />
+                            <h2>Rémunération</h2>
+                        </div>
+                        <div className="payroll-form-grid payroll-form-grid-3">
+                            {[
+                                { label: "Salaire de base", name: "remuneration.salaireBase", value: formData.remuneration.salaireBase },
+                                { label: "Sursalaire", name: "remuneration.sursalaire", value: formData.remuneration.sursalaire },
+                                { label: "Indemnité de déplacement", name: "remuneration.indemniteDeplacement", value: formData.remuneration.indemniteDeplacement },
+                                { label: "Autres indemnités", name: "remuneration.autresIndemnites", value: formData.remuneration.autresIndemnites },
+                                { label: "Avantages en nature", name: "remuneration.avantagesNature", value: formData.remuneration.avantagesNature }
+                            ].map((field, index) => (
+                                <div className="payroll-form-group" key={index}>
+                                    <label className="payroll-label">{field.label}</label>
+                                    <div className="payroll-input-wrapper">
+                                        <FaCoins className="payroll-input-icon" />
+                                        <input
+                                            type="number"
+                                            name={field.name}
+                                            value={field.value}
+                                            onChange={handleChange}
+                                            onFocus={handleInputFocus}
+                                            onBlur={handleInputBlur}
+                                            className="payroll-input"
+                                            min="0"
+                                            step="100"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Section: Retenues */}
+                    <section id="section-deductions" className="payroll-form-section">
+                        <div className="payroll-section-header">
+                            <FaPercentage className="payroll-section-icon" />
+                            <h2>Retenues & Cotisations</h2>
+                        </div>
+                        <div className="payroll-form-grid payroll-form-grid-3">
+                            {[
+                                { label: "Retenue salaire", name: "retenues.retenueSalaire", value: formData.retenues.retenueSalaire },
+                                { label: "Qpart I.P.M", name: "retenues.qpartipm", value: formData.retenues.qpartipm },
+                                { label: "Avances", name: "retenues.avances", value: formData.retenues.avances },
+                                { label: "TRIMF", name: "retenues.trimf", value: formData.retenues.trimf },
+                                { label: "IR", name: "retenues.ir", value: formData.retenues.ir }
+                            ].map((field, index) => (
+                                <div className="payroll-form-group" key={index}>
+                                    <label className="payroll-label">{field.label}</label>
+                                    <div className="payroll-input-wrapper">
+                                        <FaPercentage className="payroll-input-icon" />
+                                        <input
+                                            type="number"
+                                            name={field.name}
+                                            value={field.value}
+                                            onChange={handleChange}
+                                            onFocus={handleInputFocus}
+                                            onBlur={handleInputBlur}
+                                            className="payroll-input"
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Section: Primes */}
+                    <section id="section-bonuses" className="payroll-form-section">
+                        <div className="payroll-section-header">
+                            <FaCoins className="payroll-section-icon" />
+                            <h2>Primes et Indemnités</h2>
+                        </div>
+                        <div className="payroll-form-grid payroll-form-grid-3">
+                            {[
+                                { label: "Transport", name: "primes.transport", value: formData.primes.transport },
+                                { label: "Panier", name: "primes.panier", value: formData.primes.panier },
+                                { label: "Repas", name: "primes.repas", value: formData.primes.repas },
+                                { label: "Ancienneté", name: "primes.anciennete", value: formData.primes.anciennete },
+                                { label: "Responsabilité", name: "primes.responsabilite", value: formData.primes.responsabilite },
+                                { label: "Autres primes", name: "primes.autresPrimes", value: formData.primes.autresPrimes }
+                            ].map((field, index) => (
+                                <div className="payroll-form-group" key={index}>
+                                    <label className="payroll-label">{field.label}</label>
+                                    <div className="payroll-input-wrapper">
+                                        <FaCoins className="payroll-input-icon" />
+                                        <input
+                                            type="number"
+                                            name={field.name}
+                                            value={field.value}
+                                            onChange={handleChange}
+                                            onFocus={handleInputFocus}
+                                            onBlur={handleInputBlur}
+                                            className="payroll-input"
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Section: Récapitulatif */}
+                    {selectedEmployeeId && (
+                        <section id="section-summary" className="payroll-form-section">
+                            <div className="payroll-section-header">
+                                <FaChartPie className="payroll-section-icon" />
+                                <h2>Récapitulatif</h2>
                             </div>
 
-                            {selectedEmployeeId && (
-                                <div className="client-info-box">
-                                    <h3>Informations de l'employé</h3>
-                                    <p><strong>Nom:</strong> {selectedEmployee.nom} {selectedEmployee.prenom}</p>
-                                    <p><strong>Poste:</strong> {selectedEmployee.poste}</p>
-                                    <p><strong>Matricule:</strong> {selectedEmployee.matricule}</p>
-                                    <p><strong>Date d'embauche:</strong> {formatFirestoreDate(selectedEmployee.dateEmbauche)}</p>
-                                    <p><strong>Salaire de base:</strong> {formatCurrency(selectedEmployee.salaireBase)}</p>
-                                    <p><strong>Nombre de parts:</strong> {selectedEmployee.nbreofParts}</p>
-                                    <p><strong>Type de contrat:</strong> {selectedEmployee.typeContrat}</p>
+                            <div className="payroll-summary-grid">
+                                {/* Cotisations */}
+                                <div className="payroll-summary-card">
+                                    <h3 className="payroll-summary-title">Détails des Cotisations</h3>
+                                    <div className="payroll-summary-list">
+                                        <div className="payroll-summary-item">
+                                            <span>IPRES RG (5.6%)</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.detailsCotisations.ipresRG)}</span>
+                                        </div>
+                                        <div className="payroll-summary-item">
+                                            <span>IPRES RC (2.4%)</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.detailsCotisations.ipresRC)}</span>
+                                        </div>
+                                        <div className="payroll-summary-item">
+                                            <span>CFCE (1%)</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.detailsCotisations.cfce)}</span>
+                                        </div>
+                                        <div className="payroll-summary-item payroll-summary-total">
+                                            <span>Total Cotisations</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.cotisationsEmp)}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </>
+
+                                {/* Salaires */}
+                                <div className="payroll-summary-card">
+                                    <h3 className="payroll-summary-title">Calcul des Salaires</h3>
+                                    <div className="payroll-summary-list">
+                                        <div className="payroll-summary-item">
+                                            <span>Brut Social</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.brutSocial)}</span>
+                                        </div>
+                                        <div className="payroll-summary-item">
+                                            <span>Brut Fiscal</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.brutFiscal)}</span>
+                                        </div>
+                                        <div className="payroll-summary-item">
+                                            <span>Rémunération nette</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.salaireNet)}</span>
+                                        </div>
+                                        <div className="payroll-summary-item payroll-summary-highlight">
+                                            <span>Salaire Net à Payer</span>
+                                            <span className="payroll-summary-value">{formatCurrency(calculations.salaireNetAPayer)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     )}
                 </div>
 
-                <div className="section">
-                    <h2>Période de Paie</h2>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="label">Du</label>
-                            <input
-                                type="date"
-                                name="periode.du"
-                                value={formData.periode.du}
-                                onChange={handleChange}
-                                className="input"
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Au</label>
-                            <input
-                                type="date"
-                                name="periode.au"
-                                value={formData.periode.au}
-                                onChange={handleChange}
-                                className="input"
-                                required
-                            />
-                        </div>
-                    </div>
-                </div>
+                {/* Boutons flottants */}
+                <div className="payroll-floating-buttons">
+                    {/* Bouton Aperçu PDF */}
+                    <button
+                        className="payroll-floating-btn payroll-float-preview"
+                        onClick={handleShowPdfModal}
+                        disabled={!selectedEmployeeId}
+                        title="Aperçu PDF"
+                    >
+                        <span className="floating-btn-icon">
+                            <FaEye />
+                        </span>
+                        <span className="floating-btn-label">Aperçu PDF</span>
+                    </button>
 
-                <div className="section">
-                    <h2>Rémunération</h2>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="label">Salaire de base</label>
-                            <input
-                                type="number"
-                                name="remuneration.salaireBase"
-                                value={formData.remuneration.salaireBase}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Sursalaire</label>
-                            <input
-                                type="number"
-                                name="remuneration.sursalaire"
-                                value={formData.remuneration.sursalaire}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Indemnité de déplacement</label>
-                            <input
-                                type="number"
-                                name="remuneration.indemniteDeplacement"
-                                value={formData.remuneration.indemniteDeplacement}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Autres indemnités</label>
-                            <input
-                                type="number"
-                                name="remuneration.autresIndemnites"
-                                value={formData.remuneration.autresIndemnites}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Avantages en nature</label>
-                            <input
-                                type="number"
-                                name="remuneration.avantagesNature"
-                                value={formData.remuneration.avantagesNature}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                    </div>
-                </div>
+                    {/* Bouton Enregistrer - visible toujours */}
+                    <button
+                        className={`payroll-floating-btn payroll-float-save ${isSaved ? 'saved' : ''} ${isSaving ? 'payroll-saving' : ''}`}
+                        onClick={handleSave}
+                        disabled={isSaving || !selectedEmployeeId}
+                        title={isDuplicating ? 'Dupliquer' : 'Enregistrer'}
+                    >
+                        <span className="floating-btn-icon">
+                            {isSaving ? <FaSpinner className="spinner" /> : <FaSave />}
+                        </span>
+                        <span className="floating-btn-label">
+                            {isSaving ? 'Enregistrement...' : isSaved ? 'Enregistré' : isDuplicating ? 'Dupliquer' : 'Enregistrer'}
+                        </span>
+                        {isSaved && !isSaving && <span className="payroll-save-badge">✓</span>}
+                    </button>
 
-                <div className="section">
-                    <h2>Cotisations sociales & impôts</h2>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="label">Retenue salaire</label>
-                            <input
-                                type="number"
-                                name="retenues.retenueSalaire"
-                                value={formData.retenues.retenueSalaire}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Retenue Qpart I.P.M</label>
-                            <input
-                                type="number"
-                                name="retenues.qpartipm"
-                                value={formData.retenues.qpartipm}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Avances</label>
-                            <input
-                                type="number"
-                                name="retenues.avances"
-                                value={formData.retenues.avances}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">TRIMF</label>
-                            <input
-                                type="number"
-                                name="retenues.trimf"
-                                value={formData.retenues.trimf}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">IR</label>
-                            <input
-                                type="number"
-                                name="retenues.ir"
-                                value={formData.retenues.ir}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="section">
-                    <h2>Primes et Indemnités</h2>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="label">Indemnité de transport</label>
-                            <input
-                                type="number"
-                                name="primes.transport"
-                                value={formData.primes.transport}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Prime de panier</label>
-                            <input
-                                type="number"
-                                name="primes.panier"
-                                value={formData.primes.panier}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Prime de repas</label>
-                            <input
-                                type="number"
-                                name="primes.repas"
-                                value={formData.primes.repas}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Prime d'ancienneté</label>
-                            <input
-                                type="number"
-                                name="primes.anciennete"
-                                value={formData.primes.anciennete}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Indemnité de responsabilité</label>
-                            <input
-                                type="number"
-                                name="primes.responsabilite"
-                                value={formData.primes.responsabilite}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Autres primes</label>
-                            <input
-                                type="number"
-                                name="primes.autresPrimes"
-                                value={formData.primes.autresPrimes}
-                                onChange={handleChange}
-                                className="input"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {selectedEmployeeId && (
-                    <div className="section">
-                        <h2>Détails des Cotisations</h2>
-                        <div className="table-container">
-                            <table className="totals-table">
-                                <tbody>
-                                    <tr>
-                                        <td>IPRES RG (5.6%):</td>
-                                        <td>{formatCurrency(calculations.detailsCotisations.ipresRG)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>IPRES RC (2.4%):</td>
-                                        <td>{formatCurrency(calculations.detailsCotisations.ipresRC)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>CFCE (1%):</td>
-                                        <td>{formatCurrency(calculations.detailsCotisations.cfce)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>IR:</td>
-                                        <td>{formatCurrency(calculations.detailsCotisations.ir)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Cotisations Salariales:</td>
-                                        <td>{formatCurrency(calculations.cotisationsSalariales)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Cotisations Patronales:</td>
-                                        <td>{formatCurrency(calculations.cotisationsPatronales)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <h2 style={{ marginTop: '3rem' }}>Salaires</h2>
-                        <div className="table-container">
-                            <table className="totals-table">
-                                <tbody>
-                                    <tr>
-                                        <td>Brut Social:</td>
-                                        <td>{formatCurrency(calculations.brutSocial)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Brut Fiscal:</td>
-                                        <td>{formatCurrency(calculations.brutFiscal)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Remuneration nette:</td>
-                                        <td>{formatCurrency(calculations.salaireNet)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Salaire Net à Payer:</td>
-                                        <td className="highlight">{formatCurrency(calculations.salaireNetAPayer)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                <div className="preview-container">
-                    <div className="button-group">
-                        <button
-                            className="primary-button"
-                            onClick={togglePreview}
+                    {/* Bouton Télécharger PDF - visible seulement quand enregistré */}
+                    {(isSaved || isDuplicating) && selectedEmployeeId && (
+                        <PDFDownloadLink
+                            document={
+                                <PayrollPDF
+                                    employee={selectedEmployee}
+                                    formData={{ ...formData, numero: payrollNumber }}
+                                    calculations={calculations}
+                                    companyInfo={{
+                                        name: "LEADER INTERIM & SERVICES",
+                                        address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
+                                        phone: "33-820-88-46 / 78-434-30-16",
+                                        email: "infos@leaderinterime.com",
+                                        rc: "SN 2015 B24288",
+                                        ninea: "0057262212 A2"
+                                    }}
+                                />
+                            }
+                            fileName={`bulletin_paie_${selectedEmployee.nom}_${selectedEmployee.prenom}_${formData.periode.du}_${formData.periode.au}.pdf`}
                         >
-                            {showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
-                        </button>
-
-                        <button
-                            className="success-button"
-                            onClick={handleSave}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? (
-                                <>
-                                    <FaSpinner className="spinner" /> Enregistrement...
-                                </>
-                            ) : (
-                                <>
-                                    <FaSave />
-                                    {isDuplicating ? "Dupliquer" :
-                                        location.state?.payroll?.id ? "Mettre à jour" : "Enregistrer"}
-                                </>
+                            {({ loading: pdfLoading, blob, url, error }) => (
+                                <button
+                                    className="payroll-floating-btn payroll-float-download"
+                                    disabled={pdfLoading}
+                                    title="Télécharger PDF"
+                                >
+                                    <span className="floating-btn-icon">
+                                        {pdfLoading ? <FaSpinner className="spinner" /> : <FaDownload />}
+                                    </span>
+                                    <span className="floating-btn-label">
+                                        {pdfLoading ? 'Génération...' : 'Télécharger PDF'}
+                                    </span>
+                                </button>
                             )}
-                        </button>
+                        </PDFDownloadLink>
+                    )}
 
-                        {(isSaved || duplicationComplete) && (
+                    {/* Bouton Retour */}
+                    <button
+                        className="payroll-floating-btn payroll-float-back"
+                        onClick={() => navigate(-1)}
+                        title="Retour"
+                    >
+                        <span className="floating-btn-icon">
+                            <FaArrowLeft />
+                        </span>
+                        <span className="floating-btn-label">Retour</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Modal PDF Preview */}
+            {showPdfModal && selectedEmployeeId && (
+                <div className={`payroll-pdf-modal ${showPdfModal ? 'active' : ''}`} onClick={handleClosePdfModal}>
+                    <div className="payroll-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="payroll-modal-header">
+                            <h3>
+                                <FaFileInvoice />
+                                Aperçu du Bulletin de Paie
+                            </h3>
+                            <button
+                                className="payroll-modal-close"
+                                onClick={handleClosePdfModal}
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+
+                        <div className="payroll-modal-body">
+                            {pdfBlob ? (
+                                <PDFPreviewDynamic
+                                    width="100%"
+                                    height="100%"
+                                    document={
+                                        <PayrollPDF
+                                            employee={selectedEmployee}
+                                            formData={{ ...formData, numero: payrollNumber }}
+                                            calculations={calculations}
+                                            companyInfo={{
+                                                name: "LEADER INTERIM & SERVICES",
+                                                address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
+                                                phone: "33-820-88-46 / 78-434-30-16",
+                                                email: "infos@leaderinterime.com",
+                                                rc: "SN 2015 B24288",
+                                                ninea: "0057262212 A2"
+                                            }}
+                                        />
+                                    }
+                                />
+                            ) : (
+                                <div className="payroll-preview-loading">
+                                    <FaSpinner className="payroll-spinner" />
+                                    <p>Chargement de l'aperçu PDF...</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="payroll-modal-footer">
+                            <button
+                                className="payroll-modal-btn payroll-modal-btn-secondary"
+                                onClick={handleClosePdfModal}
+                            >
+                                <FaTimes />
+                                Fermer
+                            </button>
+
                             <PDFDownloadLink
                                 document={
                                     <PayrollPDF
@@ -932,46 +1126,28 @@ const PayrollForm = () => {
                                 fileName={`bulletin_paie_${selectedEmployee.nom}_${selectedEmployee.prenom}_${formData.periode.du}_${formData.periode.au}.pdf`}
                             >
                                 {({ loading: pdfLoading }) => (
-                                    <button className="info-button donwload" disabled={pdfLoading}>
-                                        {pdfLoading ? (
-                                            <>
-                                                <FaSpinner className="spinner" /> Génération...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <FaDownload /> Télécharger
-                                            </>
-                                        )}
+                                    <button
+                                        className="payroll-modal-btn payroll-modal-btn-primary"
+                                        disabled={pdfLoading}
+                                    >
+                                        {pdfLoading ? <FaSpinner className="spinner" /> : <FaDownload />}
+                                        Télécharger PDF
                                     </button>
                                 )}
                             </PDFDownloadLink>
-                        )}
+                        </div>
                     </div>
-
-                    {showPreview && (
-                        <PDFPreviewDynamic
-                            width="100%"
-                            height="800px"
-                            style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
-                            document={
-                                <PayrollPDF
-                                    employee={selectedEmployee}
-                                    formData={{ ...formData, numero: payrollNumber }}
-                                    calculations={calculations}
-                                    companyInfo={{
-                                        name: "LEADER INTERIM & SERVICES",
-                                        address: "Ouest Foire, Parcelle N°1, Route de l'aéroport, Dakar",
-                                        phone: "33-820-88-46 / 78-434-30-16",
-                                        email: "infos@leaderinterime.com",
-                                        rc: "SN 2015 B24288",
-                                        ninea: "0057262212 A2"
-                                    }}
-                                />
-                            }
-                        />
-                    )}
                 </div>
-            </div>
+            )}
+
+            {/* Notification */}
+            {notification.show && (
+                <Notification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification({ show: false, message: '', type: '' })}
+                />
+            )}
         </div>
     );
 };

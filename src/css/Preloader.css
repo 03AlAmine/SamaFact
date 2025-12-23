@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url("../assets/bg/bg-bill-1.svg");
+  background-image: url("../assets/bg/bg-fond.jpg");
   background-attachment: fixed; /* ✅ l’image reste fixe */
   background-size: cover; /* ✅ l’image couvre tout */
   background-position: center; /* ✅ centrée */
@@ -15,26 +15,9 @@
   overflow: hidden;
 }
 
-.preloader-overlay::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    to bottom right,
-    rgba(195, 187, 94, 0.2) 0%,
-    rgba(195, 187, 94, 0.3) 50%,
-    rgba(195, 187, 94, 0.2) 100%
-  );
-  animation: shimmer 8s infinite linear;
-  transform: rotate(30deg);
-}
-
 .preloader-container {
   text-align: center;
-  max-width: 320px;
+  max-width: 520px;
   padding: 40px;
   background: rgba(255, 255, 255, 0.648);
   border-radius: 25px;
