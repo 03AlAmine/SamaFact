@@ -34,7 +34,7 @@
 }
 
 /* ===== CONTENEUR PRINCIPAL CLIENTS ===== */
-.clients-section {
+.clients-section, .employees-section {
   position: relative;
   min-height: 100vh;
   padding: 2rem;
@@ -51,22 +51,19 @@
   overflow: hidden;
 }
 
-.clients-section > * {
+.clients-section > * , .employees-section > * {
   position: relative;
   z-index: 1;
 }
 
-.clients-section > * {
-  position: relative;
-  z-index: 1;
-}
 
-.clients-section.background-loaded {
+
+.clients-section.background-loaded, .employees-section.background-loaded {
   animation: fadeInUp 0.8s ease-out;
 }
 
 /* ===== EN-TÊTE SECTION CLIENTS ===== */
-.header-client {
+.header-client, .header-employee {
   display: flex;
   justify-content: space-between !important;
   flex-direction: column !important;

@@ -1384,7 +1384,6 @@ const InvoiceEditor = () => {
             name: companyData.name || 'Nom de l\'entreprise',
             logo: companyData.logo || '',
             logoFileName: companyData.logoFileName || '',
-            // AJOUT: Récupérer la signature
             signatureFileName: companyData.signatureFileName || '',
             rcNumber: companyData.rcNumber || '',
             ninea: companyData.ninea || '',

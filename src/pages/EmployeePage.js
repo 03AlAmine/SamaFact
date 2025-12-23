@@ -770,11 +770,8 @@ const EmployeesPage = ({
 
       <div
         className={`employees-section ${backgroundLoaded ? 'background-loaded' : ''}`}
-        style={{
-          backgroundImage: `url(/bg-client.jpg)`,
-        }}
       >
-        <div className="section-header">
+        <div className="header-employee">
           <div className="header-left">
             <h2 className="section-title">
               <FaUsers style={{ marginRight: "10px" }} />

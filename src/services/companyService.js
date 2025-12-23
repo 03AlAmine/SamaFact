@@ -18,6 +18,7 @@ export const companyService = {
                     name: companyData.name || 'Nom de l\'entreprise',
                     logo: companyData.logo || '',
                     logoFileName: companyData.logoFileName || '',
+                    signatureFileName: companyData.signatureFileName || '',
                     rcNumber: companyData.rcNumber || '',
                     ninea: companyData.ninea || '',
                     address: companyData.address || '',
@@ -55,7 +56,8 @@ export const companyService = {
                     ribOther2: '',
                     ribOther2Label: '',
                     invoiceColor: '#218838',
-                    logoFileName: ''
+                    logoFileName: '',
+                    signatureFileName: ''
                 };
             }
         } catch (error) {

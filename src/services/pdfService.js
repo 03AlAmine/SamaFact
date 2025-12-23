@@ -29,7 +29,8 @@ export const generatePdfBlob = async (facture) => {
                 ribOther2: "",
                 ribOther2Label: "",
                 invoiceColor: "#218838",
-                logoFileName: ""
+                logoFileName: "",
+                signatureFileName: ''
             };
         }
 

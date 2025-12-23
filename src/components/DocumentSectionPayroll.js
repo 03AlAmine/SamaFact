@@ -427,7 +427,6 @@ const PayrollSection = ({
     <div
       ref={containerRef}
       className={`document-section-container ${backgroundLoaded ? 'background-loaded' : ''}`}
-      style={{ backgroundImage: `url(/bg-fact.jpg)` }}
     >
       <PayrollHeader
         title={title}
