@@ -9,10 +9,54 @@ import {
   where,
   getDocs,
   orderBy,
-  deleteDoc
+  deleteDoc,
+  limit,
+  getDoc
 } from "firebase/firestore";
 
 export const employeeService = {
+  generateMatricule: async (companyId) => {
+    try {
+      // Récupérer le code de l'entreprise depuis la collection companies
+      const companyDoc = await getDoc(doc(db, "companies", companyId));
+      if (!companyDoc.exists()) {
+        throw new Error("Entreprise non trouvée");
+      }
+
+      const companyData = companyDoc.data();
+      const companyCode = companyData.code || companyData.name.substring(0, 3).toUpperCase();
+
+      // Chercher le dernier matricule pour cette entreprise
+      const employeesRef = collection(db, `companies/${companyId}/employees`);
+      const q = query(
+        employeesRef,
+        where("matricule", ">=", `${companyCode}-`),
+        where("matricule", "<=", `${companyCode}-\uf8ff`),
+        orderBy("matricule", "desc"),
+        limit(1)
+      );
+
+      const querySnapshot = await getDocs(q);
+      let lastNumber = 0;
+
+      if (!querySnapshot.empty) {
+        const lastMatricule = querySnapshot.docs[0].data().matricule;
+        const match = lastMatricule.match(/-(\d+)$/);
+        if (match) {
+          lastNumber = parseInt(match[1], 10);
+        }
+      }
+
+      // Générer le prochain numéro séquentiel
+      const nextNumber = lastNumber + 1;
+      const formattedNumber = nextNumber.toString().padStart(4, '0');
+
+      return `${companyCode}-${formattedNumber}`;
+    } catch (error) {
+      console.error("Erreur génération matricule:", error);
+      throw error;
+    }
+  },
   // Récupère tous les employés avec écoute en temps réel
   getEmployees: (companyId, callback) => {
     if (!companyId) return () => { };
@@ -55,33 +99,88 @@ export const employeeService = {
 
     return unsubscribe;
   },
+  // Dans employeeService.js, vérifiez que previewMatricule est bien définie
+  previewMatricule: async (companyId) => {
+    try {
+      // Récupérer le code de l'entreprise
+      const companyDoc = await getDoc(doc(db, "companies", companyId));
+      if (!companyDoc.exists()) {
+        throw new Error("Entreprise non trouvée");
+      }
 
+      const companyData = companyDoc.data();
+      const companyCode = companyData.code || companyData.name.substring(0, 3).toUpperCase();
+
+      // Chercher le dernier matricule
+      const employeesRef = collection(db, `companies/${companyId}/employees`);
+      const q = query(
+        employeesRef,
+        where("matricule", ">=", `${companyCode}-`),
+        where("matricule", "<=", `${companyCode}-\uf8ff`),
+        orderBy("matricule", "desc"),
+        limit(1)
+      );
+
+      const querySnapshot = await getDocs(q);
+      let lastNumber = 0;
+
+      if (!querySnapshot.empty) {
+        const lastMatricule = querySnapshot.docs[0].data().matricule;
+        const match = lastMatricule.match(/-(\d+)$/);
+        if (match) {
+          lastNumber = parseInt(match[1], 10);
+        }
+      }
+
+      // Générer le prochain numéro
+      const nextNumber = lastNumber + 1;
+      const formattedNumber = nextNumber.toString().padStart(4, '0');
+
+      return `${companyCode}-${formattedNumber}`;
+    } catch (error) {
+      console.error("Erreur prévisualisation matricule:", error);
+      return `${companyId.substring(0, 3).toUpperCase()}-0001`; // Fallback
+    }
+  },
   // Ajoute un nouvel employé
   addEmployee: async (companyId, employeeData) => {
     try {
       // Validation des données requises
-      if (!employeeData.nom || !employeeData.prenom || !employeeData.matricule) {
-        throw new Error("Nom, prénom et matricule sont obligatoires");
+      if (!employeeData.nom || !employeeData.prenom) {
+        throw new Error("Nom et prénom sont obligatoires");
       }
 
-      const employeesRef = collection(db, `companies/${companyId}/employees`);
-      const docRef = await addDoc(employeesRef, {
-        ...employeeData,
-        dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
+      // Validation de la catégorie (doit être un nombre entre 1 et 10)
+      const categorie = parseInt(employeeData.categorie, 10);
+      if (isNaN(categorie) || categorie < 1 || categorie > 10) {
+        throw new Error("La catégorie doit être un nombre entre 1 et 10");
+      }
 
-        fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(), // Pour la recherche
+      // Générer le matricule automatiquement
+      const matricule = await employeeService.generateMatricule(companyId);
+
+      // S'assurer que categorie est un nombre
+      const validatedEmployeeData = {
+        ...employeeData,
+        categorie: categorie, // ← Conversion en nombre
+        matricule: matricule,
+        dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
+        fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
         createdAt: new Date(),
-        status: 'active' // Statut par défaut
-      });
+        status: 'active',
+        companyCode: matricule.split('-')[0]
+      };
+
+      const employeesRef = collection(db, `companies/${companyId}/employees`);
+      const docRef = await addDoc(employeesRef, validatedEmployeeData);
 
       return {
         success: true,
         message: "Employé ajouté avec succès !",
         employee: {
           id: docRef.id,
-          ...employeeData,
+          ...validatedEmployeeData,
           dateEmbauche: employeeData.dateEmbauche
-
         }
       };
     } catch (error) {
@@ -150,15 +249,35 @@ export const employeeService = {
     }
   },
 
-
   deleteEmployee: async (companyId, employeeId) => {
     try {
-      const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
+      if (!companyId || !employeeId) {
+        throw new Error("companyId et employeeId sont requis");
+      }
+
+      const employeeRef = doc(db, "companies", companyId, "employees", employeeId);
       await deleteDoc(employeeRef);
-      return { success: true, message: "Employé supprimé avec succès !" };
+
+      return {
+        success: true,
+        message: "Employé supprimé avec succès !"
+      };
+
     } catch (error) {
-      console.error("Erreur:", error);
-      return { success: false, message: "Erreur lors de la suppression de l'employé." };
+      console.error("Erreur suppression employé:", error);
+
+      let errorMessage = "Erreur lors de la suppression de l'employé";
+
+      if (error.code === 'permission-denied') {
+        errorMessage = "Permission refusée. Vérifiez vos droits d'accès.";
+      } else if (error.code === 'not-found') {
+        errorMessage = "Employé introuvable.";
+      }
+
+      return {
+        success: false,
+        message: errorMessage
+      };
     }
   },
   // Charge les bulletins de paie d'un employé

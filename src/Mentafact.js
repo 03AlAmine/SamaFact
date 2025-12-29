@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { clientService } from "./services/clientService";
@@ -87,7 +87,6 @@ const Mentafact = () => {
     categorie: "",
     poste: "",
     departement: "",
-    matricule: "",
     dateEmbauche: "",
     typeContrat: "CDI",
     salaireBase: 0,
@@ -515,27 +514,69 @@ const Mentafact = () => {
     setEmployee({ ...employee, [e.target.name]: e.target.value });
   const handleEditChangeemployee = (e) =>
     setEditingEmployee({ ...editingEmployee, [e.target.name]: e.target.value });
+  const [nextMatricule, setNextMatricule] = useState("");
+
+  // Fonction pour charger le prochain matricule
+  const loadNextMatricule = useCallback(async () => {
+    if (!companyId) return;
+
+    try {
+      const matricule = await employeeService.previewMatricule(companyId);
+      setNextMatricule(matricule);
+    } catch (error) {
+      console.error("Erreur chargement matricule:", error);
+      setNextMatricule("CODE-0001");
+    }
+  }, [companyId]);
+
+  // Charger le matricule quand companyId change
+  useEffect(() => {
+    if (companyId && activeTab === "employees") {
+      loadNextMatricule();
+    }
+  }, [companyId, activeTab, loadNextMatricule]);
 
   const handleSubmitemployee = async (e) => {
     e.preventDefault();
-    const result = await employeeService.addEmployee(companyId, employee);
+
+    // Ajoutez automatiquement le prochain matricule
+    const employeeWithMatricule = {
+      ...employee,
+      matricule: nextMatricule // Utilise le matricule généré
+    };
+
+    const result = await employeeService.addEmployee(companyId, employeeWithMatricule);
     if (result.success) {
       alert(result.message);
+      // Réinitialiser le formulaire
       setEmployee({
         nom: "",
         prenom: "",
-        matricule: "",
+        adresse: "",
+        categorie: "",
         poste: "",
         departement: "",
         dateEmbauche: "",
         typeContrat: "CDI",
         salaireBase: 0,
+        indemniteTransport: 26000,
+        primePanier: 0,
+        indemniteResponsabilite: 0,
+        indemniteDeplacement: 0,
+        joursConges: 0,
+        joursAbsence: 0,
+        avanceSalaire: 0,
+        joursCongesUtilises: 0,
       });
+      // Recharger le prochain matricule
+      await loadNextMatricule();
     } else {
       alert(result.message);
     }
   };
   const handleEditEmployee = (employee) => {
+    if (!employee) return;
+
     setEditingEmployee({ ...employee });
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -547,22 +588,38 @@ const Mentafact = () => {
     }
 
     try {
-      const result = await employeeService.deleteEmployee(
-        companyId,
-        employeeId
-      );
+      const result = await employeeService.deleteEmployee(companyId, employeeId);
+
       if (result.success) {
+        // Mettre à jour la liste des employés
         setEmployees((prev) => prev.filter((emp) => emp.id !== employeeId));
-        alert(result.message);
+
+        // Réinitialiser l'employé sélectionné si c'est celui supprimé
+        if (selectedEmployee?.id === employeeId) {
+          setSelectedEmployee(null);
+        }
+
+        alert("Employé supprimé avec succès");
         return true;
+      } else {
+        alert(result.message || "Échec de la suppression");
+        return false;
       }
+
     } catch (error) {
       console.error("Erreur suppression employé:", error);
-      alert("Échec de la suppression");
+
+      let errorMessage = "Échec de la suppression de l'employé";
+      if (error.code === "permission-denied") {
+        errorMessage = "Vous n'avez pas les droits pour supprimer cet employé";
+      } else if (error.code === "not-found") {
+        errorMessage = "Employé déjà supprimé ou introuvable";
+      }
+
+      alert(errorMessage);
       return false;
     }
   };
-
   const handleUpdateEmployee = async (e) => {
     e.preventDefault();
     const result = await employeeService.updateEmployee(
@@ -579,7 +636,6 @@ const Mentafact = () => {
   };
 
   const handleUpdateEmployeeSuivi = async (employeeData) => {
-    // Ne plus s'attendre à un événement
     try {
       const result = await employeeService.updateEmployee(
         companyId,
@@ -588,7 +644,6 @@ const Mentafact = () => {
       );
 
       if (result.success) {
-        // Mettre à jour l'état local
         setEmployees(
           employees.map((emp) =>
             emp.id === employeeData.id ? employeeData : emp
@@ -857,71 +912,166 @@ const Mentafact = () => {
     try {
       // 1. Lire le fichier Excel
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      const workbook = XLSX.read(data, {
+        type: 'array',
+        cellDates: true,
+        cellNF: false
+      });
 
-      setImportProgress("Conversion des données employés...");
+      const worksheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[worksheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        raw: false,
+        dateNF: 'yyyy-mm-dd'
+      });
+
+      setImportProgress(`Conversion de ${jsonData.length} lignes...`);
 
       // 2. Transformer les données
-      const employeesToImport = jsonData
-        .map((row) => ({
-          nom: row["Nom"] || "",
-          prenom: row["Prénom"] || "",
-          email: row["Email"] || row["E-mail"] || "",
-          telephone: row["Téléphone"] || row["Phone"] || "",
-          adresse: row["Adresse"] || row["Address"] || "",
-          poste: row["Poste"] || row["Fonction"] || "",
-          departement: row["Département"] || "",
-          matricule: row["Matricule"] || "",
-          dateEmbauche: row["Date embauche"] ? row["Date embauche"] : "",
-          typeContrat: row["Type contrat"] || "CDI",
-          salaireBase: parseFloat(row["Salaire base"] || 0),
-          categorie: row["Catégorie"] || "",
-          nbreofParts: parseInt(row["Nombre parts"] || 1),
-          indemniteTransport: parseFloat(row["Indemnité transport"] || 26000),
-          primePanier: parseFloat(row["Prime panier"] || 0),
-          indemniteResponsabilite: parseFloat(
-            row["Indemnité responsabilité"] || 0
-          ),
-          indemniteDeplacement: parseFloat(row["Indemnité déplacement"] || 0),
-        }))
-        .filter(
-          (employee) =>
-            employee.nom.trim() !== "" && employee.prenom.trim() !== ""
-        );
+      const employeesToImport = [];
+      let errorCount = 0;
+      let errors = [];
+
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        try {
+          // Normalisation des noms de colonnes
+          const rowData = {};
+          Object.keys(row).forEach(key => {
+            const normalizedKey = key
+              .toLowerCase()
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+              .trim();
+            rowData[normalizedKey] = row[key];
+          });
+
+          // Validation des champs requis
+          const nom = rowData.nom || rowData.name || '';
+          const prenom = rowData.prenom || rowData.firstname || rowData['prenom/nom']?.split(' ')[0] || '';
+
+          if (!nom.trim() || !prenom.trim()) {
+            errors.push(`Ligne ${i + 2}: Nom et prénom requis`);
+            errorCount++;
+            continue;
+          }
+
+          // Traitement de la date d'embauche
+          let dateEmbauche = '';
+          const dateRaw = rowData.dateembauche || rowData['date embauche'] || rowData.date_embauche || rowData.hiredate;
+
+          if (dateRaw) {
+            if (dateRaw instanceof Date) {
+              dateEmbauche = dateRaw.toISOString().split('T')[0];
+            } else if (typeof dateRaw === 'string') {
+              const parsedDate = new Date(dateRaw);
+              if (!isNaN(parsedDate.getTime())) {
+                dateEmbauche = parsedDate.toISOString().split('T')[0];
+              } else {
+                dateEmbauche = dateRaw;
+              }
+            }
+          }
+
+          // Construction de l'objet employé SANS matricule
+          const employee = {
+            nom: nom.toString().trim(),
+            prenom: prenom.toString().trim(),
+            email: (rowData.email || rowData.mail || '').toString().trim(),
+            telephone: (rowData.telephone || rowData.phone || rowData.tel || '').toString().trim(),
+            adresse: (rowData.adresse || rowData.address || '').toString().trim(),
+            poste: (rowData.poste || rowData.job || rowData.position || '').toString().trim(),
+            departement: (rowData.departement || rowData.department || rowData.dept || '').toString().trim(),
+            // PAS DE MATRICULE ICI - Il sera généré automatiquement
+            dateEmbauche: dateEmbauche,
+            typeContrat: (rowData.typecontrat || rowData['type contrat'] || rowData.contracttype || 'CDI').toString().trim(),
+            salaireBase: parseFloat(rowData.salairebase || rowData['salaire base'] || rowData.basesalary || rowData.salaire || 0),
+            categorie: (rowData.categorie || rowData.category || rowData.grade || '').toString().trim(),
+            nbreofParts: parseInt(rowData.nbreofparts || rowData['nbre parts'] || rowData.parts || rowData['nombre parts'] || 1, 10),
+            indemniteTransport: parseFloat(rowData.indemnitetransport || rowData['indemnite transport'] || rowData.transportallowance || 26000),
+            primePanier: parseFloat(rowData.primepanier || rowData['prime panier'] || rowData.mealallowance || 0),
+            indemniteResponsabilite: parseFloat(rowData.indemniteresponsabilite || rowData['indemnite responsabilite'] || rowData.responsibilityallowance || 0),
+            indemniteDeplacement: parseFloat(rowData.indemnitedeplacement || rowData['indemnite deplacement'] || rowData.travelallowance || 0),
+            joursConges: parseInt(rowData.joursconges || rowData['jours conges'] || rowData.leavedays || 0, 10),
+            joursAbsence: parseInt(rowData.joursabsence || rowData['jours absence'] || rowData.absencedays || 0, 10),
+            avanceSalaire: parseFloat(rowData.avancesalaire || rowData['avance salaire'] || rowData.salaryadvance || 0),
+            joursCongesUtilises: parseInt(rowData.jourscongesutilises || rowData['jours conges utilises'] || rowData.usedleavedays || 0, 10),
+          };
+
+          // Validation du salaire
+          if (employee.salaireBase < 0 || isNaN(employee.salaireBase)) {
+            errors.push(`Ligne ${i + 2}: Salaire base invalide`);
+            errorCount++;
+            continue;
+          }
+
+          employeesToImport.push(employee);
+
+        } catch (error) {
+          errors.push(`Ligne ${i + 2}: ${error.message}`);
+          errorCount++;
+          continue;
+        }
+      }
 
       if (employeesToImport.length === 0) {
         setImportProgress("Aucun employé valide trouvé dans le fichier");
         return;
       }
 
-      setImportProgress(
-        `Importation de ${employeesToImport.length} employés...`
-      );
+      setImportProgress(`Importation de ${employeesToImport.length} employés...`);
 
       // 3. Importer les employés
       let importedCount = 0;
-      for (const employee of employeesToImport) {
+      let importErrors = [];
+
+      for (let i = 0; i < employeesToImport.length; i++) {
+        const employee = employeesToImport[i];
         try {
+          // ✅ APPEL SIMPLIFIÉ - Le matricule sera généré automatiquement
           const result = await employeeService.addEmployee(companyId, employee);
+
           if (result.success) {
             importedCount++;
+
+            // Mise à jour du prochain matricule pour l'affichage UI
+            if (i === employeesToImport.length - 1) {
+              loadNextMatricule(); // Recharge le prochain matricule pour le formulaire
+            }
+          } else {
+            importErrors.push(`Ligne ${i + 2}: ${result.message}`);
           }
         } catch (error) {
-          console.error("Erreur lors de l'import d'un employé:", error);
+          importErrors.push(`Ligne ${i + 2}: ${error.message}`);
+        }
+
+        // Mise à jour de la progression
+        if (i % 5 === 0 || i === employeesToImport.length - 1) {
+          setImportProgress(`Importation... ${importedCount}/${employeesToImport.length}`);
         }
       }
 
-      setImportProgress(
-        `${importedCount}/${employeesToImport.length} employés importés avec succès`
-      );
+      // 4. Résultats finaux
+      let resultMessage = `${importedCount}/${employeesToImport.length} employés importés avec succès ✓`;
+
+      if (errorCount > 0) {
+        resultMessage += `\n${errorCount} ligne(s) rejetée(s)`;
+      }
+
+      if (importErrors.length > 0) {
+        resultMessage += `\n${importErrors.length} erreur(s) d'import`;
+        console.warn("Erreurs d'import:", importErrors.slice(0, 3));
+      }
+
+      setImportProgress(resultMessage);
+
     } catch (error) {
       console.error("Erreur lors de l'import des employés:", error);
-      setImportProgress("Erreur lors de l'import: " + error.message);
+      setImportProgress(`Erreur: ${error.message}`);
     } finally {
-      // Réinitialiser le champ de fichier
-      e.target.value = "";
+      if (e.target) {
+        e.target.value = "";
+      }
     }
   };
 
@@ -1036,6 +1186,8 @@ const Mentafact = () => {
             cancelEdit={cancelEditEmployee}
             handleImportEmployees={handleImportEmployee} // ← Cette ligne
             importProgress={importProgress} // ← Et cette ligne
+            nextMatricule={nextMatricule} // ← Ajoutez cette ligne
+
           />
         );
       case "factures":

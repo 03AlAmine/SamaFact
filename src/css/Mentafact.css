@@ -1825,6 +1825,8 @@ body {
 
 .chart-card,
 .chart-card-stat {
+  display: flex;
+  flex-direction: column;
   padding: 1.5rem;
   border-radius: var(--border-radius);
   transition: var(--transition);
@@ -2584,12 +2586,6 @@ button:hover svg {
   .chart-card-stat:nth-child(3) {
     height: 500px;
   }
-}
-/* Ajuster le conteneur des cartes de graphique */
-.chart-card {
-  min-height: 350px;
-  display: flex;
-  flex-direction: column;
 }
 
 /*--------------------------- Floating UP (vertical expand) ------------------------------*/

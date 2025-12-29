@@ -58,9 +58,10 @@ const SamaFact = () => {
     companyForm: {
       name: '',
       email: '',
+      code: '',
       industry: '',
-      logoFileName: '', 
-      signatureFileName: '', 
+      logoFileName: '',
+      signatureFileName: '',
       status: 'active'
     },
     userForm: {
@@ -114,6 +115,7 @@ const SamaFact = () => {
     return companiesSnapshot.docs.map(doc => ({
       id: doc.id,
       name: doc.data().name || '',
+      code: doc.data().code || '',
       email: doc.data().email || '',
       industry: doc.data().industry || '',
       status: doc.data().status || 'active',
@@ -241,6 +243,7 @@ const SamaFact = () => {
         companyForm: {
           name: '',
           email: '',
+          code: '',
           industry: '',
           status: 'active',
           logoFileName: '',
@@ -368,6 +371,7 @@ const SamaFact = () => {
           ...prev,
           companyForm: {
             name: item.name || '',
+            code: item.code || '',
             email: item.email || '',
             industry: item.industry || '',
             status: item.status || 'active',
@@ -395,6 +399,7 @@ const SamaFact = () => {
           ...prev,
           companyForm: {
             name: '',
+            code: '',
             email: '',
             industry: '',
             status: 'active',

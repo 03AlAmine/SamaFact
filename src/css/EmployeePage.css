@@ -878,3 +878,48 @@
   }
 }
 
+/* Dans EmployeePage.css */
+.matricule-display {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.matricule-preview {
+  display: flex;
+  align-items: center;
+}
+
+.matricule-code {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #2c3e50;
+  background-color: #e8f4fd;
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px dashed #3498db;
+}
+/* Empêcher les flèches sur les inputs number */
+.form-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.form-input[type="number"]::-webkit-outer-spin-button,
+.form-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Style pour les inputs invalides */
+.form-input:invalid {
+  border-color: #ff6b6b;
+  background-color: rgba(255, 107, 107, 0.05);
+}
+
+/* Message d'erreur */
+.error-message {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 4px;
+}

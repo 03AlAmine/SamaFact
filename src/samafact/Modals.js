@@ -85,6 +85,23 @@ export const CompanyModal = ({
                                 placeholder="Ex: Entreprise SARL"
                             />
                         </div>
+                        <div className="form-group">
+                            <label htmlFor="company-code">Code entreprise *</label>
+                            <input
+                                id="company-code"
+                                type="text"
+                                className="form-control"
+                                value={company.code || ''}
+                                onChange={(e) => onChange('code', e.target.value.toUpperCase())}
+                                required
+                                maxLength="3"
+                                placeholder="Ex: LIS, SON, SAM"
+                                style={{ textTransform: 'uppercase' }}
+                            />
+                            <small className="form-text text-muted">
+                                3 lettres maximum. Utilisé pour générer les matricules (ex: MTF-0001)
+                            </small>
+                        </div>
 
                         <div className="form-group">
                             <label htmlFor="company-email">Email</label>
@@ -285,10 +302,12 @@ CompanyModal.propTypes = {
     onSubmit: PropTypes.func.isRequired,
     company: PropTypes.shape({
         name: PropTypes.string,
+        code: PropTypes.string,
         email: PropTypes.string,
         industry: PropTypes.string,
         status: PropTypes.string,
         logoFileName: PropTypes.string,
+        signatureFileName: PropTypes.string,
     }).isRequired,
     onChange: PropTypes.func.isRequired,
     mode: PropTypes.oneOf(['add', 'edit']).isRequired,

@@ -206,116 +206,67 @@ export const InvoiceChart = ({ invoices }) => {
   );
 };
 
-// 🧍‍♂️ Clients par entreprise (Doughnut)
 
-const navButtonStyle = {
-  background: '#4f46e5',
-  color: 'white',
-  border: 'none',
-  borderRadius: '50%',
-  width: '32px',
-  height: '32px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  ':hover': {
-    background: '#4338ca',
-    transform: 'scale(1.05)'
-  },
-  ':disabled': {
-    background: '#e2e8f0',
-    color: '#94a3b8',
-    cursor: 'not-allowed',
-    transform: 'none'
-  }
-};
-
-
-export const ClientChart = ({ clients }) => {
+// 📊 Composant générique de graphique donut avec légende paginée
+export const DonutChartWithLegend = ({ 
+  dataItems, 
+  title = "Données", 
+  dataKey = "nom",
+  valueKey = "count",
+  labelSingular = "élément",
+  labelPlural = "éléments"
+}) => {
   const [currentPage, setCurrentPage] = useState(0); // 0 = graphique, 1 = légende
   const [currentLegendPage, setCurrentLegendPage] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const itemsPerPage = 6;
   const intervalRef = useRef(null);
 
-  const companies = {};
-  if (Array.isArray(clients)) {
-    clients.forEach(client => {
-      const company = client.nom || 'Non spécifié';
-      companies[company] = (companies[company] || 0) + 1;
+  // Grouper les données (même logique que ClientChart et EmployeChart)
+  const groupedData = {};
+  if (Array.isArray(dataItems)) {
+    dataItems.forEach(item => {
+      const key = item[dataKey] || 'Non spécifié';
+      const value = item[valueKey] || 1;
+      groupedData[key] = (groupedData[key] || 0) + value;
     });
   }
 
-  const labels = Object.keys(companies);
-  const values = Object.values(companies);
-  const totalClients = values.reduce((a, b) => a + b, 0);
+  const labels = Object.keys(groupedData);
+  const values = Object.values(groupedData);
+  const total = values.reduce((a, b) => a + b, 0);
+  const labelText = total === 1 ? labelSingular : labelPlural;
 
-  // Palette de couleurs
+  // Palette de couleurs étendue (commune aux deux graphiques)
   const backgroundColors = [
-    // 🌌 Bleus & Violets
+    // Bleus & Violets
     '#6366f1', '#4f46e5', '#4338ca', '#3730a3', '#312e81', '#1e3a8a', '#1e40af', '#1d4ed8',
     '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#c7d2fe', '#a5b4fc',
     '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6', '#4c1d95', '#3f0c96', '#9d4edd', '#7b2cbf',
     '#a855f7', '#9333ea', '#c026d3', '#a21caf', '#86198f', '#701a75',
 
-    // 💖 Roses / Magentas / Rouges doux
+    // Roses / Rouges
     '#ec4899', '#db2777', '#be185d', '#9d174d', '#f472b6', '#f06292', '#ff80ab', '#ff4d94',
     '#e84393', '#ff6f91', '#ff8da1', '#fca5a5', '#fecaca', '#f43f5e', '#ef4444', '#dc2626',
     '#b91c1c', '#ae2c2c', '#9f1239', '#fb7185', '#fda4af', '#ffe0e6',
 
-    // 🔥 Oranges & Tons chauds
+    // Oranges & Jaunes
     '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12', '#ff8e42', '#ff6a00', '#ff7849',
     '#ffa366', '#ffb380', '#fca311', '#fb8c00', '#f57c00', '#ef6c00', '#ff9800', '#ffb74d',
     '#fed7aa', '#fbd38d', '#f6ad55', '#f59e0b', '#eab308', '#facc15', '#fcd34d', '#fde68a',
     '#fef08a', '#fff3b0', '#ffd166',
 
-    // 🍃 Verts / Menthes / Limes
+    // Verts
     '#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#34d399', '#22c55e', '#16a34a',
     '#15803d', '#166534', '#14532d', '#4ade80', '#84cc16', '#bef264', '#c6f68d', '#86efac',
     '#bbf7d0', '#ccfbf1', '#99f6e4', '#5eead4', '#2dd4bf', '#14b8a6', '#0d9488', '#0f766e',
     '#064e3b', '#4caf50', '#66bb6a', '#81c784', '#a5d6a7', '#c7f9cc', '#80ed99', '#57cc99',
-
-    // 🌊 Turquoises / Cyans / Bleus clairs
-    '#06b6d4', '#0891b2', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd', '#e0f2fe', '#0d9488',
-    '#0284c7', '#0369a1', '#075985', '#0e7490', '#14b8a6', '#2ec4b6', '#1d9bf0', '#3da9fc',
-    '#48cae4', '#90e0ef', '#caf0f8', '#0096c7', '#00b4d8', '#7cd4fd',
-
-    // 🍇 Mélanges premium (dégradés naturels)
-    '#d946ef', '#c026d3', '#a21caf', '#86198f', '#fb7185', '#fb6f92', '#ff99cc', '#ffb3d9',
-    '#ffa8e2', '#ffd1dc', '#fcd5ce', '#fae1dd', '#fde2e4', '#f8edeb', '#ffe5ec', '#ffc2d1',
-
-    // 🪵 Marrons / Chauds naturels
-    '#78350f', '#92400e', '#b45309', '#d97706', '#e4863b', '#c8652c', '#ad4f1c', '#8d3c13',
-    '#7b341e', '#6d2812', '#5c1f0f', '#cc8e35', '#a47148', '#8d5524', '#7f4f24', '#6f400f',
-
-    // 🖤 Gris / Neutres / Anthracite
-    '#64748b', '#475569', '#334155', '#1e293b', '#0f172a', '#0b141f', '#94a3b8', '#cbd5e1',
-    '#e2e8f0', '#f1f5f9', '#f8fafc', '#9ca3af', '#6b7280', '#4b5563', '#374151', '#1f2937',
-    '#f3f4f6', '#e5e7eb', '#d1d5db', '#a8a29e', '#78716c', '#57534e', '#44403c', '#262626',
-
-    // ✨ Pastels premium (super beaux pour backgrounds)
-    '#fde2e4', '#fad2e1', '#e2ece9', '#bee1e6', '#fef6e4', '#fff5e1', '#f6e9d7', '#faedcd',
-    '#f5ebe0', '#e3d5ca', '#d6ccc2', '#f8edeb', '#dbe9f4', '#edf2fb', '#ffe5ec', '#e9edc9',
-    '#d7e3fc', '#f0efeb', '#d8e2dc', '#ece4db', '#f7ede2', '#fff1e6', '#fde4cf', '#f1faee',
-
-    // 🟣 Tons spéciaux / Vibrants / Néons
-    '#b5179e', '#f72585', '#7209b7', '#560bad', '#480ca8', '#4cc9f0', '#4361ee', '#3a0ca3',
-    '#720e9e', '#d00000', '#ff4800', '#ff6d00', '#ff9500', '#ffea00', '#bcff01', '#80ff72',
-    '#38b000', '#008000', '#37ff8b', '#00ffa3', '#00f5d4', '#00bbf0', '#00a6fb', '#00509d',
-
-    // 🌈 Mélanges personnalisés
-    '#ff4f79', '#ff7f50', '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff',
-    '#bdb2ff', '#ffc6ff', '#fffffc', '#f1c0e8', '#cfbaf0', '#a3c4f3', '#90dbf4', '#00b3a4',
-    '#00aab7', '#0096a5', '#006d77', '#e29578', '#ffddd2', '#edf6f9', '#eaf4f4', '#bee3db'
   ];
-
 
   const data = {
     labels,
     datasets: [{
-      label: 'Nombre de clients',
+      label: `Nombre de ${labelPlural}`,
       data: values,
       backgroundColor: backgroundColors.slice(0, labels.length),
       borderColor: '#fff',
@@ -341,8 +292,8 @@ export const ClientChart = ({ clients }) => {
           label: function (context) {
             const label = context.label || '';
             const value = context.raw || 0;
-            const percentage = totalClients > 0 ? ((value / totalClients) * 100).toFixed(1) : 0;
-            return `${label}: ${value} clients (${percentage}%)`;
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            return `${label}: ${value} ${labelPlural} (${percentage}%)`;
           }
         }
       }
@@ -365,7 +316,7 @@ export const ClientChart = ({ clients }) => {
   useEffect(() => {
     if (!isHovering) {
       intervalRef.current = setInterval(() => {
-        setCurrentPage(prev => (prev + 1) % 2); // Alterne entre 0 et 1
+        setCurrentPage(prev => (prev + 1) % 2);
       }, 5000);
     }
 
@@ -374,7 +325,7 @@ export const ClientChart = ({ clients }) => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isHovering]); // Dépendance sur isHovering 
+  }, [isHovering]);
 
   // Gestion du survol
   const handleMouseEnter = () => {
@@ -400,7 +351,6 @@ export const ClientChart = ({ clients }) => {
   // Navigation manuelle des pages
   const handlePageChange = (pageIndex) => {
     setCurrentPage(pageIndex);
-    // Réinitialiser le timer quand on change manuellement de page
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
@@ -420,9 +370,9 @@ export const ClientChart = ({ clients }) => {
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="client-chart-container"
+      className="donut-chart-container"
     >
-      {/* Boutons de pagination seulement (sans titre) */}
+      {/* Boutons de pagination */}
       <div style={{
         position: 'absolute',
         top: '-50px',
@@ -516,7 +466,7 @@ export const ClientChart = ({ clients }) => {
               marginBottom: '4px',
               lineHeight: 1
             }}>
-              {totalClients}
+              {total}
             </div>
             <div style={{
               fontSize: '14px',
@@ -524,7 +474,7 @@ export const ClientChart = ({ clients }) => {
               fontWeight: '500',
               marginBottom: '4px'
             }}>
-              Clients
+              {labelText}
             </div>
             <div style={{
               fontSize: '11px',
@@ -554,7 +504,7 @@ export const ClientChart = ({ clients }) => {
           pointerEvents: currentPage === 1 ? 'auto' : 'none'
         }}
       >
-        {/* Liste des légendes avec scroll */}
+        {/* Liste des légendes */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
@@ -619,7 +569,7 @@ export const ClientChart = ({ clients }) => {
           })}
         </div>
 
-        {/* Barre inférieure avec état de rotation ET pagination de légende */}
+        {/* Barre inférieure */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -628,7 +578,7 @@ export const ClientChart = ({ clients }) => {
           borderTop: '1px solid #e2e8f0',
           gap: '10px'
         }}>
-          {/* Indicateur d'état de rotation à gauche */}
+          {/* Indicateur d'état de rotation */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -652,7 +602,7 @@ export const ClientChart = ({ clients }) => {
             {isHovering ? 'Suspendue' : 'Auto'}
           </div>
 
-          {/* Indicateur de pagination de légende au centre */}
+          {/* Indicateur de pagination de légende */}
           {totalLegendPages > 1 && (
             <div style={{
               display: 'flex',
@@ -684,7 +634,7 @@ export const ClientChart = ({ clients }) => {
             </div>
           )}
 
-          {/* Boutons de pagination de légende à droite */}
+          {/* Boutons de pagination de légende */}
           {totalLegendPages > 1 && (
             <div style={{
               display: 'flex',
@@ -750,264 +700,39 @@ export const ClientChart = ({ clients }) => {
     </div>
   );
 };
+
+// 🧍‍♂️ Clients par entreprise 
+export const ClientChart = ({ clients }) => (
+  <DonutChartWithLegend
+    dataItems={clients}
+  //  title="Répartition des clients"
+    dataKey="nom"
+    labelSingular="client"
+    labelPlural="clients"
+  />
+);
+
+// 👥 Employés par entreprise 
 export const EmployeChart = ({ employees }) => {
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 5;
-  const intervalRef = useRef(null);
-
-  const companies = {};
-  if (Array.isArray(employees)) {
-    employees.forEach(employee => {
-      const company = [employee?.nom, employee?.prenom].filter(Boolean).join(' ') || 'Non spécifié';
-      companies[company] = (companies[company] || 0) + 1;
-    });
-  }
-
-  const labels = Object.keys(companies);
-  const values = Object.values(companies);
-
-  // Palette de couleurs modernes
-  const backgroundColors = [
-    // Couleurs existantes
-    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#ef4444',
-    '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
-    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
-    '#64748b', '#94a3b8', '#cbd5e1',
-
-    // Couleurs ajoutées
-    '#a855f7', '#9333ea', '#7c3aed', '#6d28d9', // violet
-    '#d946ef', '#c026d3', '#a21caf', '#86198f', // rose/violet
-    '#facc15', '#fde68a', '#fef08a', '#fcd34d', // jaune
-    '#4ade80', '#34d399', '#2dd4bf', '#5eead4', // vert-menthe
-    '#0d9488', '#0891b2', '#0284c7', '#2563eb', // bleu
-    '#1d4ed8', '#1e40af', '#1e3a8a', '#172554', // bleu foncé
-    '#f43f5e', '#fb7185', '#fca5a5', '#fecaca', // rouge/rose
-    '#e2e8f0', '#f1f5f9', '#f8fafc', '#e5e7eb'  // gris/pastel
-  ];
-
-
-  const data = {
-    labels,
-    datasets: [{
-      label: 'Nombre d\'employés par ',
-      data: values,
-      backgroundColor: backgroundColors.slice(0, labels.length),
-      borderColor: '#fff',
-      borderWidth: 2,
-      hoverOffset: 10,
-      cutout: '75%',
-    }]
-  };
-
-  const options = {
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-        titleFont: { size: 14, weight: 'bold' },
-        bodyFont: { size: 12 },
-        padding: 12,
-        cornerRadius: 8,
-        displayColors: false
-      }
-    },
-    cutout: '75%',
-    layout: {
-      padding: 20
-    },
-    animation: {
-      animateScale: true,
-      animateRotate: true
-    }
-  };
-
-  const totalPages = Math.ceil(labels.length / itemsPerPage);
-  const start = currentPage * itemsPerPage;
-  const end = start + itemsPerPage;
-  const visibleLegends = labels.slice(start, end);
-
-  // Auto-slide toutes les 3 secondes
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setCurrentPage(prev => (prev + 1) % totalPages);
-    }, 3000);
-
-    return () => clearInterval(intervalRef.current);
-  }, [totalPages]);
-
-  const pauseAutoSlide = () => clearInterval(intervalRef.current);
-  const resumeAutoSlide = () => {
-    intervalRef.current = setInterval(() => {
-      setCurrentPage(prev => (prev + 1) % totalPages);
-    }, 3000);
-  };
+  // Transformer les données d'employés pour le composant générique
+  const transformedEmployees = Array.isArray(employees) 
+    ? employees.map(emp => ({
+        id: emp.id,
+        nom: [emp.nom, emp.prenom].filter(Boolean).join(' ') || 'Non spécifié',
+        count: 1
+      }))
+    : [];
 
   return (
-    <div style={{
-      display: 'flex',
-      gap: '1rem',
-      alignItems: 'center',
-      flexWrap: 'wrap', // ✅ pour responsivité
-      maxWidth: '100%',
-      margin: '0 auto',
-      padding: '0,5rem',
-      boxSizing: 'border-box'
-    }}>
-      {/* Graphique */}
-      <div style={{
-        height: '250px',
-        width: '250px',
-        position: 'relative',
-        flexShrink: 0
-      }}>
-        <Doughnut data={data} options={options} />
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: '#1e293b'
-          }}>
-            {values.reduce((a, b) => a + b, 0)}
-          </div>
-          <div style={{
-            fontSize: '14px',
-            color: '#64748b'
-          }}>
-            Employés
-          </div>
-        </div>
-      </div>
-
-      {/* Légende avec carousel */}
-      <div
-        onMouseEnter={pauseAutoSlide}
-        onMouseLeave={resumeAutoSlide}
-        style={{
-          flex: 1,
-          minWidth: '260px',
-          padding: '1rem',
-          borderRadius: '12px',
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          maxWidth: '100%',
-          boxSizing: 'border-box'
-        }}
-      >
-
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1px',
-          minHeight: '160px',
-          maxWidth: '100%',
-          overflow: 'hidden'
-        }}>
-          {visibleLegends.map((label, i) => (
-            <div key={label} style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              transition: 'all 0.2s ease',
-              overflow: 'hidden',
-              maxWidth: '100%'
-            }}>
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  backgroundColor: backgroundColors[start + i],
-                  marginRight: 12,
-                  borderRadius: '4px',
-                  flexShrink: 0
-                }}
-              />
-              <span style={{
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                color: '#334155',
-                fontWeight: '500',
-                maxWidth: '80%',
-                flexGrow: 1,
-                display: 'inline-block'
-              }}>
-                {label}
-              </span>
-              <span style={{
-                marginLeft: 'auto',
-                color: '#64748b',
-                fontSize: '13px',
-                fontWeight: '600',
-                whiteSpace: 'nowrap',
-                flexShrink: 0
-              }}>
-                {values[start + i]}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Navigation & pagination */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: '0.5rem'
-        }}>
-          <button
-            onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
-            disabled={currentPage === 0}
-            style={{
-              ...navButtonStyle,
-              background: currentPage === 0 ? '#e2e8f0' : '#6366f1',
-              color: currentPage === 0 ? '#94a3b8' : 'white'
-            }}
-          >
-            ◀
-          </button>
-
-          <div style={{
-            display: 'flex',
-            gap: '6px'
-          }}>
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <div
-                key={idx}
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: currentPage === idx ? '#6366f1' : '#cbd5e1',
-                  transition: 'all 0.2s ease'
-                }}
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages - 1))}
-            disabled={currentPage === totalPages - 1}
-            style={{
-              ...navButtonStyle,
-              background: currentPage === totalPages - 1 ? '#e2e8f0' : '#6366f1',
-              color: currentPage === totalPages - 1 ? '#94a3b8' : 'white'
-            }}
-          >
-            ▶
-          </button>
-        </div>
-      </div>
-    </div>
+    <DonutChartWithLegend
+      dataItems={transformedEmployees}
+    //  title="Répartition des employés"
+      dataKey="nom"
+      valueKey="count"
+      labelSingular="employé"
+      labelPlural="employés"
+    />
   );
-
 };
 
 // 💳 Statut des factures (Pie)

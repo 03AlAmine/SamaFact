@@ -24,13 +24,13 @@ const ModernDateRangePicker = ({ dateRange, setDateRange }) => {
           popperClassName="custom-popper"
         />
       </div>
-      
+
       <div className="date-separator">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 12H16M16 12L13 9M16 12L13 15" stroke="var(--primary-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 12H16M16 12L13 9M16 12L13 15" stroke="var(--primary-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      
+
       <div className="date-picker-group">
         <FaCalendarAlt className="calendar-icon" />
         <DatePicker
@@ -49,9 +49,9 @@ const ModernDateRangePicker = ({ dateRange, setDateRange }) => {
           popperClassName="custom-popper"
         />
       </div>
-      
+
       {(dateRange.from || dateRange.to) && (
-        <button 
+        <button
           onClick={() => setDateRange({ from: null, to: null })}
           className="clear-date-range-btn"
           aria-label="Effacer la sélection"

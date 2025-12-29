@@ -1,5 +1,4 @@
 /* PayrollForm.css - Version Premium Refondue */
-
 :root {
   /* Palette raffinée */
   --payroll-primary: #4f46e5;
@@ -238,7 +237,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--payroll-primary);
+  background: var(--payroll-warning);
   transform: translateX(-100%);
   transition: var(--payroll-transition);
 }
@@ -359,9 +358,9 @@
 }
 
 .payroll-header-title h1 {
-  font-size: var(--payroll-font-size-3xl);
-  font-weight: 800;
-  color: var(--payroll-dark);
+  font-size: var(--payroll-font-size-lg);
+  font-weight: 600;
+  color: var(--payroll-primary);
   margin-bottom: var(--payroll-spacing-sm);
   background: var(--payroll-gradient-primary);
   -webkit-background-clip: text;
@@ -370,6 +369,10 @@
   display: flex;
   align-items: center;
   gap: var(--payroll-spacing-md);
+}
+.payroll-payroll-number{
+  font-size: var(--payroll-font-size-3xl);
+  font-weight: 800;
 }
 
 .payroll-header-icon {
@@ -456,7 +459,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--payroll-spacing-lg);
-  margin-top: var(--payroll-spacing-xl);
+  margin-top: var(--payroll-spacing-md);
 }
 
 .payroll-stat-card {
@@ -570,7 +573,7 @@
 .payroll-form-sections {
   display: flex;
   flex-direction: column;
-  gap: var(--payroll-spacing-2xl);
+  gap: var(--payroll-spacing-xl);
   margin-bottom: var(--payroll-spacing-2xl);
 }
 
@@ -623,7 +626,7 @@
 
 .payroll-section-icon {
   font-size: var(--payroll-font-size-xl);
-  color: var(--payroll-primary);
+  color: var(--payroll-warning);
   background: linear-gradient(
     135deg,
     var(--payroll-primary) 0%,
@@ -637,7 +640,7 @@
 .payroll-section-header h2 {
   font-size: var(--payroll-font-size-xl);
   font-weight: 700;
-  color: var(--payroll-dark);
+  color: var(--payroll-primary-light);
   margin: 0;
   flex: 1;
 }
@@ -711,6 +714,11 @@
   left: var(--payroll-spacing-md);
   top: 50%;
   transform: translateY(-50%);
+  color: var(--payroll-gray);
+  transition: var(--payroll-transition);
+  font-size: var(--payroll-font-size-base);
+}
+.payroll-input-icon-employee {
   color: var(--payroll-gray);
   transition: var(--payroll-transition);
   font-size: var(--payroll-font-size-base);
@@ -796,7 +804,7 @@
   width: 64px;
   height: 64px;
   border-radius: var(--payroll-radius);
-  background: var(--payroll-gradient-primary);
+  background: var(--payroll-gradient-warning);
   color: white;
   display: flex;
   align-items: center;

@@ -12,7 +12,9 @@
           "min-height: auto",
           "scrollbar-width",
           "scrollbar-color",
-          "-webkit-mask"
+          "-webkit-mask",
+          "scrollbar-width: thin",
+          "-moz-appearance"
         ]
       }
     ],

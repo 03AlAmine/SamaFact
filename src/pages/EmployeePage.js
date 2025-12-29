@@ -24,12 +24,20 @@ const EmptyState = ({ onAddEmployee }) => (
 );
 
 // FormField réutilisable
-const FormField = ({ label, required, ...props }) => (
+// Mettez à jour le composant FormField pour supporter le type number :
+const FormField = ({ label, required, type = "text", min, max, ...props }) => (
   <div className="form-group">
     <label htmlFor={props.name} className="form-label">
       {label} {required && <span className="required">*</span>}
     </label>
-    <input id={props.name} className="form-input" {...props} />
+    <input
+      id={props.name}
+      className="form-input"
+      type={type}
+      min={min}
+      max={max}
+      {...props}
+    />
   </div>
 );
 
@@ -53,7 +61,8 @@ const EmployeeForm = ({
   onSubmit,
   onCancel,
   onChange,
-  onEditChange
+  onEditChange,
+  nextMatricule
 }) => {
   const primesFields = [
     { name: "indemniteTransport", label: "Indemnité transport", value: formData.indemniteTransport || 26000 },
@@ -69,11 +78,46 @@ const EmployeeForm = ({
           {isEditing ? <FaEdit /> : <FaPlus />}
           {isEditing ? "Modifier l'employé" : "Ajouter un nouvel employé"}
         </h2>
+        <div className="form-group">
+          <label className="form-label">
+            Matricule <span className="required">*</span>
+          </label>
+          <div className="matricule-display">
+            <div className="matricule-value">
+              {isEditing ? (
+                // En mode édition, afficher le matricule existant
+                <input
+                  type="text"
+                  name="matricule"
+                  value={formData.matricule || ""}
+                  onChange={onEditChange}
+                  className="form-input"
+                  required
+                  placeholder="Matricule"
+                  readOnly // Empêche la modification manuelle
+                />
+              ) : (
+                // En mode création, afficher le prochain matricule
+                <div className="matricule-preview">
+                  <span className="matricule-code">
+                    {nextMatricule || "Chargement..."}
+                  </span>
+                  <input
+                    type="hidden"
+                    name="matricule"
+                    value={nextMatricule || ""}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         {!isEditing && (
           <button type="button" className="primary-btn" onClick={onCancel}>
             <FaPlus /> Fermer
           </button>
         )}
+
       </div>
 
       <div className="form-row">
@@ -131,14 +175,7 @@ const EmployeeForm = ({
       </div>
 
       <div className="form-row">
-        <FormField
-          label="Matricule"
-          name="matricule"
-          value={formData.matricule}
-          onChange={isEditing ? onEditChange : onChange}
-          required
-          placeholder="EMP001"
-        />
+
         <FormSelect
           label="Contrat"
           name="typeContrat"
@@ -176,7 +213,10 @@ const EmployeeForm = ({
           value={formData.categorie}
           onChange={isEditing ? onEditChange : onChange}
           required
-          placeholder="Cadre"
+          placeholder="1, 2, 3..."
+          type="number"
+          min="1"
+          max="10"
         />
         <FormField
           label="Nbre parts"
@@ -346,9 +386,27 @@ const ImportButton = ({ onImport }) => (
 
 // Carte employé
 const EmployeeCard = ({ employee, isSelected, onSelect, onEdit, onDelete, onView, onTracking }) => {
-  const handleAction = (e, action) => {
+
+
+  // Gardez seulement ces nouvelles fonctions
+  const handleDeleteAction = (e) => {
     e.stopPropagation();
-    action(employee);
+    onDelete(employee.id); // Suppression reçoit l'ID
+  };
+
+  const handleViewAction = (e) => {
+    e.stopPropagation();
+    onView(employee); // Vue reçoit l'objet
+  };
+
+  const handleEditAction = (e) => {
+    e.stopPropagation();
+    onEdit(employee); // Édition reçoit l'objet
+  };
+
+  const handleTrackingAction = (e) => {
+    e.stopPropagation();
+    onTracking(employee); // Tracking reçoit l'objet
   };
 
   return (
@@ -366,10 +424,11 @@ const EmployeeCard = ({ employee, isSelected, onSelect, onEdit, onDelete, onView
           <div className="employee-position">{employee.poste}</div>
         </div>
         <div className="employee-actions">
-          <ActionButton icon={<FaEye />} title="Voir détails" onClick={(e) => handleAction(e, onView)} className="view-btn" />
-          <ActionButton icon={<FaEdit />} title="Modifier" onClick={(e) => handleAction(e, onEdit)} className="edit-btn" />
-          <ActionButton icon={<FaTrash />} title="Supprimer" onClick={(e) => handleAction(e, onDelete)} className="delete-btn" />
-          <ActionButton icon={<FaCalendarAlt />} title="Suivi" onClick={(e) => handleAction(e, onTracking)} className="tracking-btn" />
+          {/* UTILISEZ LES NOUVELLES FONCTIONS */}
+          <ActionButton icon={<FaEye />} title="Voir détails" onClick={handleViewAction} className="view-btn" />
+          <ActionButton icon={<FaEdit />} title="Modifier" onClick={handleEditAction} className="edit-btn" />
+          <ActionButton icon={<FaTrash />} title="Supprimer" onClick={handleDeleteAction} className="delete-btn" />
+          <ActionButton icon={<FaCalendarAlt />} title="Suivi" onClick={handleTrackingAction} className="tracking-btn" />
         </div>
       </div>
 
@@ -402,9 +461,25 @@ const ActionButton = ({ icon, title, onClick, className }) => (
 
 // Ligne tableau employé
 const EmployeeTableRow = ({ employee, isSelected, onSelect, onView, onEdit, onDelete, onTracking }) => {
-  const handleAction = (e, action) => {
+  // Créez des fonctions séparées comme dans EmployeeCard
+  const handleDeleteAction = (e) => {
     e.stopPropagation();
-    action(employee);
+    onDelete(employee.id); // Suppression reçoit l'ID
+  };
+
+  const handleViewAction = (e) => {
+    e.stopPropagation();
+    onView(employee); // Vue reçoit l'objet
+  };
+
+  const handleEditAction = (e) => {
+    e.stopPropagation();
+    onEdit(employee); // Édition reçoit l'objet
+  };
+
+  const handleTrackingAction = (e) => {
+    e.stopPropagation();
+    onTracking(employee); // Tracking reçoit l'objet
   };
 
   return (
@@ -429,25 +504,19 @@ const EmployeeTableRow = ({ employee, isSelected, onSelect, onView, onEdit, onDe
         </div>
       </td>
       <td>
-        <TableActions
-          onView={(e) => handleAction(e, onView)}
-          onEdit={(e) => handleAction(e, onEdit)}
-          onDelete={(e) => handleAction(e, onDelete)}
-          onTracking={(e) => handleAction(e, onTracking)}
-        />
+        {/* UTILISEZ LES NOUVELLES FONCTIONS */}
+        <div className="table-actions">
+          <ActionButton icon={<FaEye />} title="Voir détails" onClick={handleViewAction} className="view-btn" />
+          <ActionButton icon={<FaEdit />} title="Modifier" onClick={handleEditAction} className="edit-btn" />
+          <ActionButton icon={<FaTrash />} title="Supprimer" onClick={handleDeleteAction} className="delete-btn" />
+          <ActionButton icon={<FaCalendarAlt />} title="Suivi" onClick={handleTrackingAction} className="tracking-btn" />
+        </div>
       </td>
     </tr>
   );
 };
 
-const TableActions = ({ onView, onEdit, onDelete, onTracking }) => (
-  <div className="table-actions">
-    <ActionButton icon={<FaEye />} title="Voir détails" onClick={onView} className="view-btn" />
-    <ActionButton icon={<FaEdit />} title="Modifier" onClick={onEdit} className="edit-btn" />
-    <ActionButton icon={<FaTrash />} title="Supprimer" onClick={onDelete} className="delete-btn" />
-    <ActionButton icon={<FaCalendarAlt />} title="Suivi" onClick={onTracking} className="tracking-btn" />
-  </div>
-);
+
 
 // Section fiches de paie
 const EmployeePayrollsSection = ({ selectedEmployee, onCreatePayroll, sectionRef }) => {
@@ -645,6 +714,7 @@ const EmployeesPage = ({
   handleImportEmployees,
   importProgress,
   setImportProgress,
+  nextMatricule
 }) => {
   const [viewMode, setViewMode] = useState('list');
   const [sortBy, setSortBy] = useState('nom');
@@ -789,6 +859,7 @@ const EmployeesPage = ({
           onSubmit={handleSubmit}
           onCancel={() => setShowAddForm(false)}
           onChange={handleChange}
+          nextMatricule={nextMatricule}
         />
       )}
 

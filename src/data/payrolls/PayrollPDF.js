@@ -6,16 +6,62 @@ import { styles } from './styles'; // Import des styles depuis le fichier styles
 
 const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyInfo = {} }) => {
     // Formatage des dates
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString('fr-FR', options);
+    const formatDate = (dateInput) => {
+        if (!dateInput) return 'Non spécifié';
+
+        try {
+            let date;
+
+            // 1. Si c'est un Timestamp Firebase (objet avec toDate())
+            if (dateInput && typeof dateInput === 'object' && dateInput.toDate && typeof dateInput.toDate === 'function') {
+                date = dateInput.toDate();
+            }
+            // 2. Si c'est déjà un objet Date
+            else if (dateInput instanceof Date) {
+                date = dateInput;
+            }
+            // 3. Si c'est une string (format ISO ou autre)
+            else if (typeof dateInput === 'string') {
+                date = new Date(dateInput);
+
+                // Si la date est invalide, essayer de parser autrement
+                if (isNaN(date.getTime())) {
+                    // Essayer le format "YYYY-MM-DD"
+                    const isoMatch = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                    if (isoMatch) {
+                        date = new Date(isoMatch[1], isoMatch[2] - 1, isoMatch[3]);
+                    } else {
+                        return dateInput; // Retourner la string telle quelle
+                    }
+                }
+            }
+            // 4. Si c'est un timestamp numérique
+            else if (typeof dateInput === 'number') {
+                date = new Date(dateInput);
+            } else {
+                return 'Format invalide';
+            }
+
+            // Vérifier si la date est valide
+            if (isNaN(date.getTime())) {
+                return 'Date invalide';
+            }
+
+            // Formater en français
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('fr-FR', options);
+
+        } catch (error) {
+            console.error("Erreur formatage date:", error);
+            return 'Erreur date';
+        }
     };
+
     const formatCurrency = (value) => {
         const numericValue = parseFloat(value) || 0;
-        // Solution 1: simple replace
         return `${numericValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`;
     };
+
     // Conversion du montant en lettres
     const amountInWords = (amount) => {
         const numericAmount = parseFloat(amount) || 0;

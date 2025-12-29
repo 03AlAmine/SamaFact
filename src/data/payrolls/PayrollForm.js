@@ -631,7 +631,8 @@ const PayrollForm = () => {
                         <div className="payroll-header-title">
                             <h1>
                                 <FaFileInvoice className="payroll-header-icon" />
-                                Bulletin de Paie {payrollNumber && `- ${payrollNumber}`}
+                                Bulletin de Paie 
+                                <span className="payroll-payroll-number">{payrollNumber && `| ${payrollNumber}`}</span>
                             </h1>
                             <div className="payroll-header-subtitle">
                                 {selectedEmployeeId ?
@@ -712,7 +713,7 @@ const PayrollForm = () => {
                             <div className="payroll-form-grid">
                                 <div className="payroll-form-group">
                                     <label className="payroll-label">
-                                        <FaUser className="payroll-input-icon" />
+                                        <FaUser className="payroll-input-icon-employee" />
                                         Sélectionner un employé
                                     </label>
                                     <select
