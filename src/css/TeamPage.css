@@ -718,7 +718,7 @@ textarea.form-input {
 .password-input .icon-btn {
   border: 2px solid var(--border-color);
   border-left: none;
-  border-top-right-radius: var(--border-radius-sm);
+  border-top-left-radius: var(--border-radius-sm);
   border-bottom-right-radius: var(--border-radius-sm);
   height: 3rem;
   width: 3rem;

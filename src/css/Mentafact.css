@@ -32,10 +32,9 @@
   display: flex;
   align-items: center;
 }
-.sts{
+.sts {
   color: var(--primary-color);
-    margin-bottom: 1.5rem !important;
-
+  margin-bottom: 1.5rem !important;
 }
 
 :root {
@@ -1759,6 +1758,7 @@ body {
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   backdrop-filter: blur(5px);
+  background: #5684ff12;
 }
 
 .stat-card.large {
@@ -1825,14 +1825,13 @@ body {
 
 .chart-card,
 .chart-card-stat {
-  background-color: var(--card-bg);
   padding: 1.5rem;
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow-card);
   transition: var(--transition);
   width: 100%;
   overflow: hidden;
   min-height: 360px;
+  box-shadow: 0 2px 5px rgb(143 145 255 / 36%);
 }
 
 .chart-card:hover,

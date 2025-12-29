@@ -102,11 +102,18 @@ export function AuthProvider({ children }) {
     lastUpdateRef.current = now;
     localStorage.setItem("lastUpdate", now);
 
-    await setDoc(
-      doc(db, 'users', userId),
-      { lastActivity: serverTimestamp() },
-      { merge: true }
-    );
+    try {
+      await setDoc(
+        doc(db, 'users', userId),
+        { lastActivity: serverTimestamp() },
+        { merge: true }
+      );
+    } catch (error) {
+      // Silencieux en production
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Update last activity failed:", error.message);
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -129,9 +136,27 @@ export function AuthProvider({ children }) {
         const userData = userDoc.data();
         const lastActivity = userData.lastActivity?.toDate();
         const now = new Date();
-        const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
 
-        if (lastActivity && lastActivity < oneDayAgo) {
+        // Définir le timeout selon le rôle
+        let inactivityTimeout = 48 * 60 * 60 * 1000; // ← CHANGÉ: 48h par défaut (au lieu de 7 jours)
+
+        if (['superadmin', 'supadmin'].includes(userData.role)) {
+          inactivityTimeout = 24 * 60 * 60 * 1000; // 24h pour superadmin/supadmin
+        } else if (['admin', 'rh_daf'].includes(userData.role)) {
+          inactivityTimeout = 12 * 60 * 60 * 1000; // 12h pour admin/RH
+        } else if (['comptable'].includes(userData.role)) {
+          inactivityTimeout = 8 * 60 * 60 * 1000; // 8h pour comptable
+        } else if (['charge_compte'].includes(userData.role)) {
+          inactivityTimeout = 16 * 60 * 60 * 1000; // 16h pour charge de compte
+        } else if (['employe'].includes(userData.role)) {
+          inactivityTimeout = 24 * 60 * 60 * 1000; // 24h pour employés
+        } else if (['lecteur'].includes(userData.role)) {
+          inactivityTimeout = 48 * 60 * 60 * 1000; // 48h pour lecteurs
+        }
+
+        const timeoutAgo = new Date(now.getTime() - inactivityTimeout);
+
+        if (lastActivity && lastActivity < timeoutAgo) {
           await handleLogout();
           window.location.href = '/login?reason=inactivity';
           return false;
@@ -185,14 +210,17 @@ export function AuthProvider({ children }) {
     });
 
     return unsubscribe;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!currentUser) return;
 
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        updateLastActivity(currentUser.uid);
+      if (document.visibilityState === "visible" && currentUser) {
+        updateLastActivity(currentUser.uid).catch(() => {
+          // Ignorer l'erreur
+        });
       }
     };
 
@@ -302,7 +330,7 @@ export function AuthProvider({ children }) {
       // Déconnexion en cas d'erreur
       try {
         await signOut(auth);
-      } catch {}
+      } catch { }
       throw error;
     }
   }
