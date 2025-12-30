@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom'; // AJOUT: useLocation
 import { useAuth } from '../../auth/AuthContext';
 import { invoiceService } from '../../services/invoiceService';
@@ -690,6 +690,7 @@ const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
     index: null,
     count: 1
   });
+  const editFormRef = useRef(null);
 
   const calculateItemTotals = (item) => {
     const quantite = parseFloat(item.quantity) || 1;
@@ -804,7 +805,40 @@ const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
       customTaxRate: ['0', '18', '20'].includes(item.taxRate) ? '' : item.taxRate
     });
     setEditingIndex(index);
+
+    // AJOUT: Défilement vers le formulaire après un court délai
+    setTimeout(() => {
+      if (editFormRef.current) {
+        editFormRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 100);
   };
+
+  const handleCancelEdit = () => {
+    setCurrentItem({
+      description: '',
+      quantity: 1,
+      unitPrice: '',
+      taxRate: '0',
+      customTaxRate: ''
+    });
+    setEditingIndex(null);
+
+    // Défilement vers le haut du formulaire
+    setTimeout(() => {
+      const formSection = document.querySelector('.ie-item-form');
+      if (formSection) {
+        formSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 100);
+  };
+
 
   const moveItem = (fromIndex, toIndex) => {
     if (fromIndex === toIndex) return;
@@ -900,7 +934,6 @@ const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
         <p>Ajoutez les produits et services facturés</p>
       </div>
 
-
       <div className="ie-setting-group">
         <h3>Objet du document</h3>
         <div className="ie-form-group">
@@ -928,8 +961,11 @@ const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
         </div>
       )}
 
-      <div className="ie-item-form">
-        <div className="ie-form-row">
+      {/* AJOUT: Référence sur le formulaire */}
+      <div
+        ref={editFormRef}
+        className={`ie-item-form ${editingIndex !== null ? 'editing' : ''}`}
+      >        <div className="ie-form-row">
           <div className="ie-form-group">
             <label>Description *</label>
             <input
@@ -1028,16 +1064,7 @@ const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
 
         {editingIndex !== null && (
           <button
-            onClick={() => {
-              setCurrentItem({
-                description: '',
-                quantity: 1,
-                unitPrice: '',
-                taxRate: '0',
-                customTaxRate: ''
-              });
-              setEditingIndex(null);
-            }}
+            onClick={handleCancelEdit}
             className="ie-btn-cancel"
             type="button"
           >
@@ -1071,7 +1098,7 @@ const ItemsSection = ({ data, setData, error, objet, setObjet }) => {
                 <div>{formatNumberWithSpaces(data.items["Prix Total"][index])} FCFA</div>
                 <div className="ie-item-actions">
                   <div className="ie-item-actions-second">
-
+                    {/* MODIF: Utiliser la nouvelle fonction editItem */}
                     <button onClick={() => editItem(index)} className="ie-btn-edit" type="button">
                       <FaEdit className="" />
                     </button>
