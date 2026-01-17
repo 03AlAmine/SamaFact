@@ -219,7 +219,7 @@
 
 .document-card {
   background-color: var(--card-bg);
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: var(--shadow);
   overflow: hidden;
   transition: all 0.3s ease;
@@ -331,7 +331,7 @@
 .table-container {
   margin-top: 20px;
   overflow-x: auto;
-  background: var(--card-bg);
+  background: white;
   border-radius: 8px;
   box-shadow: var(--shadow);
 }

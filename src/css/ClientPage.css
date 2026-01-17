@@ -400,7 +400,7 @@
   border-spacing: 0;
   font-size: 0.95rem;
   min-width: 900px;
-  background: var(--client-card-bg);
+  background: white;
   border-radius: var(--client-radius-xl);
   overflow: hidden;
   box-shadow: var(--client-shadow-md);

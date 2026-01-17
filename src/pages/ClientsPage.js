@@ -954,7 +954,7 @@ const ClientsPage = ({
     importProgress,
     setImportProgress
 }) => {
-    const [viewMode, setViewMode] = useState('list');
+    const [viewMode, setViewMode] = useState('card');
     const [sortBy, setSortBy] = useState('nom');
     const [sortOrder, setSortOrder] = useState('asc');
     const invoicesSectionRef = useRef(null);
