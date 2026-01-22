@@ -24,7 +24,6 @@ const EmptyState = ({ onAddEmployee }) => (
 );
 
 // FormField réutilisable
-// Mettez à jour le composant FormField pour supporter le type number :
 const FormField = ({ label, required, type = "text", min, max, ...props }) => (
   <div className="form-group">
     <label htmlFor={props.name} className="form-label">
@@ -208,6 +207,29 @@ const EmployeeForm = ({
           required
         />
         <FormField
+          label="IPM"
+          name="ipm"
+          type="number"
+          value={formData.ipm || 0}
+          onChange={isEditing ? onEditChange : onChange}
+          min="0"
+          step="0.01"
+          placeholder="Impôt sur le revenu"
+        />
+        <FormField
+          label="Sursalaire"
+          name="sursalaire"
+          type="number"
+          value={formData.sursalaire || 0}
+          onChange={isEditing ? onEditChange : onChange}
+          min="0"
+          step="0.01"
+          placeholder="Sursalaire additionnel"
+        />
+      </div>
+
+      <div className="form-row">
+        <FormField
           label="Catégorie"
           name="categorie"
           value={formData.categorie}
@@ -224,6 +246,7 @@ const EmployeeForm = ({
           type="number"
           value={formData.nbreofParts || 1}
           onChange={isEditing ? onEditChange : onChange}
+          min="1"
         />
       </div>
 
@@ -516,8 +539,6 @@ const EmployeeTableRow = ({ employee, isSelected, onSelect, onView, onEdit, onDe
   );
 };
 
-
-
 // Section fiches de paie
 const EmployeePayrollsSection = ({ selectedEmployee, onCreatePayroll, sectionRef }) => {
   if (!selectedEmployee) return null;
@@ -716,7 +737,7 @@ const EmployeesPage = ({
   setImportProgress,
   nextMatricule
 }) => {
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState('card');
   const [sortBy, setSortBy] = useState('nom');
   const [sortOrder, setSortOrder] = useState('asc');
   const payrollsSectionRef = useRef(null);

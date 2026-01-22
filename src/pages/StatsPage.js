@@ -1,4 +1,4 @@
-import React, {  useMemo } from "react";
+import React, { useMemo } from "react";
 import { useAppContext } from "../contexts/AppContext";
 import { FaUsers, FaChartBar, FaMoneyBillWave, FaFileSignature } from "react-icons/fa";
 import {
@@ -14,7 +14,7 @@ import Chart from "react-apexcharts";
 const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls, employees }) => {
   const { activeModule } = useAppContext();
 
-  
+
   const moduleConfig = {
     mentafact: {
       stats: [
@@ -39,11 +39,22 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
         }
       ],
       charts: [
-        { title: "Chiffre d'affaires mensuel", comp: <InvoiceChart invoices={allFactures} /> },
-        { title: "Comparaison annuelle", comp: <MonthlyComparisonChart invoices={allFactures} /> },
-        { title: "Répartition des clients", comp: <ClientChart clients={clients} /> },
-        { title: "Statut des factures", comp: <StatusChart invoices={allFactures} /> }
-      ]
+        {
+          title: "Chiffre d'affaires mensuel",
+          comp: <InvoiceChart invoices={allFactures} enableYearSelection={true} />
+        },
+        {
+          title: "Comparaison annuelle",
+          comp: <MonthlyComparisonChart invoices={allFactures} />
+        },
+        {
+          title: "Répartition des clients",
+          comp: <ClientChart clients={clients} />
+        },
+        {
+          title: "Statut des factures",
+          comp: <StatusChart invoices={allFactures} />
+        }]
     },
     payroll: {
       stats: [
@@ -104,6 +115,7 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
       .sort((a, b) => b[1].reduce((sum, v) => sum + v, 0) - a[1].reduce((sum, v) => sum + v, 0))
       .slice(0, 3);
   }, [allFactures]);
+
   const topClientsLineChartOptions = useMemo(() => {
     const categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

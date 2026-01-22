@@ -1,10 +1,9 @@
 import React from "react";
 import {
     FaFileSignature, FaUser, FaCalendarAlt, FaIdCard, FaBuilding,
-    FaMoneyBillWave, FaCheckCircle, FaFileAlt
+    FaMoneyBillWave, FaCheckCircle, FaFileAlt, FaPercentage, FaChartLine
 } from "react-icons/fa";
 import { Modal, Button } from "antd";
-
 
 export const EmployeeDetailsModal = ({
     isVisible,
@@ -22,8 +21,27 @@ export const EmployeeDetailsModal = ({
 
         return Math.max(0, moisEcoules * 2 - (employee.joursCongesUtilises || 0));
     };
-    return (
 
+    // Calcul du salaire net estimé
+    const calculateSalaireNet = () => {
+        const salaireBase = parseFloat(employee.salaireBase || 0);
+        const sursalaire = parseFloat(employee.sursalaire || 0);
+        const ipm = parseFloat(employee.ipm || 0);
+        const transport = parseFloat(employee.indemniteTransport || 0);
+        const panier = parseFloat(employee.primePanier || 0);
+        const responsabilite = parseFloat(employee.indemniteResponsabilite || 0);
+        const deplacement = parseFloat(employee.indemniteDeplacement || 0);
+
+        const totalBrut = salaireBase + sursalaire;
+        const totalIndemnites = transport + panier + responsabilite + deplacement;
+
+        // Salaire net estimé (brut - IPM + indemnités)
+        const netEstime = totalBrut - ipm + totalIndemnites;
+
+        return netEstime > 0 ? netEstime : 0;
+    };
+
+    return (
         <Modal
             title={
                 <div className="employee-modal__header">
@@ -42,12 +60,13 @@ export const EmployeeDetailsModal = ({
                     Fermer
                 </Button>
             ]}
-            width={700}
+            width={750}
             className="employee-modal"
         >
             {employee && (
                 <div className="employee-modal__content">
                     <div className="employee-details">
+                        {/* Section informations principales */}
                         <div className="employee-details__main">
                             <div className="employee-details__row">
                                 <div className="employee-detail">
@@ -96,7 +115,34 @@ export const EmployeeDetailsModal = ({
                             <div className="employee-details__row">
                                 <div className="employee-detail">
                                     <span className="employee-detail__label">
-                                        <FaMoneyBillWave className="employee-detail__icon" />
+                                        <FaCheckCircle className="employee-detail__icon" />
+                                        Type de contrat
+                                    </span>
+                                    <span className={`employee-detail__value employee-detail__value--${employee.typeContrat?.toLowerCase()}`}>
+                                        {employee.typeContrat}
+                                    </span>
+                                </div>
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        Catégorie
+                                    </span>
+                                    <span className="employee-detail__value">
+                                        {employee.categorie || 'Non spécifié'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section Rémunération */}
+                        <div className="employee-section">
+                            <h4 className="employee-section__title">
+                                <FaMoneyBillWave className="employee-section__icon" />
+                                Rémunération
+                            </h4>
+
+                            <div className="employee-details__grid">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
                                         Salaire de base
                                     </span>
                                     <span className="employee-detail__value employee-detail__value--amount">
@@ -106,19 +152,38 @@ export const EmployeeDetailsModal = ({
 
                                 <div className="employee-detail">
                                     <span className="employee-detail__label">
-                                        <FaCheckCircle className="employee-detail__icon" />
-                                        Type de contrat
+                                        <FaChartLine className="employee-detail__icon" />
+                                        Sursalaire
                                     </span>
-                                    <span className={`employee-detail__value employee-detail__value--${employee.typeContrat?.toLowerCase()}`}>
-                                        {employee.typeContrat}
+                                    <span className="employee-detail__value employee-detail__value--amount">
+                                        {employee.sursalaire?.toLocaleString('fr-FR') || '0'} FCFA
+                                    </span>
+                                </div>
+
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">
+                                        <FaPercentage className="employee-detail__icon" />
+                                        IPM (Impôt)
+                                    </span>
+                                    <span className="employee-detail__value employee-detail__value--amount employee-detail__value--tax">
+                                        {employee.ipm?.toLocaleString('fr-FR') || '0'} FCFA
+                                    </span>
+                                </div>
+
+                                <div className="employee-detail highlight">
+                                    <span className="employee-detail__label">
+                                        Salaire net estimé
+                                    </span>
+                                    <span className="employee-detail__value employee-detail__value--amount employee-detail__value--highlight">
+                                        {calculateSalaireNet().toLocaleString('fr-FR')} FCFA
                                     </span>
                                 </div>
                             </div>
                         </div>
 
+                        {/* Section Primes et indemnités */}
                         <div className="employee-section">
                             <h4 className="employee-section__title">
-                                <FaMoneyBillWave className="employee-section__icon" />
                                 Primes et indemnités
                             </h4>
 
@@ -153,6 +218,7 @@ export const EmployeeDetailsModal = ({
                             </div>
                         </div>
 
+                        {/* Section Statistiques */}
                         <div className="employee-section">
                             <h4 className="employee-section__title">
                                 <FaFileAlt className="employee-section__icon" />
@@ -160,6 +226,13 @@ export const EmployeeDetailsModal = ({
                             </h4>
 
                             <div className="employee-details__grid">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Nombre de parts</span>
+                                    <span className="employee-detail__value">
+                                        {employee.nbreofParts || 1}
+                                    </span>
+                                </div>
+
                                 <div className="employee-detail">
                                     <span className="employee-detail__label">Nombre de bulletins</span>
                                     <span className="employee-detail__value">
@@ -178,6 +251,7 @@ export const EmployeeDetailsModal = ({
                             </div>
                         </div>
 
+                        {/* Section Suivi des congés et absences */}
                         <div className="employee-section">
                             <h4 className="employee-section__title">
                                 <FaCalendarAlt className="employee-section__icon" />
@@ -214,11 +288,39 @@ export const EmployeeDetailsModal = ({
                                 </div>
                             </div>
                         </div>
+
+                        {/* Section Informations de contact */}
+                        <div className="employee-section">
+                            <h4 className="employee-section__title">
+                                Informations de contact
+                            </h4>
+
+                            <div className="employee-details__grid">
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Email</span>
+                                    <span className="employee-detail__value">
+                                        {employee.email || 'Non spécifié'}
+                                    </span>
+                                </div>
+
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Téléphone</span>
+                                    <span className="employee-detail__value">
+                                        {employee.telephone || 'Non spécifié'}
+                                    </span>
+                                </div>
+
+                                <div className="employee-detail">
+                                    <span className="employee-detail__label">Adresse</span>
+                                    <span className="employee-detail__value">
+                                        {employee.adresse || 'Non spécifiée'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
         </Modal>
-
     );
 };
-

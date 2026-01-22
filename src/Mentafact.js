@@ -90,6 +90,8 @@ const Mentafact = () => {
     dateEmbauche: "",
     typeContrat: "CDI",
     salaireBase: 0,
+    ipm: 0,
+    sursalaire: 0,
     indemniteTransport: 26000,
     primePanier: 0,
     indemniteResponsabilite: 0,
@@ -903,6 +905,7 @@ const Mentafact = () => {
     }
   };
 
+
   const handleImportEmployee = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -942,7 +945,11 @@ const Mentafact = () => {
             const normalizedKey = key
               .toLowerCase()
               .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-              .trim();
+              .trim()
+              // Gestion des espaces et underscores
+              .replace(/\s+/g, '')
+              .replace('_', '');
+
             rowData[normalizedKey] = row[key];
           });
 
@@ -958,7 +965,7 @@ const Mentafact = () => {
 
           // Traitement de la date d'embauche
           let dateEmbauche = '';
-          const dateRaw = rowData.dateembauche || rowData['date embauche'] || rowData.date_embauche || rowData.hiredate;
+          const dateRaw = rowData.dateembauche || rowData['dateembauche'] || rowData.date_embauche || rowData.hiredate;
 
           if (dateRaw) {
             if (dateRaw instanceof Date) {
@@ -973,7 +980,7 @@ const Mentafact = () => {
             }
           }
 
-          // Construction de l'objet employé SANS matricule
+          // Construction de l'objet employé avec les nouveaux champs
           const employee = {
             nom: nom.toString().trim(),
             prenom: prenom.toString().trim(),
@@ -982,20 +989,23 @@ const Mentafact = () => {
             adresse: (rowData.adresse || rowData.address || '').toString().trim(),
             poste: (rowData.poste || rowData.job || rowData.position || '').toString().trim(),
             departement: (rowData.departement || rowData.department || rowData.dept || '').toString().trim(),
-            // PAS DE MATRICULE ICI - Il sera généré automatiquement
+            // NOUVEAUX CHAMPS AJOUTÉS
+            ipm: parseFloat(rowData.ipm || rowData['ipm'] || 0),
+            sursalaire: parseFloat(rowData.sursalaire || rowData['sursalaire'] || 0),
+            // FIN DES NOUVEAUX CHAMPS
             dateEmbauche: dateEmbauche,
-            typeContrat: (rowData.typecontrat || rowData['type contrat'] || rowData.contracttype || 'CDI').toString().trim(),
-            salaireBase: parseFloat(rowData.salairebase || rowData['salaire base'] || rowData.basesalary || rowData.salaire || 0),
+            typeContrat: (rowData.typecontrat || rowData['typecontrat'] || rowData.contracttype || 'CDI').toString().trim(),
+            salaireBase: parseFloat(rowData.salairebase || rowData['salairebase'] || rowData.basesalary || rowData.salaire || 0),
             categorie: (rowData.categorie || rowData.category || rowData.grade || '').toString().trim(),
-            nbreofParts: parseInt(rowData.nbreofparts || rowData['nbre parts'] || rowData.parts || rowData['nombre parts'] || 1, 10),
-            indemniteTransport: parseFloat(rowData.indemnitetransport || rowData['indemnite transport'] || rowData.transportallowance || 26000),
-            primePanier: parseFloat(rowData.primepanier || rowData['prime panier'] || rowData.mealallowance || 0),
-            indemniteResponsabilite: parseFloat(rowData.indemniteresponsabilite || rowData['indemnite responsabilite'] || rowData.responsibilityallowance || 0),
-            indemniteDeplacement: parseFloat(rowData.indemnitedeplacement || rowData['indemnite deplacement'] || rowData.travelallowance || 0),
-            joursConges: parseInt(rowData.joursconges || rowData['jours conges'] || rowData.leavedays || 0, 10),
-            joursAbsence: parseInt(rowData.joursabsence || rowData['jours absence'] || rowData.absencedays || 0, 10),
-            avanceSalaire: parseFloat(rowData.avancesalaire || rowData['avance salaire'] || rowData.salaryadvance || 0),
-            joursCongesUtilises: parseInt(rowData.jourscongesutilises || rowData['jours conges utilises'] || rowData.usedleavedays || 0, 10),
+            nbreofParts: parseInt(rowData.nbreofparts || rowData['nbreofparts'] || rowData.parts || rowData['nbreparts'] || 1, 10),
+            indemniteTransport: parseFloat(rowData.indemnitetransport || rowData['indemnitetransport'] || rowData.transportallowance || 26000),
+            primePanier: parseFloat(rowData.primepanier || rowData['primepanier'] || rowData.mealallowance || 0),
+            indemniteResponsabilite: parseFloat(rowData.indemniteresponsabilite || rowData['indemniteresponsabilite'] || rowData.responsibilityallowance || 0),
+            indemniteDeplacement: parseFloat(rowData.indemnitedeplacement || rowData['indemnitedeplacement'] || rowData.travelallowance || 0),
+            joursConges: parseInt(rowData.joursconges || rowData['joursconges'] || rowData.leavedays || 0, 10),
+            joursAbsence: parseInt(rowData.joursabsence || rowData['joursabsence'] || rowData.absencedays || 0, 10),
+            avanceSalaire: parseFloat(rowData.avancesalaire || rowData['avancesalaire'] || rowData.salaryadvance || 0),
+            joursCongesUtilises: parseInt(rowData.jourscongesutilises || rowData['jourscongesutilises'] || rowData.usedleavedays || 0, 10),
           };
 
           // Validation du salaire
@@ -1003,6 +1013,16 @@ const Mentafact = () => {
             errors.push(`Ligne ${i + 2}: Salaire base invalide`);
             errorCount++;
             continue;
+          }
+
+          // Validation IPM (doit être >= 0)
+          if (employee.ipm < 0 || isNaN(employee.ipm)) {
+            employee.ipm = 0;
+          }
+
+          // Validation Sursalaire (doit être >= 0)
+          if (employee.sursalaire < 0 || isNaN(employee.sursalaire)) {
+            employee.sursalaire = 0;
           }
 
           employeesToImport.push(employee);
@@ -1028,7 +1048,6 @@ const Mentafact = () => {
       for (let i = 0; i < employeesToImport.length; i++) {
         const employee = employeesToImport[i];
         try {
-          // ✅ APPEL SIMPLIFIÉ - Le matricule sera généré automatiquement
           const result = await employeeService.addEmployee(companyId, employee);
 
           if (result.success) {
@@ -1036,7 +1055,7 @@ const Mentafact = () => {
 
             // Mise à jour du prochain matricule pour l'affichage UI
             if (i === employeesToImport.length - 1) {
-              loadNextMatricule(); // Recharge le prochain matricule pour le formulaire
+              loadNextMatricule();
             }
           } else {
             importErrors.push(`Ligne ${i + 2}: ${result.message}`);
@@ -1074,7 +1093,6 @@ const Mentafact = () => {
       }
     }
   };
-
   const { canToggleModules } = useAuth();
   const { activeModule, setModuleBasedOnRole } = useAppContext();
   // Initialisation au chargement

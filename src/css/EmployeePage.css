@@ -17,7 +17,7 @@
 .employees-table th {
   text-align: left;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #4a6fa5 0%,  #e2d5b0 100%);
+  background: linear-gradient(135deg, #4a6fa5 0%, #e2d5b0 100%);
   color: white;
   font-weight: 600;
   position: sticky;
@@ -140,7 +140,6 @@
   background: transparent;
   color: var(--gray-medium);
 }
-
 
 .action-btn:hover {
   background: rgba(0, 0, 0, 0.05);
@@ -393,7 +392,6 @@
   align-items: center;
   box-shadow: 0 2px 5px rgba(95, 130, 255, 0.2);
 }
-
 /* Employee Modal - Premium Style */
 .employee-modal .ant-modal-content {
   border-radius: 16px;
@@ -542,7 +540,9 @@
   background: white;
   border-radius: 20px;
   border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -582,7 +582,9 @@
 
 .employee-detail:hover .employee-detail__value {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .employee-detail:hover .employee-detail__value::after {
@@ -593,7 +595,8 @@
 .employee-detail__value--amount {
   color: #047857;
   background: linear-gradient(to right, #e5e0cc, #ffffff);
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.1),
+  box-shadow:
+    0 2px 6px rgba(5, 150, 105, 0.1),
     inset 0 0 0 1px rgba(5, 150, 105, 0.2);
   font-weight: 600;
 }
@@ -606,20 +609,6 @@
   );
 }
 
-.employee-detail__value--cdi {
-  color: #1d4ed8;
-  background: linear-gradient(to right, #eff6ff, #ffffff);
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1),
-    inset 0 0 0 1px rgba(59, 130, 246, 0.2);
-}
-
-.employee-detail__value--cdd {
-  color: #b45309;
-  background: linear-gradient(to right, #fffbeb, #ffffff);
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.1),
-    inset 0 0 0 1px rgba(245, 158, 11, 0.2);
-}
-
 .employee-detail__value--date {
   font-family: "Courier New", monospace;
   background: #f8fafc;
@@ -627,6 +616,25 @@
   box-shadow: none;
   border-left: 3px solid #4361ee;
   border-radius: 0 20px 20px 0;
+}
+
+/* Nouveaux styles pour IPM et Sursalaire */
+.employee-detail__value--tax {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.employee-detail__value--highlight {
+  color: #27ae60;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.highlight {
+  background-color: rgba(39, 174, 96, 0.1);
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid #27ae60;
 }
 
 /* Section Styles */
@@ -677,6 +685,39 @@
   gap: 18px;
 }
 
+/* Type de contrat */
+.employee-detail__value--cdi {
+  color: #1d4ed8;
+  background: linear-gradient(to right, #eff6ff, #ffffff);
+  box-shadow:
+    0 2px 6px rgba(59, 130, 246, 0.1),
+    inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+.employee-detail__value--cdd {
+  color: #b45309;
+  background: linear-gradient(to right, #fffbeb, #ffffff);
+  box-shadow:
+    0 2px 6px rgba(245, 158, 11, 0.1),
+    inset 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+.employee-detail__value--stage {
+  color: #059669;
+  background: linear-gradient(to right, #ecfdf5, #ffffff);
+  box-shadow:
+    0 2px 6px rgba(16, 185, 129, 0.1),
+    inset 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.employee-detail__value--freelance {
+  color: #dc2626;
+  background: linear-gradient(to right, #fef2f2, #ffffff);
+  box-shadow:
+    0 2px 6px rgba(239, 68, 68, 0.1),
+    inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .employee-details__row {
@@ -695,6 +736,14 @@
   .employee-modal .ant-modal-content {
     margin: 12px;
     width: calc(100% - 24px);
+  }
+
+  .employee-modal__header {
+    font-size: 1.1rem;
+  }
+
+  .employee-section__title {
+    font-size: 0.95rem;
   }
 }
 
@@ -715,6 +764,75 @@
     padding: 6px 12px;
     font-size: 0.9rem;
   }
+
+  .employee-modal__content {
+    max-height: 80vh;
+  }
+}
+
+/* Animations supplémentaires */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.employee-detail {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.employee-detail:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.employee-detail:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.employee-detail:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.employee-detail:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.employee-detail:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+/* Effet de hover pour les sections */
+.employee-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.employee-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.02),
+    rgba(255, 193, 7, 0.02)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.employee-section:hover::before {
+  opacity: 1;
+}
+
+.employee-section__title,
+.employee-details__grid {
+  position: relative;
+  z-index: 1;
 }
 
 /*-----------------------------------------*-/
@@ -892,7 +1010,7 @@
 }
 
 .matricule-code {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-weight: bold;
   color: #2c3e50;
   background-color: #e8f4fd;

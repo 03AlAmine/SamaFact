@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Chart as ChartJS,
   BarElement,
@@ -113,18 +113,36 @@ const commonOptions = {
   }
 };
 
-// 📊 Factures mensuelles (Barres)
-export const InvoiceChart = ({ invoices }) => {
-  const monthlyData = Array(12).fill(0);
-  const currentYear = new Date().getFullYear();
+// 📊 Factures mensuelles (Barres) 
+export const InvoiceChart = ({ invoices, enableYearSelection = false }) => {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  invoices.forEach(invoice => {
-    const date = new Date(invoice.date);
-    if (date.getFullYear() === currentYear) {
-      const month = date.getMonth();
-      monthlyData[month] += parseFloat(invoice.totalTTC) || 0;
-    }
-  });
+  // Récupérer toutes les années disponibles dans les factures
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    invoices.forEach(invoice => {
+      if (invoice.date) {
+        const date = new Date(invoice.date);
+        years.add(date.getFullYear());
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a); // Tri décroissant
+  }, [invoices]);
+
+  // Calculer les données mensuelles pour l'année sélectionnée
+  const monthlyData = useMemo(() => {
+    const data = Array(12).fill(0);
+
+    invoices.forEach(invoice => {
+      const date = new Date(invoice.date);
+      if (date.getFullYear() === selectedYear) {
+        const month = date.getMonth();
+        data[month] += parseFloat(invoice.totalTTC) || 0;
+      }
+    });
+
+    return data;
+  }, [invoices, selectedYear]);
 
   // Palette de couleurs variée pour chaque barre
   const backgroundColors = [
@@ -138,7 +156,7 @@ export const InvoiceChart = ({ invoices }) => {
     labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
     datasets: [
       {
-        label: "Chiffre d'affaires (FCFA)",
+        label: `Chiffre d'affaires ${selectedYear} (FCFA)`,
         data: monthlyData,
         backgroundColor: backgroundColors,
         borderColor: borderColors,
@@ -148,19 +166,18 @@ export const InvoiceChart = ({ invoices }) => {
         hoverBorderWidth: 2
       },
       {
-        // Ligne de courbe pour relier les sommets
         type: 'line',
         label: 'Tendance',
         data: monthlyData,
         backgroundColor: 'transparent',
-        borderColor: 'rgba(45, 91, 156, 0.5)',
-        borderWidth: 1.5,
-        pointRadius: 3, // Cercles visibles sur chaque point
+        borderColor: 'rgba(45, 91, 156, 0.8)',
+        borderWidth: 2,
+        pointRadius: 3,
         pointHoverRadius: 5,
-        pointBackgroundColor: 'rgba(145, 66, 48, 0.8)',
+        pointBackgroundColor: 'rgba(254, 56, 11, 0.8)',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 1.5,
-        tension: 0.4, // Courbure de la ligne
+        tension: 0.4,
         fill: false
       }
     ],
@@ -171,7 +188,16 @@ export const InvoiceChart = ({ invoices }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false
+        display: true,
+        position: 'top',
+        labels: {
+          font: {
+            size: 12,
+            weight: '500'
+          },
+          padding: 20,
+          usePointStyle: true
+        }
       },
       tooltip: {
         callbacks: {
@@ -189,28 +215,233 @@ export const InvoiceChart = ({ invoices }) => {
         },
         ticks: {
           callback: value => value.toLocaleString() + ' FCFA'
+        },
+        title: {
+          display: true,
+          text: 'Montant (FCFA)',
+          font: {
+            weight: 'bold'
+          }
         }
       },
       x: {
         grid: {
           display: false
+        },
+        title: {
+          display: true,
+          text: 'Mois',
+          font: {
+            weight: 'bold'
+          }
         }
       }
     }
   };
 
   return (
-    <div style={{ height: '250px', padding: '1rem' }}>
+    <div style={{ height: '300px', padding: '1rem', position: 'relative' }}>
+      {/* Sélecteur d'année seulement si activé */}
+      {enableYearSelection && availableYears.length > 1 && (
+        <div style={{
+          position: 'absolute',
+          top: '-50px',
+          right: '20px',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span style={{
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#4b5563'
+          }}>
+            Année:
+          </span>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              backgroundColor: 'white',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'all 0.2s',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+          >
+            {availableYears.map(year => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <Bar data={data} options={options} />
     </div>
   );
 };
 
+// 📈 Comparaison mensuelle entre 2 années
+export const MonthlyComparisonChart = ({ invoices }) => {
+  const currentYear = new Date().getFullYear();
+  const lastYear = currentYear - 1;
+
+  // Calculer les données pour les deux années
+  const currentYearData = Array(12).fill(0);
+  const lastYearData = Array(12).fill(0);
+
+  invoices.forEach(invoice => {
+    const date = new Date(invoice.date);
+    const month = date.getMonth();
+    const amount = parseFloat(invoice.totalTTC) || 0;
+
+    if (date.getFullYear() === currentYear) {
+      currentYearData[month] += amount;
+    } else if (date.getFullYear() === lastYear) {
+      lastYearData[month] += amount;
+    }
+  });
+
+  // Couleurs distinctes et lisibles
+  const colors = {
+    currentYear: {
+      border: '#6366f1',
+      background: 'rgba(99, 102, 241, 0.1)',
+      point: '#6366f1'
+    },
+    lastYear: {
+      border: '#10b981',
+      background: 'rgba(16, 185, 129, 0.1)',
+      point: '#10b981'
+    }
+  };
+
+  const data = {
+    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+    datasets: [
+      {
+        label: `${currentYear}`,
+        data: currentYearData,
+        borderColor: colors.currentYear.border,
+        backgroundColor: colors.currentYear.background,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: colors.currentYear.border,
+        pointBorderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        borderWidth: 2
+      },
+      {
+        label: `${lastYear}`,
+        data: lastYearData,
+        borderColor: colors.lastYear.border,
+        backgroundColor: colors.lastYear.background,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: colors.lastYear.border,
+        pointBorderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        borderWidth: 2
+      },
+    ],
+  };
+
+  const options = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      legend: {
+        ...commonOptions.plugins.legend,
+        position: 'top',
+        align: 'end', // 👈 ICI le centrage
+
+        labels: {
+          ...commonOptions.plugins.legend.labels,
+          padding: 20,
+          boxWidth: 12,
+          boxHeight: 12
+        }
+      },
+      tooltip: {
+        ...commonOptions.plugins.tooltip,
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${context.raw.toLocaleString()} FCFA`;
+          }
+        }
+      }
+    },
+    scales: {
+      ...commonOptions.scales,
+      y: {
+        ...commonOptions.scales.y,
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        },
+        ticks: {
+          ...commonOptions.scales.y.ticks,
+          callback: value => value.toLocaleString() + ' FCFA'
+        },
+        title: {
+          display: true,
+          text: 'Chiffre d\'affaires (FCFA)',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        }
+      },
+      x: {
+        ...commonOptions.scales.x,
+        grid: {
+          display: false
+        },
+        title: {
+          display: true,
+          text: 'Mois',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        }
+      }
+    },
+    elements: {
+      line: {
+        borderWidth: 3
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  };
+
+  return (
+    <div style={{ height: '300px', padding: '1rem' }}>
+      <Line data={data} options={options} />
+    </div>
+  );
+};
 
 // 📊 Composant générique de graphique donut avec légende paginée
-export const DonutChartWithLegend = ({ 
-  dataItems, 
-  title = "Données", 
+export const DonutChartWithLegend = ({
+  dataItems,
+  title = "Données",
   dataKey = "nom",
   valueKey = "count",
   labelSingular = "élément",
@@ -705,7 +936,7 @@ export const DonutChartWithLegend = ({
 export const ClientChart = ({ clients }) => (
   <DonutChartWithLegend
     dataItems={clients}
-  //  title="Répartition des clients"
+    //  title="Répartition des clients"
     dataKey="nom"
     labelSingular="client"
     labelPlural="clients"
@@ -715,18 +946,18 @@ export const ClientChart = ({ clients }) => (
 // 👥 Employés par entreprise 
 export const EmployeChart = ({ employees }) => {
   // Transformer les données d'employés pour le composant générique
-  const transformedEmployees = Array.isArray(employees) 
+  const transformedEmployees = Array.isArray(employees)
     ? employees.map(emp => ({
-        id: emp.id,
-        nom: [emp.nom, emp.prenom].filter(Boolean).join(' ') || 'Non spécifié',
-        count: 1
-      }))
+      id: emp.id,
+      nom: [emp.nom, emp.prenom].filter(Boolean).join(' ') || 'Non spécifié',
+      count: 1
+    }))
     : [];
 
   return (
     <DonutChartWithLegend
       dataItems={transformedEmployees}
-    //  title="Répartition des employés"
+      //  title="Répartition des employés"
       dataKey="nom"
       valueKey="count"
       labelSingular="employé"
@@ -782,96 +1013,6 @@ export const StatusChart = ({ invoices }) => {
   return (
     <div style={{ height: '275px', padding: '1rem' }}>
       <Pie data={data} options={options} />
-    </div>
-  );
-};
-
-// 📈 Comparaison mensuelle entre 2 années (Lignes)
-export const MonthlyComparisonChart = ({ invoices }) => {
-  const currentYear = new Date().getFullYear();
-  const lastYear = currentYear - 1;
-
-  const currentYearData = Array(12).fill(0);
-  const lastYearData = Array(12).fill(0);
-
-  invoices.forEach(invoice => {
-    const date = new Date(invoice.date);
-    const month = date.getMonth();
-    const amount = parseFloat(invoice.totalTTC) || 0;
-
-    if (date.getFullYear() === currentYear) {
-      currentYearData[month] += amount;
-    } else if (date.getFullYear() === lastYear) {
-      lastYearData[month] += amount;
-    }
-  });
-
-  const data = {
-    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
-    datasets: [
-      {
-        label: `${currentYear}`,
-        data: currentYearData,
-        borderColor: CHART_BORDERS.primary,
-        backgroundColor: CHART_COLORS.primary,
-        tension: 0.3,
-        fill: true,
-        pointBackgroundColor: '#fff',
-        pointBorderColor: CHART_BORDERS.primary,
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      },
-      {
-        label: `${lastYear}`,
-        data: lastYearData,
-        borderColor: CHART_BORDERS.secondary,
-        backgroundColor: CHART_COLORS.secondary,
-        tension: 0.3,
-        fill: true,
-        pointBackgroundColor: '#fff',
-        pointBorderColor: CHART_BORDERS.secondary,
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      },
-    ],
-  };
-
-  const options = {
-    ...commonOptions,
-    plugins: {
-      ...commonOptions.plugins,
-      tooltip: {
-        ...commonOptions.plugins.tooltip,
-        callbacks: {
-          label: function (context) {
-            return `${context.dataset.label}: ${context.raw.toLocaleString()} FCFA`;
-          }
-        }
-      }
-    },
-    scales: {
-      ...commonOptions.scales,
-      y: {
-        ...commonOptions.scales.y,
-        beginAtZero: true,
-        ticks: {
-          ...commonOptions.scales.y.ticks,
-          callback: value => value.toLocaleString() + ' FCFA'
-        }
-      }
-    },
-    elements: {
-      line: {
-        borderWidth: 2
-      }
-    }
-  };
-
-  return (
-    <div style={{ height: '250px', padding: '1rem' }}>
-      <Line data={data} options={options} />
     </div>
   );
 };

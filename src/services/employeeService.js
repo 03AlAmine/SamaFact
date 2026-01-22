@@ -159,16 +159,19 @@ export const employeeService = {
       // Générer le matricule automatiquement
       const matricule = await employeeService.generateMatricule(companyId);
 
-      // S'assurer que categorie est un nombre
+      // S'assurer que les valeurs numériques sont correctement converties
       const validatedEmployeeData = {
         ...employeeData,
-        categorie: categorie, // ← Conversion en nombre
+        categorie: categorie,
         matricule: matricule,
         dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
         createdAt: new Date(),
         status: 'active',
-        companyCode: matricule.split('-')[0]
+        companyCode: matricule.split('-')[0],
+        // Conversion des nouveaux champs
+        ipm: parseFloat(employeeData.ipm || 0),
+        sursalaire: parseFloat(employeeData.sursalaire || 0)
       };
 
       const employeesRef = collection(db, `companies/${companyId}/employees`);
@@ -192,19 +195,23 @@ export const employeeService = {
     }
   },
 
-  // Met à jour un employé existant
+  // Mettez aussi à jour updateEmployee pour inclure ces champs
   updateEmployee: async (companyId, employeeId, employeeData) => {
     try {
       const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
 
-      // Mise à jour avec timestamp
-      await updateDoc(employeeRef, {
+      // Mise à jour avec les nouveaux champs
+      const updatedData = {
         ...employeeData,
         dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
-
         updatedAt: new Date(),
-        fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase()
-      });
+        fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
+        // Assurez-vous que les valeurs sont numériques
+        ipm: typeof employeeData.ipm === 'number' ? employeeData.ipm : parseFloat(employeeData.ipm || 0),
+        sursalaire: typeof employeeData.sursalaire === 'number' ? employeeData.sursalaire : parseFloat(employeeData.sursalaire || 0)
+      };
+
+      await updateDoc(employeeRef, updatedData);
 
       return {
         success: true,
@@ -212,7 +219,6 @@ export const employeeService = {
         updatedFields: Object.keys(employeeData),
         updatedEmployee: {
           ...employeeData,
-          // Retournez la date au format string pour le state
           dateEmbauche: employeeData.dateEmbauche
         }
       };

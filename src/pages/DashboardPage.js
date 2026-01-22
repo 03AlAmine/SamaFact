@@ -175,8 +175,14 @@ const DashboardPage = ({ stats, allFactures, allDevis, allAvoirs, navigate, empl
         { icon: <FaUserPlus className="action-icon" />, text: "Nouvel Client", route: "/employee/new" }
       ],
       charts: [
-        { title: "Chiffre d'affaires mensuel", comp: <InvoiceChart invoices={allFactures} /> },
-        { title: "Répartition des clients", comp: <ClientChart clients={clients} /> }
+        {
+          title: "Chiffre d'affaires mensuel",
+          comp: <InvoiceChart invoices={allFactures} enableYearSelection={false} />
+        },
+        {
+          title: "Répartition des clients",
+          comp: <ClientChart clients={clients} />
+        }
       ]
     },
     payroll: {
