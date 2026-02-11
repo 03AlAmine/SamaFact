@@ -92,6 +92,7 @@ const Mentafact = () => {
     salaireBase: 0,
     ipm: 0,
     sursalaire: 0,
+    avances: 0,
     indemniteTransport: 26000,
     primePanier: 0,
     indemniteResponsabilite: 0,

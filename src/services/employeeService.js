@@ -169,9 +169,11 @@ export const employeeService = {
         createdAt: new Date(),
         status: 'active',
         companyCode: matricule.split('-')[0],
-        // Conversion des nouveaux champs
         ipm: parseFloat(employeeData.ipm || 0),
-        sursalaire: parseFloat(employeeData.sursalaire || 0)
+        sursalaire: parseFloat(employeeData.sursalaire || 0),
+        avances: parseFloat(employeeData.avances || 0), // Assurez-vous que ce champ existe
+        indemniteDeplacement: parseFloat(employeeData.indemniteDeplacement || 0),
+        avantagesNature: parseFloat(employeeData.avantagesNature || 0) // Si ce champ existe
       };
 
       const employeesRef = collection(db, `companies/${companyId}/employees`);
@@ -206,9 +208,9 @@ export const employeeService = {
         dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
         updatedAt: new Date(),
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
-        // Assurez-vous que les valeurs sont numériques
         ipm: typeof employeeData.ipm === 'number' ? employeeData.ipm : parseFloat(employeeData.ipm || 0),
-        sursalaire: typeof employeeData.sursalaire === 'number' ? employeeData.sursalaire : parseFloat(employeeData.sursalaire || 0)
+        sursalaire: typeof employeeData.sursalaire === 'number' ? employeeData.sursalaire : parseFloat(employeeData.sursalaire || 0),
+        avances: typeof employeeData.avances === 'number' ? employeeData.avances : parseFloat(employeeData.avances || 0)
       };
 
       await updateDoc(employeeRef, updatedData);

@@ -420,29 +420,31 @@ const PayrollForm = () => {
                     ...prev,
                     remuneration: {
                         ...prev.remuneration,
-                        salaireBase: selectedEmployee.salaireBase || '',
-                        tauxHoraire: (selectedEmployee.salaireBase / 173.33).toFixed(2),
-                        indemniteDeplacement: selectedEmployee.indemniteDeplacement || '0',
-                        autresIndemnites: selectedEmployee.autresIndemnites || '0'
+                        salaireBase: selectedEmployee.salaireBase?.toString() || '0',
+                        tauxHoraire: selectedEmployee.salaireBase ? (selectedEmployee.salaireBase / 173.33).toFixed(2) : '0',
+                        indemniteDeplacement: selectedEmployee.indemniteDeplacement?.toString() || '0',
+                        autresIndemnites: selectedEmployee.autresIndemnites?.toString() || '0',
+                        sursalaire: selectedEmployee.sursalaire?.toString() || '0', // ✅ AJOUTÉ
+                        avantagesNature: selectedEmployee.avantagesNature?.toString() || '0' // ✅ AJOUTÉ
                     },
                     primes: {
-                        transport: selectedEmployee.indemniteTransport || '26000',
-                        panier: selectedEmployee.primePanier || '0',
-                        repas: selectedEmployee.primeRepas || '0',
-                        anciennete: selectedEmployee.primeAnciennete || '0',
-                        responsabilite: selectedEmployee.indemniteResponsabilite || '0',
-                        autresPrimes: selectedEmployee.autresPrimes || '0'
+                        transport: selectedEmployee.indemniteTransport?.toString() || '26000',
+                        panier: selectedEmployee.primePanier?.toString() || '0',
+                        repas: selectedEmployee.primeRepas?.toString() || '0',
+                        anciennete: selectedEmployee.primeAnciennete?.toString() || '0',
+                        responsabilite: selectedEmployee.indemniteResponsabilite?.toString() || '0',
+                        autresPrimes: selectedEmployee.autresPrimes?.toString() || '0'
                     },
                     retenues: {
                         ...prev.retenues,
-                        avances: selectedEmployee.avances || '0',
-                        retenueSalaire: selectedEmployee.retenueSalaire || '0',
+                        avances: selectedEmployee.avances?.toString() || '0',
+                        retenueSalaire: selectedEmployee.retenueSalaire?.toString() || '0',
+                        qpartipm: selectedEmployee.ipm?.toString() || '0' // ✅ AJOUTÉ - correspondance ipm -> qpartipm
                     }
                 }));
             }
         }
     }, [selectedEmployeeId, employees, location.state?.payroll, location.state?.isDuplicate]);
-
     const handleSave = async () => {
         if (!selectedEmployeeId) {
             showNotification("Veuillez sélectionner un employé", "warning");
@@ -631,7 +633,7 @@ const PayrollForm = () => {
                         <div className="payroll-header-title">
                             <h1>
                                 <FaFileInvoice className="payroll-header-icon" />
-                                Bulletin de Paie 
+                                Bulletin de Paie
                                 <span className="payroll-payroll-number">{payrollNumber && `| ${payrollNumber}`}</span>
                             </h1>
                             <div className="payroll-header-subtitle">

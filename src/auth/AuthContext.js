@@ -7,7 +7,17 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, writeBatch, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  collection,
+  writeBatch,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+  updateDoc
+} from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -93,32 +103,33 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const checkIntervalRef = useRef(null);
-  const lastUpdateRef = useRef(Number(localStorage.getItem("lastUpdate") || 0));
+
+  // throttle activité (10 minutes)
+  const lastUpdateRef = useRef(Number(localStorage.getItem('lastUpdate') || 0));
 
   const updateLastActivity = async (userId) => {
     const now = Date.now();
     if (now - lastUpdateRef.current < 10 * 60 * 1000) return;
 
     lastUpdateRef.current = now;
-    localStorage.setItem("lastUpdate", now);
+    localStorage.setItem('lastUpdate', String(now));
 
     try {
-      await setDoc(
-        doc(db, 'users', userId),
-        { lastActivity: serverTimestamp() },
-        { merge: true }
-      );
+      // ✅ updateDoc (pas de merge)
+      await updateDoc(doc(db, 'users', userId), {
+        lastActivity: serverTimestamp()
+      });
     } catch (error) {
-      // Silencieux en production
+      // Silencieux en prod
       if (process.env.NODE_ENV === 'development') {
-        console.warn("Update last activity failed:", error.message);
+        console.warn('Update last activity failed:', error?.message || error);
       }
     }
   };
 
   const handleLogout = async () => {
     try {
-      if (currentUser) {
+      if (currentUser?.uid) {
         await updateLastActivity(currentUser.uid);
       }
       await signOut(auth);
@@ -132,39 +143,38 @@ export function AuthProvider({ children }) {
   const checkInactivity = async (user) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const lastActivity = userData.lastActivity?.toDate();
-        const now = new Date();
+      if (!userDoc.exists()) return true;
 
-        // Définir le timeout selon le rôle
-        let inactivityTimeout = 48 * 60 * 60 * 1000; // ← CHANGÉ: 48h par défaut (au lieu de 7 jours)
+      const userData = userDoc.data();
+      const lastActivity = userData.lastActivity?.toDate?.();
+      const now = new Date();
 
-        if (['superadmin', 'supadmin'].includes(userData.role)) {
-          inactivityTimeout = 24 * 60 * 60 * 1000; // 24h pour superadmin/supadmin
-        } else if (['admin', 'rh_daf'].includes(userData.role)) {
-          inactivityTimeout = 12 * 60 * 60 * 1000; // 12h pour admin/RH
-        } else if (['comptable'].includes(userData.role)) {
-          inactivityTimeout = 8 * 60 * 60 * 1000; // 8h pour comptable
-        } else if (['charge_compte'].includes(userData.role)) {
-          inactivityTimeout = 16 * 60 * 60 * 1000; // 16h pour charge de compte
-        } else if (['employe'].includes(userData.role)) {
-          inactivityTimeout = 24 * 60 * 60 * 1000; // 24h pour employés
-        } else if (['lecteur'].includes(userData.role)) {
-          inactivityTimeout = 48 * 60 * 60 * 1000; // 48h pour lecteurs
-        }
+      // Timeout selon rôle
+      let inactivityTimeout = 48 * 60 * 60 * 1000; // 48h par défaut
 
-        const timeoutAgo = new Date(now.getTime() - inactivityTimeout);
+      if (['superadmin', 'supadmin'].includes(userData.role)) {
+        inactivityTimeout = 24 * 60 * 60 * 1000;
+      } else if (['admin', 'rh_daf'].includes(userData.role)) {
+        inactivityTimeout = 12 * 60 * 60 * 1000;
+      } else if (['comptable'].includes(userData.role)) {
+        inactivityTimeout = 8 * 60 * 60 * 1000;
+      } else if (['charge_compte'].includes(userData.role)) {
+        inactivityTimeout = 16 * 60 * 60 * 1000;
+      } else if (['employe'].includes(userData.role)) {
+        inactivityTimeout = 24 * 60 * 60 * 1000;
+      } else if (['lecteur'].includes(userData.role)) {
+        inactivityTimeout = 48 * 60 * 60 * 1000;
+      }
 
-        if (lastActivity && lastActivity < timeoutAgo) {
-          await handleLogout();
-          window.location.href = '/login?reason=inactivity';
-          return false;
-        }
-        return true;
+      const timeoutAgo = new Date(now.getTime() - inactivityTimeout);
+
+      if (lastActivity && lastActivity < timeoutAgo) {
+        await handleLogout();
+        window.location.href = '/login?reason=inactivity';
+        return false;
       }
       return true;
-    } catch (error) {
+    } catch {
       return true;
     }
   };
@@ -173,59 +183,67 @@ export function AuthProvider({ children }) {
     if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     checkIntervalRef.current = setInterval(() => {
       checkInactivity(user);
-    }, 2 * 60 * 60 * 1000);
+    }, 2 * 60 * 60 * 1000); // toutes les 2h
   };
 
+  // Auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const [idTokenResult, userDoc] = await Promise.all([
-          user.getIdTokenResult(),
-          getDoc(doc(db, 'users', user.uid))
-        ]);
+      try {
+        if (user) {
+          const [idTokenResult, userDoc] = await Promise.all([
+            user.getIdTokenResult(),
+            getDoc(doc(db, 'users', user.uid))
+          ]);
 
-        if (!userDoc.exists()) {
+          if (!userDoc.exists()) {
+            setCurrentUser(null);
+            setLoading(false);
+            return;
+          }
+
+          const userData = userDoc.data();
+
+          // ✅ Optionnel : tu peux mettre à jour l'activité ici
+          await updateLastActivity(user.uid);
+
+          setCurrentUser({
+            uid: user.uid,
+            email: user.email,
+            isSuperAdmin:
+              idTokenResult.claims.superAdmin ||
+              idTokenResult.claims.role === 'super-admin' ||
+              userData?.role === 'super-admin',
+            ...userData,
+            ...idTokenResult.claims
+          });
+
+          startInactivityChecking(user);
+        } else {
           setCurrentUser(null);
-          setLoading(false);
-          return;
+          if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
         }
-
-        const userData = userDoc.data();
-        await updateLastActivity(user.uid);
-
-        setCurrentUser({
-          uid: user.uid,
-          email: user.email,
-          isSuperAdmin: idTokenResult.claims.superAdmin || idTokenResult.claims.role === 'super-admin' || userData?.role === 'super-admin',
-          ...userData,
-          ...idTokenResult.claims
-        });
-
-        startInactivityChecking(user);
-      } else {
-        setCurrentUser(null);
-        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // refresh activity when tab visible again
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.uid) return;
 
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && currentUser) {
-        updateLastActivity(currentUser.uid).catch(() => {
-          // Ignorer l'erreur
-        });
+      if (document.visibilityState === 'visible' && currentUser?.uid) {
+        updateLastActivity(currentUser.uid).catch(() => {});
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [currentUser]);
 
   useEffect(() => {
@@ -235,63 +253,64 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function signup(email, password, companyName, userName, username) {
-    try {
-      if (!companyName || !userName || !username) throw new Error("Company name, user name and username are required");
-
-      const usernameCheck = await getDocs(query(collection(db, 'pseudos'), where('__name__', '==', username)));
-      if (!usernameCheck.empty) throw new Error("Ce nom d'utilisateur est déjà pris");
-
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userId = userCredential.user.uid;
-
-      const companyRef = doc(collection(db, 'companies'));
-      const companyId = companyRef.id;
-
-      const batch = writeBatch(db);
-
-      batch.set(companyRef, {
-        name: companyName,
-        createdAt: new Date(),
-        createdBy: userId,
-        status: 'active',
-        supadmin: userId
-      });
-
-      batch.set(doc(db, `companies/${companyId}/profiles`, userId), {
-        firstName: userName.split(' ')[0],
-        lastName: userName.split(' ').slice(1).join(' '),
-        email,
-        companyName,
-        createdAt: new Date(),
-        role: ROLES.SUPADMIN
-      });
-
-      batch.set(doc(db, 'users', userId), {
-        email,
-        name: userName,
-        companyId,
-        username,
-        role: ROLES.SUPADMIN,
-        createdAt: new Date(),
-        lastLogin: new Date(),
-        lastActivity: serverTimestamp()
-      });
-
-      batch.set(doc(db, 'pseudos', username), {
-        email,
-        createdAt: new Date()
-      });
-
-      await batch.commit();
-      return userCredential;
-    } catch (error) {
-      throw error;
+    if (!companyName || !userName || !username) {
+      throw new Error("Company name, user name and username are required");
     }
+
+    const usernameCheck = await getDocs(
+      query(collection(db, 'pseudos'), where('__name__', '==', username))
+    );
+    if (!usernameCheck.empty) throw new Error("Ce nom d'utilisateur est déjà pris");
+
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userId = userCredential.user.uid;
+
+    const companyRef = doc(collection(db, 'companies'));
+    const companyId = companyRef.id;
+
+    const batch = writeBatch(db);
+
+    batch.set(companyRef, {
+      name: companyName,
+      createdAt: new Date(),
+      createdBy: userId,
+      status: 'active',
+      supadmin: userId
+    });
+
+    batch.set(doc(db, `companies/${companyId}/profiles`, userId), {
+      firstName: userName.split(' ')[0],
+      lastName: userName.split(' ').slice(1).join(' '),
+      email,
+      companyName,
+      createdAt: new Date(),
+      role: ROLES.SUPADMIN
+    });
+
+    batch.set(doc(db, 'users', userId), {
+      email,
+      name: userName,
+      companyId,
+      username,
+      role: ROLES.SUPADMIN,
+      createdAt: new Date(),
+      lastLogin: new Date(),
+      lastActivity: serverTimestamp()
+    });
+
+    batch.set(doc(db, 'pseudos', username), {
+      email,
+      createdAt: new Date()
+    });
+
+    await batch.commit();
+    return userCredential;
   }
 
   async function login(identifier, password) {
     try {
       let email = identifier;
+
       if (!identifier.includes('@')) {
         const pseudoSnap = await getDoc(doc(db, 'pseudos', identifier));
         if (!pseudoSnap.exists()) throw new Error("Nom d'utilisateur non trouvé");
@@ -301,21 +320,20 @@ export function AuthProvider({ children }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // ✅ MAJ login + activité (PAS de setDoc merge)
+      await updateDoc(doc(db, 'users', user.uid), {
+        lastLogin: serverTimestamp(),
+        lastActivity: serverTimestamp()
+      });
+
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) throw new Error("Compte non trouvé");
+      if (!userDoc.exists()) throw new Error('Compte non trouvé');
 
       const userData = userDoc.data();
+
       if (userData.disabled === true) {
         await signOut(auth);
-        throw new Error("Votre compte a été désactivé. Contactez votre administrateur.");
-      }
-
-      // Mettre à jour lastLogin uniquement pour les rôles avec permission d'écriture
-      if (['superadmin', 'supadmin', 'admin', 'rh_daf'].includes(userData.role)) {
-        await setDoc(doc(db, 'users', user.uid), {
-          lastLogin: serverTimestamp(),
-          lastActivity: serverTimestamp()
-        }, { merge: true });
+        throw new Error('Votre compte a été désactivé. Contactez votre administrateur.');
       }
 
       return {
@@ -327,93 +345,94 @@ export function AuthProvider({ children }) {
         name: userData.name || userData.username || email.split('@')[0]
       };
     } catch (error) {
-      // Déconnexion en cas d'erreur
       try {
         await signOut(auth);
-      } catch { }
+      } catch {}
       throw error;
     }
   }
 
-  function logout() { return handleLogout(); }
+  function logout() {
+    return handleLogout();
+  }
 
   async function createSubUser(email, password, userName, role = ROLES.LECTEUR) {
-    if (!currentUser ||
+    if (
+      !currentUser ||
       (currentUser.role !== ROLES.ADMIN &&
         currentUser.role !== ROLES.SUPADMIN &&
-        !isSuperAdmin())) {
-      throw new Error("Unauthorized");
+        !isSuperAdmin())
+    ) {
+      throw new Error('Unauthorized');
     }
 
     if (currentUser.role === ROLES.ADMIN && role === ROLES.SUPADMIN) {
-      throw new Error("Vous ne pouvez pas créer un supadmin");
+      throw new Error('Vous ne pouvez pas créer un supadmin');
     }
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userId = userCredential.user.uid;
-      await sendPasswordResetEmail(auth, email);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userId = userCredential.user.uid;
 
-      const batch = writeBatch(db);
-      const companyId = currentUser.companyId;
+    await sendPasswordResetEmail(auth, email);
 
-      batch.set(doc(db, `companies/${companyId}/profiles`, userId), {
-        firstName: userName.split(' ')[0],
-        lastName: userName.split(' ').slice(1).join(' '),
-        email,
-        createdAt: new Date(),
-        role,
-        permissions: PERMISSIONS[role],
-        createdBy: currentUser.uid,
-        tempPassword: true
-      });
+    const batch = writeBatch(db);
+    const companyId = currentUser.companyId;
 
-      batch.set(doc(db, 'users', userId), {
-        email,
-        name: userName,
-        companyId,
-        role,
-        createdAt: new Date(),
-        isActive: true,
-        permissions: PERMISSIONS[role],
-        tempPassword: true,
-        lastActivity: serverTimestamp()
-      });
+    batch.set(doc(db, `companies/${companyId}/profiles`, userId), {
+      firstName: userName.split(' ')[0],
+      lastName: userName.split(' ').slice(1).join(' '),
+      email,
+      createdAt: new Date(),
+      role,
+      permissions: PERMISSIONS[role],
+      createdBy: currentUser.uid,
+      tempPassword: true
+    });
 
-      await batch.commit();
-      return userCredential;
-    } catch (error) {
-      throw error;
-    }
+    batch.set(doc(db, 'users', userId), {
+      email,
+      name: userName,
+      companyId,
+      role,
+      createdAt: new Date(),
+      isActive: true,
+      permissions: PERMISSIONS[role],
+      tempPassword: true,
+      lastActivity: serverTimestamp()
+    });
+
+    await batch.commit();
+    return userCredential;
   }
 
   async function updateUserRole(userId, newRole) {
-    if (!currentUser ||
+    if (
+      !currentUser ||
       (currentUser.role !== ROLES.ADMIN &&
         currentUser.role !== ROLES.SUPADMIN &&
-        !isSuperAdmin())) {
-      throw new Error("Unauthorized");
+        !isSuperAdmin())
+    ) {
+      throw new Error('Unauthorized');
     }
 
     if (currentUser.role === ROLES.ADMIN && newRole === ROLES.SUPADMIN) {
       throw new Error("Vous ne pouvez pas attribuer le rôle supadmin");
     }
 
-    try {
-      const batch = writeBatch(db);
-      const companyId = currentUser.companyId;
-      batch.update(doc(db, `companies/${companyId}/profiles`, userId), {
-        role: newRole,
-        permissions: PERMISSIONS[newRole]
-      });
-      batch.update(doc(db, 'users', userId), {
-        role: newRole,
-        permissions: PERMISSIONS[newRole]
-      });
-      await batch.commit();
-    } catch (error) {
-      throw error;
-    }
+    const batch = writeBatch(db);
+    const companyId = currentUser.companyId;
+
+    batch.update(doc(db, `companies/${companyId}/profiles`, userId), {
+      role: newRole,
+      permissions: PERMISSIONS[newRole]
+    });
+
+    batch.update(doc(db, 'users', userId), {
+      role: newRole,
+      permissions: PERMISSIONS[newRole]
+    });
+
+    await batch.commit();
   }
 
   function checkPermission(permission) {
@@ -422,21 +441,29 @@ export function AuthProvider({ children }) {
   }
 
   function isSuperAdmin() {
-    return currentUser?.isSuperAdmin || currentUser?.customClaims?.superAdmin || currentUser?.role === ROLES.SUPERADMIN;
+    return (
+      currentUser?.isSuperAdmin ||
+      currentUser?.customClaims?.superAdmin ||
+      currentUser?.role === ROLES.SUPERADMIN
+    );
   }
 
   function isSupAdmin() {
     return currentUser?.role === ROLES.SUPADMIN;
   }
 
-  function resetPassword(email) { return sendPasswordResetEmail(auth, email); }
+  function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
+  }
 
   function shouldDefaultToPayroll() {
     return [ROLES.RH_DAF, ROLES.SUPADMIN, ROLES.ADMIN].includes(currentUser?.role);
   }
 
   function canToggleModules() {
-    return [ROLES.ADMIN, ROLES.COMPTABLE, ROLES.SUPERADMIN, ROLES.SUPADMIN].includes(currentUser?.role);
+    return [ROLES.ADMIN, ROLES.COMPTABLE, ROLES.SUPERADMIN, ROLES.SUPADMIN].includes(
+      currentUser?.role
+    );
   }
 
   const value = {
@@ -459,5 +486,8 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 }
 
-export function useAuth() { return useContext(AuthContext); }
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
 export { ROLES };
