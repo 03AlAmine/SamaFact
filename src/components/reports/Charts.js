@@ -366,8 +366,7 @@ export const MonthlyComparisonChart = ({ invoices }) => {
       legend: {
         ...commonOptions.plugins.legend,
         position: 'top',
-        align: 'end', // 👈 ICI le centrage
-
+        align: 'end',
         labels: {
           ...commonOptions.plugins.legend.labels,
           padding: 20,
@@ -468,26 +467,19 @@ export const DonutChartWithLegend = ({
   const total = values.reduce((a, b) => a + b, 0);
   const labelText = total === 1 ? labelSingular : labelPlural;
 
-  // Palette de couleurs étendue (commune aux deux graphiques)
+  // Palette de couleurs étendue
   const backgroundColors = [
-    // Bleus & Violets
     '#6366f1', '#4f46e5', '#4338ca', '#3730a3', '#312e81', '#1e3a8a', '#1e40af', '#1d4ed8',
     '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#c7d2fe', '#a5b4fc',
     '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6', '#4c1d95', '#3f0c96', '#9d4edd', '#7b2cbf',
     '#a855f7', '#9333ea', '#c026d3', '#a21caf', '#86198f', '#701a75',
-
-    // Roses / Rouges
     '#ec4899', '#db2777', '#be185d', '#9d174d', '#f472b6', '#f06292', '#ff80ab', '#ff4d94',
     '#e84393', '#ff6f91', '#ff8da1', '#fca5a5', '#fecaca', '#f43f5e', '#ef4444', '#dc2626',
     '#b91c1c', '#ae2c2c', '#9f1239', '#fb7185', '#fda4af', '#ffe0e6',
-
-    // Oranges & Jaunes
     '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12', '#ff8e42', '#ff6a00', '#ff7849',
     '#ffa366', '#ffb380', '#fca311', '#fb8c00', '#f57c00', '#ef6c00', '#ff9800', '#ffb74d',
     '#fed7aa', '#fbd38d', '#f6ad55', '#f59e0b', '#eab308', '#facc15', '#fcd34d', '#fde68a',
     '#fef08a', '#fff3b0', '#ffd166',
-
-    // Verts
     '#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#34d399', '#22c55e', '#16a34a',
     '#15803d', '#166534', '#14532d', '#4ade80', '#84cc16', '#bef264', '#c6f68d', '#86efac',
     '#bbf7d0', '#ccfbf1', '#99f6e4', '#5eead4', '#2dd4bf', '#14b8a6', '#0d9488', '#0f766e',
@@ -936,7 +928,6 @@ export const DonutChartWithLegend = ({
 export const ClientChart = ({ clients }) => (
   <DonutChartWithLegend
     dataItems={clients}
-    //  title="Répartition des clients"
     dataKey="nom"
     labelSingular="client"
     labelPlural="clients"
@@ -948,16 +939,15 @@ export const EmployeChart = ({ employees }) => {
   // Transformer les données d'employés pour le composant générique
   const transformedEmployees = Array.isArray(employees)
     ? employees.map(emp => ({
-      id: emp.id,
-      nom: [emp.nom, emp.prenom].filter(Boolean).join(' ') || 'Non spécifié',
-      count: 1
-    }))
+        id: emp.id,
+        nom: [emp.nom, emp.prenom].filter(Boolean).join(' ') || 'Non spécifié',
+        count: 1
+      }))
     : [];
 
   return (
     <DonutChartWithLegend
       dataItems={transformedEmployees}
-      //  title="Répartition des employés"
       dataKey="nom"
       valueKey="count"
       labelSingular="employé"
@@ -1017,6 +1007,7 @@ export const StatusChart = ({ invoices }) => {
   );
 };
 
+// 💰 Graphique des paies
 export const PayrollChart = ({ payrolls = [] }) => {
   const data = {
     labels: payrolls.map(p => p.mois),
@@ -1073,12 +1064,13 @@ export const PayrollChart = ({ payrolls = [] }) => {
   );
 };
 
-// Nouveau graphique pour les types de contrat (Payroll)
+// 📊 Graphique des types de contrat
 export const ContractTypeChart = ({ employees = [] }) => {
   const contractTypes = {
     'CDI': 0,
     'CDD': 0,
     'Stagiaire': 0,
+    'Freelance': 0,
     'Autre': 0
   };
 
@@ -1086,7 +1078,6 @@ export const ContractTypeChart = ({ employees = [] }) => {
     const type = emp.typeContrat || 'Autre';
     contractTypes[type] = (contractTypes[type] || 0) + 1;
   });
-
 
   const data = {
     labels: Object.keys(contractTypes),
@@ -1096,6 +1087,7 @@ export const ContractTypeChart = ({ employees = [] }) => {
         CHART_COLORS.success,
         CHART_COLORS.warning,
         CHART_COLORS.info,
+        CHART_COLORS.secondary,
         CHART_COLORS.light
       ],
       borderColor: '#fff',
@@ -1105,20 +1097,186 @@ export const ContractTypeChart = ({ employees = [] }) => {
 
   return (
     <div style={{ height: '250px', padding: '1rem' }}>
-      <Pie
-        data={data}
-        options={{
-          ...commonOptions,
-          plugins: {
-            ...commonOptions.plugins,
-            title: {
-              display: true,
-              text: 'Types de contrat',
-              font: { size: 16 }
-            }
+      <Pie data={data} options={{
+        ...commonOptions,
+        plugins: {
+          ...commonOptions.plugins,
+          title: {
+            display: true,
+            text: 'Types de contrat',
+            font: { size: 16 }
           }
-        }}
-      />
+        }
+      }} />
+    </div>
+  );
+};
+
+// 📈 NOUVEAU: Graphique des revenus
+export const RevenueChart = ({ data = [] }) => {
+  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+  
+  // Si ce sont des paies
+  if (data.length > 0 && data[0]?.netAPayer !== undefined) {
+    const monthlyData = Array(12).fill(0);
+    data.forEach(item => {
+      if (item.date) {
+        const date = new Date(item.date);
+        monthlyData[date.getMonth()] += parseFloat(item.netAPayer) || 0;
+      }
+    });
+
+    const chartData = {
+      labels: months,
+      datasets: [{
+        label: 'Revenus (FCFA)',
+        data: monthlyData,
+        backgroundColor: CHART_COLORS.primary,
+        borderColor: CHART_BORDERS.primary,
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+      //  backgroundColor: 'rgba(99, 102, 241, 0.1)'
+      }]
+    };
+
+    return (
+      <div style={{ height: '250px', padding: '1rem' }}>
+        <Line data={chartData} options={commonOptions} />
+      </div>
+    );
+  }
+
+  // Fallback
+  return (
+    <div style={{ height: '250px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+      Aucune donnée de revenu disponible
+    </div>
+  );
+};
+
+// 💸 NOUVEAU: Graphique des dépenses
+export const ExpenseChart = ({ data = [] }) => {
+  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+  
+  if (data.length > 0 && data[0]?.chargesSociales !== undefined) {
+    const monthlyData = Array(12).fill(0);
+    data.forEach(item => {
+      if (item.date) {
+        const date = new Date(item.date);
+        monthlyData[date.getMonth()] += parseFloat(item.chargesSociales) || 0;
+      }
+    });
+
+    const chartData = {
+      labels: months,
+      datasets: [{
+        label: 'Dépenses (FCFA)',
+        data: monthlyData,
+        backgroundColor: CHART_COLORS.danger,
+        borderColor: CHART_BORDERS.danger,
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+      //  backgroundColor: 'rgba(239, 68, 68, 0.1)'
+      }]
+    };
+
+    return (
+      <div style={{ height: '250px', padding: '1rem' }}>
+        <Line data={chartData} options={commonOptions} />
+      </div>
+    );
+  }
+
+  // Fallback
+  return (
+    <div style={{ height: '250px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+      Aucune donnée de dépense disponible
+    </div>
+  );
+};
+
+// 💵 NOUVEAU: Graphique de flux de trésorerie
+export const CashFlowChart = ({ revenues = [], expenses = [] }) => {
+  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+  
+  const revenueData = Array(12).fill(0);
+  const expenseData = Array(12).fill(0);
+  const cashFlowData = Array(12).fill(0);
+
+  // Traiter les revenus
+  revenues.forEach(item => {
+    if (item.date) {
+      const date = new Date(item.date);
+      const amount = parseFloat(item.totalTTC || item.netAPayer || 0);
+      revenueData[date.getMonth()] += amount;
+    }
+  });
+
+  // Traiter les dépenses
+  expenses.forEach(item => {
+    if (item.date) {
+      const date = new Date(item.date);
+      const amount = parseFloat(item.chargesSociales || item.netAPayer || 0);
+      expenseData[date.getMonth()] += amount;
+    }
+  });
+
+  // Calculer le cash flow
+  for (let i = 0; i < 12; i++) {
+    cashFlowData[i] = revenueData[i] - expenseData[i];
+  }
+
+  const chartData = {
+    labels: months,
+    datasets: [
+      {
+        label: 'Revenus',
+        data: revenueData,
+        backgroundColor: CHART_COLORS.success,
+        borderColor: CHART_BORDERS.success,
+        borderWidth: 2,
+        type: 'bar'
+      },
+      {
+        label: 'Dépenses',
+        data: expenseData,
+        backgroundColor: CHART_COLORS.danger,
+        borderColor: CHART_BORDERS.danger,
+        borderWidth: 2,
+        type: 'bar'
+      },
+      {
+        label: 'Cash Flow',
+        data: cashFlowData,
+        borderColor: CHART_COLORS.primary,
+        borderWidth: 3,
+        type: 'line',
+        fill: false,
+        pointBackgroundColor: CHART_COLORS.primary
+      }
+    ]
+  };
+
+  const options = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      tooltip: {
+        ...commonOptions.plugins.tooltip,
+        callbacks: {
+          label: (context) => {
+            return `${context.dataset.label}: ${context.raw.toLocaleString('fr-FR')} FCFA`;
+          }
+        }
+      }
+    }
+  };
+
+  return (
+    <div style={{ height: '300px', padding: '1rem' }}>
+      <Bar data={chartData} options={options} />
     </div>
   );
 };

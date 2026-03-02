@@ -27,7 +27,9 @@ import { useUi } from "./contexts/uiContext"; // Ajoutez cette importation
 
 import logo from "./assets/Logo_Mf.png";
 import "./css/Mentafact.css";
+import "./css/Dashboard.css";
 import "./css/Navbar.css";
+import './css/dark-mode-overrides.css';
 import * as XLSX from "xlsx";
 import { FaArrowUp } from "react-icons/fa";
 
@@ -1337,6 +1339,9 @@ const Mentafact = () => {
           setModuleBasedOnRole={setModuleBasedOnRole}
           canToggleModules={canToggleModules}
           logout={logout}
+          employees={employees}
+          allFactures={allFactures}
+          clients={clients}
         />
 
         <div className="dashboard-container">{renderActiveTab()}</div>

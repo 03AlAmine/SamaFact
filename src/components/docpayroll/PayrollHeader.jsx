@@ -2,11 +2,16 @@ import React from "react";
 import {
   FaFileSignature,
   FaSearch,
-  FaPlus,
   FaList,
   FaTh,
   FaSortAlphaDown,
-  FaSortNumericDown
+  FaSortNumericDown,
+  FaMagic,
+  FaDownload,
+  FaFileExcel,
+  FaFilePdf,
+  FaBuilding,
+  FaTimes
 } from "react-icons/fa";
 
 const PayrollHeader = ({
@@ -21,14 +26,40 @@ const PayrollHeader = ({
   toggleSort,
   navigate,
   selectedEmployee,
-  showEmployeeColumn
+  showEmployeeColumn,
+  onGenerateAll,
+  onDownloadAll,
+  onExport,
+  totalFilteredCount,
+  generateAllDisabled,
+  downloadAllDisabled,
+  // NOUVELLES PROPS
+  selectedDepartment,
+  onClearDepartment
 }) => (
   <div className="section-header">
     <div className="header-left">
-      <h2 className="section-title">
-        <FaFileSignature className="section-icon" style={{ color: '#3b82f6' }} />
-        {title} <span className="count-badge">{filteredItemsCount}</span>
-      </h2>
+      <div className="title-with-badge">
+        <h2 className="section-title">
+          <FaFileSignature className="section-icon" style={{ color: '#3b82f6' }} />
+          {title} <span className="count-badge">{filteredItemsCount}</span>
+        </h2>
+
+        {/* Badge département - juste après le titre */}
+        {selectedDepartment && (
+          <div className="department-badge">
+            <FaBuilding size={12} />
+            <span>{selectedDepartment}</span>
+            <button
+              onClick={onClearDepartment}
+              className="department-badge-clear"
+              title="Effacer le filtre département"
+            >
+              <FaTimes size={10} />
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="view-controls">
         <button
@@ -46,9 +77,7 @@ const PayrollHeader = ({
           <FaList />
         </button>
       </div>
-    </div>
 
-    <div className="header-right">
       <div className="search-container">
         <FaSearch className="search-icon" />
         <input
@@ -59,7 +88,9 @@ const PayrollHeader = ({
           className="search-input"
         />
       </div>
+    </div>
 
+    <div className="header-right">
       <div className="sort-options">
         <div className="sort-label">Trier par:</div>
         <button
@@ -80,14 +111,46 @@ const PayrollHeader = ({
         )}
       </div>
 
-      <button
-        onClick={() => navigate("/payroll", { state: { employee: selectedEmployee } })}
-        className="create-btn"
-        style={{ backgroundColor: '#3b82f6' }}
-      >
-        <FaPlus className="btn-icon" />
-        Créer un bulletin
-      </button>
+      {/* Actions de masse */}
+      <div className="export-buttons" style={{ display: 'flex', gap: '8px', marginLeft: '10px' }}>
+        <button
+          onClick={onGenerateAll}
+          disabled={generateAllDisabled}
+          className="generate-all-btn"
+          style={{
+            cursor: generateAllDisabled ? 'not-allowed' : 'pointer',
+            opacity: generateAllDisabled ? 0.5 : 1,
+          }}
+        >
+          <FaMagic /> Générer ({totalFilteredCount})
+        </button>
+
+        <button
+          onClick={onDownloadAll}
+          disabled={downloadAllDisabled}
+          className="donwload-zip-btn"
+          style={{
+            cursor: downloadAllDisabled ? 'not-allowed' : 'pointer',
+            opacity: downloadAllDisabled ? 0.5 : 1,
+          }}
+        >
+          <FaDownload /> Télécharger
+        </button>
+
+        <button
+          onClick={() => onExport('excel')}
+          className="export-btn-excel"
+        >
+          <FaFileExcel /> Excel
+        </button>
+
+        <button
+          onClick={() => onExport('pdf')}
+          className="export-btn-pdf"
+        >
+          <FaFilePdf /> PDF
+        </button>
+      </div>
     </div>
   </div>
 );

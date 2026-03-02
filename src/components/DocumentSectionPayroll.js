@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { message } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import emailjs from "emailjs-com";
 
 import PayrollCard from './docpayroll/PayrollCard';
@@ -28,7 +27,17 @@ const PayrollSection = ({
   onMarkAsPaid,
   onCancel,
   getStatus,
-  showEmployeeColumn = true
+  showEmployeeColumn = true,
+  navigate,
+  onGenerateAll,
+  onDownloadAll,
+  onExport,
+  totalFilteredCount,
+  generateAllDisabled,
+  downloadAllDisabled,
+  // NOUVELLES PROPS
+  selectedDepartment,
+  onClearDepartment
 }) => {
   const [sortBy, setSortBy] = useState('numero');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -38,7 +47,6 @@ const PayrollSection = ({
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sendingEmails, setSendingEmails] = useState({});
-  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
 
   // États pour le scroll infini
@@ -102,7 +110,7 @@ const PayrollSection = ({
   }, [page, loadingMore, hasMore, items, itemsPerPage, sortBy]);
 
   // Calcul du nombre total filtré
-  const totalFilteredCount = useMemo(() => {
+  const totalFilteredCountLocal = useMemo(() => {
     return items.filter(item => {
       if (!item) return false;
       const searchLower = (searchTerm || '').toLowerCase();
@@ -430,7 +438,7 @@ const PayrollSection = ({
     >
       <PayrollHeader
         title={title}
-        filteredItemsCount={totalFilteredCount}
+        filteredItemsCount={totalFilteredCountLocal}
         viewMode={viewMode}
         setViewMode={handleViewModeChange}
         searchTerm={searchTerm}
@@ -441,9 +449,18 @@ const PayrollSection = ({
         navigate={navigate}
         selectedEmployee={selectedEmployee}
         showEmployeeColumn={showEmployeeColumn}
+        onGenerateAll={onGenerateAll}
+        onDownloadAll={onDownloadAll}
+        onExport={onExport}
+        totalFilteredCount={totalFilteredCount}
+        generateAllDisabled={generateAllDisabled}
+        downloadAllDisabled={downloadAllDisabled}
+        // NOUVELLES PROPS
+        selectedDepartment={selectedDepartment}
+        onClearDepartment={onClearDepartment}
       />
 
-      {totalFilteredCount === 0 ? (
+      {totalFilteredCountLocal === 0 ? (
         <EmptyState
           title="Aucun bulletin de paie trouvé"
           message="Commencez par créer votre premier bulletin"

@@ -10,7 +10,6 @@ import {
   query,
   where,
   orderBy,
-  limit,
   onSnapshot,
   setDoc,
   deleteField
@@ -55,19 +54,33 @@ export const payrollService = {
     if (!companyId) return "PAY-TEMP";
 
     try {
+      const currentYear = new Date().getFullYear();
       const payrollsRef = collection(db, `companies/${companyId}/payrolls`);
-      const q = query(payrollsRef, orderBy("numero", "desc"), limit(1));
+
+      // Récupérer tous les bulletins de l'année en cours
+      const q = query(
+        payrollsRef,
+        where("numero", ">=", `PAY-${currentYear}-`),
+        where("numero", "<=", `PAY-${currentYear}-999999`)
+      );
+
       const snapshot = await getDocs(q);
 
-      let lastNumber = 0;
-      if (!snapshot.empty) {
-        const lastPayroll = snapshot.docs[0].data();
-        const match = lastPayroll.numero?.match(/-(\d+)$/);
-        if (match) lastNumber = parseInt(match[1]);
-      }
+      let maxNumber = 0;
 
-      const year = new Date().getFullYear();
-      return `PAY-${year}-${lastNumber + 1}`;
+      snapshot.docs.forEach(doc => {
+        const payrollNum = doc.data().numero;
+        const match = payrollNum?.match(new RegExp(`^PAY-${currentYear}-(\\d+)$`));
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      });
+
+      return `PAY-${currentYear}-${maxNumber + 1}`;
+
     } catch (error) {
       console.error("Erreur génération numéro paie:", error);
       return `PAY-${new Date().getFullYear()}-1`;

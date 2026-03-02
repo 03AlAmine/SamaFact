@@ -30,11 +30,11 @@ export const DocumentSliderCard = ({ stats, className = "", showTrend = false, s
             </div>
             <div className="stat-info">
                 <h3>{items[currentIndex].value || 0}</h3>
-                {showName && (
+              {/*  {showName && (
                     <>
                         <p>{items[currentIndex].label}</p>
                     </>
-                )}
+                )} */}
                 {showTrend && (
                     <>
                         <p>{items[currentIndex].label} enregistrés</p>

@@ -1,3 +1,4 @@
+// pdf_payrollService.js
 import { pdf } from '@react-pdf/renderer';
 import PayrollPDF from '../data/payrolls/PayrollPDF';
 
@@ -87,6 +88,7 @@ const getDefaultPayrollData = () => ({
     }
 });
 
+// Fonction principale de génération de PDF
 export const generatePayrollPdfBlob = async (employee, formData, calculations, companyInfo) => {
     try {
         const defaults = getDefaultPayrollData();
@@ -106,7 +108,8 @@ export const generatePayrollPdfBlob = async (employee, formData, calculations, c
                         key,
                         validateNumber(formData?.remuneration?.[key])
                     ])
-        )},
+                )
+            },
             calculations: {
                 ...defaults.calculations,
                 ...Object.fromEntries(
@@ -116,7 +119,8 @@ export const generatePayrollPdfBlob = async (employee, formData, calculations, c
                             ? { ...defaults.calculations[key], ...val }
                             : validateNumber(val)
                     ])
-      )},
+                )
+            },
             companyInfo: { ...defaults.companyInfo, ...companyInfo }
         };
 
@@ -133,6 +137,56 @@ export const generatePayrollPdfBlob = async (employee, formData, calculations, c
             stack: error.stack,
             inputData: { employee, formData, calculations }
         });
+        throw error;
+    }
+};
+
+// Version corrigée pour la génération multiple
+export const generateMultiplePayrollsPdf = async (employee, formData, calculations, companyInfo, index) => {
+    try {
+        const defaults = getDefaultPayrollData();
+
+        // Fusion profonde des données
+        const payload = {
+            employee: { ...defaults.employee, ...employee },
+            formData: {
+                ...defaults.formData,
+                ...formData,
+                periode: {
+                    du: convertDate(formData?.periode?.du),
+                    au: convertDate(formData?.periode?.au)
+                },
+                remuneration: Object.fromEntries(
+                    Object.entries(defaults.formData.remuneration).map(([key]) => [
+                        key,
+                        validateNumber(formData?.remuneration?.[key])
+                    ])
+                )
+            },
+            calculations: {
+                ...defaults.calculations,
+                ...Object.fromEntries(
+                    Object.entries(calculations || {}).map(([key, val]) => [
+                        key,
+                        typeof val === 'object'
+                            ? { ...defaults.calculations[key], ...val }
+                            : validateNumber(val)
+                    ])
+                )
+            },
+            companyInfo: { ...defaults.companyInfo, ...companyInfo }
+        };
+
+        // Correction : utiliser formData.numero au lieu de payroll.numero
+        console.debug(`[PDF Service] Génération PDF ${index + 1}:`, formData.numero || 'N° inconnu');
+
+        const blob = await pdf(
+            <PayrollPDF {...payload} />
+        ).toBlob();
+
+        return blob;
+    } catch (error) {
+        console.error(`[PDF Service] Erreur génération PDF ${index + 1}:`, error);
         throw error;
     }
 };
@@ -173,10 +227,17 @@ export const previewPayrollPdf = async (employee, formData, calculations, compan
         if (!newWindow) {
             const modal = document.createElement('div');
             modal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); z-index: 1000;
-        display: flex; justify-content: center; align-items: center;
-      `;
+                position: fixed; 
+                top: 0; 
+                left: 0; 
+                width: 100%; 
+                height: 100%;
+                background: rgba(0,0,0,0.8); 
+                z-index: 1000;
+                display: flex; 
+                justify-content: center; 
+                align-items: center;
+            `;
 
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'width: 80%; height: 90%; border: none';
@@ -185,10 +246,16 @@ export const previewPayrollPdf = async (employee, formData, calculations, compan
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'Fermer';
             closeBtn.style.cssText = `
-        position: absolute; top: 20px; right: 20px; padding: 10px 20px;
-        background: #ff4444; color: white; border: none; border-radius: 5px;
-        cursor: pointer;
-      `;
+                position: absolute; 
+                top: 20px; 
+                right: 20px; 
+                padding: 10px 20px;
+                background: #ff4444; 
+                color: white; 
+                border: none; 
+                border-radius: 5px;
+                cursor: pointer;
+            `;
             closeBtn.onclick = () => modal.remove();
 
             modal.append(iframe, closeBtn);

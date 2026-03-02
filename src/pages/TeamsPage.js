@@ -16,12 +16,14 @@ import {
     FaUserCog,
     FaArrowLeft,
     FaChevronDown,
-    FaChevronUp
+    FaChevronUp,
+    FaList,
+    FaTh
 } from "react-icons/fa";
 import empty_team from '../assets/empty_team.png';
 import { ROLES } from '../auth/AuthContext';
 import { teamService } from '../services/teamService';
-import "../css/TeamPage.css";
+import "../css/TeamPage.css"; // Note: le fichier CSS s'appelle TeamPage.css
 import { useAuth } from '../auth/AuthContext';
 import { userService } from '../services/userService';
 import bgTeam from "../assets/bg/bg-team.jpg";
@@ -78,7 +80,7 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
             responsable: '',
             responsableId: '',
             description: '',
-            members: [] // Nouveau champ pour les membres
+            members: []
         }
     });
 
@@ -114,7 +116,6 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
         setTeams(prev => ({ ...prev, editing: team }));
     };
 
-
     const handleTeamEditChange = (field, value) => {
         setTeams(prev => ({
             ...prev,
@@ -122,13 +123,9 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
         }));
     };
 
-    // Fonction pour ajouter/supprimer des membres
     const handleMemberToggle = (userId, isAdding, isEditing = false) => {
-        // Optimisation possible : mise à jour locale immédiate
         if (isEditing) {
             const currentMembers = teams.editing.members || [];
-
-            // Empêcher les doublons
             if (isAdding && currentMembers.includes(userId)) {
                 showError("Erreur", "Cet utilisateur est déjà membre de l'équipe");
                 return;
@@ -155,18 +152,16 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
         }
     };
 
-    // Fonction pour obtenir les utilisateurs éligibles comme membres
     const getEligibleMembers = () => {
         return usersList.filter(user =>
-            !user.disabled && // Utilisateur actif
+            !user.disabled &&
             [ROLES.CHARGE_COMPTE, ROLES.COMPTABLE, ROLES.LECTEUR].includes(user.role)
         );
     };
 
-    // Fonction pour obtenir les utilisateurs éligibles comme responsables
     const getEligibleResponsables = () => {
         return usersList.filter(user =>
-            !user.disabled && // Utilisateur actif
+            !user.disabled &&
             [ROLES.ADMIN, ROLES.RH_DAF, ROLES.CHARGE_COMPTE, ROLES.COMPTABLE].includes(user.role)
         );
     };
@@ -175,12 +170,9 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
         return usersList.find(user => user.id === userId);
     };
 
-
-    // Dans useTeamsManagement
     const handleTeamSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation manquante
         if (!teams.form.nom.trim()) {
             showError("Erreur", "Le nom de l'équipe est obligatoire");
             return;
@@ -190,8 +182,8 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
             showError("Erreur", "Un responsable doit être sélectionné");
             return;
         }
+
         try {
-            // Vérifier si le nom d'équipe existe déjà
             const nameExists = await teamService.checkTeamNameExists(
                 currentUser.companyId,
                 teams.form.nom
@@ -205,7 +197,6 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
             await teamService.addTeam(currentUser.companyId, teams.form);
             await loadTeams();
 
-            // Réinitialiser le formulaire correctement
             setTeams(prev => ({
                 ...prev,
                 form: {
@@ -222,9 +213,6 @@ const useTeamsManagement = (currentUser, showSuccess, showError, usersList = [])
             showError("Erreur", error.message || "Erreur lors de l'ajout de l'équipe");
         }
     };
-
-
-
 
     const handleTeamUpdate = async (e) => {
         e.preventDefault();
@@ -284,8 +272,6 @@ const useUsersManagement = (currentUser, showSuccess, showError) => {
         userToReset: null
     });
 
-
-    // Fonctions utilitaires
     function generateRandomPassword() {
         return Math.random().toString(36).slice(-8) + 'A1!';
     }
@@ -451,20 +437,20 @@ const useUsersManagement = (currentUser, showSuccess, showError) => {
 };
 
 // =============================================================================
-// COMPOSANTS FONCTIONNELS
+// COMPOSANTS FONCTIONNELS AVEC PRÉFIXES
 // =============================================================================
 
 const LoadingSpinner = () => (
-    <div className="loading-spinner">
+    <div className="team-loading-spinner">
         <div>⏳</div>
         <div>Chargement...</div>
     </div>
 );
 
 const Notifications = ({ success, error, onClose }) => (
-    <div className="notifications-container">
+    <div className="team-notifications-container">
         {success && (
-            <div className="notification success">
+            <div className="team-notification team-success">
                 <FaCheckCircle />
                 <div>
                     <h4>{success.title}</h4>
@@ -474,7 +460,7 @@ const Notifications = ({ success, error, onClose }) => (
             </div>
         )}
         {error && (
-            <div className="notification error">
+            <div className="team-notification team-error">
                 <FaExclamationTriangle />
                 <div>
                     <h4>{error.title}</h4>
@@ -487,13 +473,13 @@ const Notifications = ({ success, error, onClose }) => (
 );
 
 const Section = ({ title, icon, isOpen, onToggle, children }) => (
-    <div className="section-card">
-        <div className="section-header-teams" onClick={onToggle}>
-            <h2 className="section-title">
+    <div className="team-section-card">
+        <div className="team-section-header" onClick={onToggle}>
+            <h2 className="team-section-title">
                 {icon}
                 {title}
             </h2>
-            <button className="icon-btn">
+            <button className="team-icon-btn">
                 {isOpen ? <FaChevronUp /> : <FaChevronDown />}
             </button>
         </div>
@@ -512,58 +498,58 @@ const UserForm = ({
     onUpdate,
     onCancelEdit
 }) => (
-    <div className="form-card">
-        <div className="form-header">
-            <h3 className="form-subtitle">
+    <div className="team-form-card">
+        <div className="team-form-header">
+            <h3 className="team-form-subtitle">
                 {isCreating ? 'Ajouter un nouvel utilisateur' : 'Modifier l\'utilisateur'}
             </h3>
             {!isCreating && (
-                <button onClick={onCancelEdit} className="btn-secondary">
+                <button onClick={onCancelEdit} className="team-btn-secondary">
                     <FaArrowLeft /> Annuler l'édition
                 </button>
             )}
         </div>
 
-        <div className="form-row">
-            <div className="form-group">
-                <label>Email <span className="required">*</span></label>
+        <div className="team-form-row">
+            <div className="team-form-group">
+                <label>Email <span className="team-required">*</span></label>
                 <input
                     type="email"
                     value={form.email}
                     onChange={(e) => onFormChange('email', e.target.value)}
                     placeholder="Email de l'utilisateur"
-                    className="form-input"
+                    className="team-form-input"
                     required
                     disabled={!isCreating}
                 />
             </div>
-            <div className="form-group">
+            <div className="team-form-group">
                 <label>Nom complet</label>
                 <input
                     value={form.name}
                     onChange={(e) => onFormChange('name', e.target.value)}
                     placeholder="Nom de l'utilisateur"
-                    className="form-input"
+                    className="team-form-input"
                 />
             </div>
         </div>
 
-        <div className="form-row">
-            <div className="form-group">
+        <div className="team-form-row">
+            <div className="team-form-group">
                 <label>Nom d'utilisateur</label>
                 <input
                     value={form.username}
                     onChange={(e) => onFormChange('username', e.target.value)}
                     placeholder="Pseudo"
-                    className="form-input"
+                    className="team-form-input"
                 />
             </div>
-            <div className="form-group">
-                <label>Rôle <span className="required">*</span></label>
+            <div className="team-form-group">
+                <label>Rôle <span className="team-required">*</span></label>
                 <select
                     value={form.role}
                     onChange={(e) => onFormChange('role', e.target.value)}
-                    className="form-input"
+                    className="team-form-input"
                     required
                 >
                     <option value={ROLES.ADMIN}>Administrateur</option>
@@ -575,34 +561,34 @@ const UserForm = ({
             </div>
 
             {isCreating && (
-                <div className="form-group">
+                <div className="team-form-group">
                     <label>Mot de passe temporaire</label>
-                    <div className="password-input">
+                    <div className="team-password-input">
                         <input
                             type="text"
                             value={password}
                             readOnly
-                            className="form-input"
+                            className="team-form-input"
                         />
                         <button
                             type="button"
                             onClick={onPasswordGenerate}
-                            className="icon-btn"
+                            className="team-icon-btn"
                             title="Générer un nouveau mot de passe"
                         >
                             <FaPlus />
                         </button>
                     </div>
-                    <small className="hint">Ce mot de passe sera envoyé à l'utilisateur</small>
+                    <small className="team-hint">Ce mot de passe sera envoyé à l'utilisateur</small>
                 </div>
             )}
         </div>
 
-        <div className="form-actions">
+        <div className="team-form-actions">
             {isCreating ? (
                 <button
                     onClick={onCreate}
-                    className="btn-primary"
+                    className="team-btn-primary"
                     disabled={!form.email || !form.role || isSubmitting}
                 >
                     {isSubmitting ? 'Création en cours...' : <><FaPlus /> Créer l'utilisateur</>}
@@ -610,7 +596,7 @@ const UserForm = ({
             ) : (
                 <button
                     onClick={onUpdate}
-                    className="btn-primary"
+                    className="team-btn-primary"
                     disabled={isSubmitting}
                 >
                     {isSubmitting ? 'Mise à jour...' : <><FaEdit /> Mettre à jour</>}
@@ -620,136 +606,186 @@ const UserForm = ({
     </div>
 );
 
-const UsersList = ({ users, loading, getRoleIcon, formatDate, onEdit, onDelete, onResetPassword, onToggleStatus }) => (
-    <div className="users-section">
-        <h3 className="section-subtitle">
-            <FaUsers />
-            Liste des Utilisateurs ({users.length})
-        </h3>
+// Composant UsersList avec sélecteur de vue
+const UsersList = ({
+    users,
+    loading,
+    getRoleIcon,
+    formatDate,
+    onEdit,
+    onDelete,
+    onResetPassword,
+    onToggleStatus
+}) => {
+    const [viewMode, setViewMode] = useState('card');
 
-        {loading ? (
-            <div className="loading">Chargement des utilisateurs...</div>
-        ) : users.length === 0 ? (
-            <div className="empty-state">
-                <p>Aucun utilisateur trouvé</p>
+    return (
+        <div className="team-users-section">
+            <div className="team-list-header">
+                <h3 className="team-section-subtitle">
+                    <FaUsers />
+                    Liste des Utilisateurs ({users.length})
+                </h3>
+
+                {/* Sélecteur de vue */}
+                <div className="view-controls">
+                    <button
+                        className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                        onClick={() => setViewMode('list')}
+                        title="Vue tableau"
+                    >
+                        <FaList />
+                    </button>
+                    <button
+                        className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
+                        onClick={() => setViewMode('card')}
+                        title="Vue cartes"
+                    >
+                        <FaTh />
+
+                    </button>
+                </div>
             </div>
-        ) : (
-            <>
-                {/* Version Desktop - Tableau */}
-                <div className="table-container desktop-view">
-                    <table className="data-table-teams">
-                        <thead>
-                            <tr>
-                                <th>Utilisateur</th>
-                                <th>Email</th>
-                                <th>Rôle</th>
-                                <th>Créé le</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map((user) => (
-                                <tr key={user.id}>
-                                    <td>
-                                        <div className="user-cell">
-                                            {getRoleIcon(user.role)}
-                                            <span>{user.name || 'N/A'}</span>
-                                        </div>
-                                    </td>
-                                    <td>{user.email}</td>
-                                    <td>
-                                        <span className={`badge role-${user.role.toLowerCase()}`}>
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td>{formatDate(user.createdAt)}</td>
-                                    <td>
-                                        <span className={`badge status-${user.disabled ? 'inactive' : 'active'}`}>
-                                            {user.disabled ? 'Désactivé' : 'Actif'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button onClick={() => onEdit(user)} className="icon-btn edit" title="Modifier">
-                                                <FaEdit />
-                                            </button>
-                                            <button onClick={() => onDelete(user.id)} className="icon-btn delete" title="Supprimer">
-                                                <FaTrash />
-                                            </button>
-                                            <button onClick={() => onResetPassword(user)} className="icon-btn reset" title="Réinitialiser le mot de passe">
-                                                <FaKey />
-                                            </button>
-                                            <button
-                                                onClick={() => onToggleStatus(user.id, user.disabled)}
-                                                className={`icon-btn ${user.disabled ? 'activate' : 'deactivate'}`}
-                                                title={user.disabled ? 'Activer' : 'Désactiver'}
-                                            >
-                                                {user.disabled ? <FaCheck /> : <FaTimes />}
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
 
-                {/* Version Mobile - Cartes */}
-                <div className="mobile-view">
-                    <div className="users-grid">
-                        {users.map((user) => (
-                            <UserCard
-                                key={user.id}
-                                user={user}
-                                getRoleIcon={getRoleIcon}
-                                formatDate={formatDate}
-                                onEdit={onEdit}
-                                onDelete={onDelete}
-                                onResetPassword={onResetPassword}
-                                onToggleStatus={onToggleStatus}
-                            />
-                        ))}
-                    </div>
+            {loading ? (
+                <div className="team-loading">Chargement des utilisateurs...</div>
+            ) : users.length === 0 ? (
+                <div className="team-empty-state">
+                    <p>Aucun utilisateur trouvé</p>
                 </div>
-            </>
-        )}
-    </div>
-);
+            ) : (
+                <>
+                    {/* Vue Tableau */}
+                    {viewMode === 'list' && (
+                        <div className="team-desktop-view">
+                            <table className="team-data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Utilisateur</th>
+                                        <th>Email</th>
+                                        <th>Rôle</th>
+                                        <th>Créé le</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map((user) => (
+                                        <tr key={user.id}>
+                                            <td>
+                                                <div className="team-user-cell">
+                                                    {getRoleIcon(user.role)}
+                                                    <span>{user.name || 'N/A'}</span>
+                                                </div>
+                                            </td>
+                                            <td>{user.email}</td>
+                                            <td>
+                                                <span className={`team-badge team-role-${user.role.toLowerCase()}`}>
+                                                    {user.role}
+                                                </span>
+                                            </td>
+                                            <td>{formatDate(user.createdAt)}</td>
+                                            <td>
+                                                <span className={`team-badge ${user.disabled ? 'team-status-inactive' : 'team-status-active'}`}>
+                                                    {user.disabled ? 'Désactivé' : 'Actif'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="team-action-buttons">
+                                                    <button
+                                                        onClick={() => onEdit(user)}
+                                                        className="team-icon-btn team-edit"
+                                                        title="Modifier"
+                                                    >
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onDelete(user.id)}
+                                                        className="team-icon-btn team-delete"
+                                                        title="Supprimer"
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onResetPassword(user)}
+                                                        className="team-icon-btn team-reset"
+                                                        title="Réinitialiser le mot de passe"
+                                                    >
+                                                        <FaKey />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onToggleStatus(user.id, user.disabled)}
+                                                        className={`team-icon-btn ${user.disabled ? 'team-activate' : 'team-deactivate'}`}
+                                                        title={user.disabled ? 'Activer' : 'Désactiver'}
+                                                    >
+                                                        {user.disabled ? <FaCheck /> : <FaTimes />}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Vue Cartes */}
+                    {viewMode === 'card' && (
+                        <div className="team-mobile-view team-users-grid">
+                            {users.map((user) => (
+                                <UserCard
+                                    key={user.id}
+                                    user={user}
+                                    getRoleIcon={getRoleIcon}
+                                    formatDate={formatDate}
+                                    onEdit={onEdit}
+                                    onDelete={onDelete}
+                                    onResetPassword={onResetPassword}
+                                    onToggleStatus={onToggleStatus}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+};
+
 const UserCard = ({ user, getRoleIcon, formatDate, onEdit, onDelete, onResetPassword, onToggleStatus }) => (
-    <div className="user-card">
-        <div className="user-card-header">
-            <div className="user-avatar">
+    <div className="team-user-card">
+        <div className="team-user-card-header">
+            <div className="team-user-avatar">
                 {getRoleIcon(user.role)}
             </div>
-            <div className="user-info">
-                <h4 className="user-name">{user.name || 'N/A'}</h4>
-                <p className="user-email">{user.email}</p>
-                <div className="user-meta">
-                    <span className={`badge role-${user.role.toLowerCase()}`}>
+            <div className="team-user-info">
+                <h4 className="team-user-name">{user.name || 'N/A'}</h4>
+                <p className="team-user-email">{user.email}</p>
+                <div className="team-user-meta">
+                    <span className={`team-badge team-role-${user.role.toLowerCase()}`}>
                         {user.role}
                     </span>
-                    <span className={`badge status-${user.disabled ? 'inactive' : 'active'}`}>
+                    <span className={`team-badge ${user.disabled ? 'team-status-inactive' : 'team-status-active'}`}>
                         {user.disabled ? 'Désactivé' : 'Actif'}
                     </span>
                 </div>
-                <p className="user-date">Créé le: {formatDate(user.createdAt)}</p>
+                <p className="team-user-date">Créé le: {formatDate(user.createdAt)}</p>
             </div>
         </div>
 
-        <div className="user-card-actions">
-            <button onClick={() => onEdit(user)} className="icon-btn edit" title="Modifier">
+        <div className="team-user-card-actions">
+            <button onClick={() => onEdit(user)} className="team-icon-btn team-edit" title="Modifier">
                 <FaEdit />
             </button>
-            <button onClick={() => onDelete(user.id)} className="icon-btn delete" title="Supprimer">
+            <button onClick={() => onDelete(user.id)} className="team-icon-btn team-delete" title="Supprimer">
                 <FaTrash />
             </button>
-            <button onClick={() => onResetPassword(user)} className="icon-btn reset" title="Réinitialiser le mot de passe">
+            <button onClick={() => onResetPassword(user)} className="team-icon-btn team-reset" title="Réinitialiser le mot de passe">
                 <FaKey />
             </button>
             <button
                 onClick={() => onToggleStatus(user.id, user.disabled)}
-                className={`icon-btn ${user.disabled ? 'activate' : 'deactivate'}`}
+                className={`team-icon-btn ${user.disabled ? 'team-activate' : 'team-deactivate'}`}
                 title={user.disabled ? 'Activer' : 'Désactiver'}
             >
                 {user.disabled ? <FaCheck /> : <FaTimes />}
@@ -762,20 +798,20 @@ const ResetPasswordModal = ({ show, user, onConfirm, onClose }) => {
     if (!show) return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal">
-                <div className="modal-header">
+        <div className="team-modal-overlay">
+            <div className="team-modal">
+                <div className="team-modal-header">
                     <h3>Réinitialiser le mot de passe</h3>
-                    <button onClick={onClose} className="close-btn">
+                    <button onClick={onClose} className="team-close-btn">
                         <FaTimes />
                     </button>
                 </div>
-                <div className="modal-body">
+                <div className="team-modal-body">
                     <p>Voulez-vous envoyer un email de réinitialisation de mot de passe à <strong>{user?.email}</strong> ?</p>
                 </div>
-                <div className="modal-footer">
-                    <button onClick={onClose} className="btn-secondary">Annuler</button>
-                    <button onClick={onConfirm} className="btn-primary">Confirmer</button>
+                <div className="team-modal-footer">
+                    <button onClick={onClose} className="team-btn-secondary">Annuler</button>
+                    <button onClick={onConfirm} className="team-btn-primary">Confirmer</button>
                 </div>
             </div>
         </div>
@@ -794,26 +830,26 @@ const TeamForm = ({
     onUpdate,
     onCancelEdit
 }) => (
-    <form onSubmit={editing ? onUpdate : onSubmit} className="form-card">
-        <h2 className="form-title">
+    <form onSubmit={editing ? onUpdate : onSubmit} className="team-form-card">
+        <h2 className="team-form-title">
             {editing ? <FaEdit /> : <FaPlus />}
             {editing ? 'Modifier l\'équipe' : 'Ajouter une nouvelle équipe'}
         </h2>
 
-        <div className="form-row">
-            <div className="form-group">
-                <label>Nom <span className="required">*</span></label>
+        <div className="team-form-row">
+            <div className="team-form-group">
+                <label>Nom <span className="team-required">*</span></label>
                 <input
                     name="nom"
                     value={editing ? editing.nom : form.nom}
                     onChange={(e) => editing ? onEditChange('nom', e.target.value) : onFormChange('nom', e.target.value)}
                     required
-                    className="form-input"
+                    className="team-form-input"
                 />
             </div>
         </div>
 
-        <div className="form-group">
+        <div className="team-form-group">
             <ResponsableSelector
                 users={eligibleResponsables}
                 selectedResponsableId={editing ? editing.responsableId : form.responsableId}
@@ -830,7 +866,7 @@ const TeamForm = ({
             />
         </div>
 
-        <div className="form-group">
+        <div className="team-form-group">
             <MembersSelector
                 users={eligibleMembers}
                 selectedMembers={editing ? (editing.members || []) : (form.members || [])}
@@ -839,29 +875,30 @@ const TeamForm = ({
             />
         </div>
 
-        <div className="form-group">
+        <div className="team-form-group">
             <label>Description</label>
             <textarea
                 name="description"
                 value={editing ? editing.description : form.description}
                 onChange={(e) => editing ? onEditChange('description', e.target.value) : onFormChange('description', e.target.value)}
-                className="form-input"
+                className="team-form-input"
                 rows="3"
             />
         </div>
 
-        <div className="form-actions">
+        <div className="team-form-actions">
             {editing && (
-                <button type="button" onClick={onCancelEdit} className="btn-secondary">
+                <button type="button" onClick={onCancelEdit} className="team-btn-secondary">
                     Annuler
                 </button>
             )}
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="team-btn-primary">
                 {editing ? 'Mettre à jour' : 'Ajouter l\'équipe'}
             </button>
         </div>
     </form>
 );
+
 const TeamList = ({
     teams,
     searchTerm,
@@ -869,17 +906,17 @@ const TeamList = ({
     onEdit,
     onDelete,
     onAddTeam,
-    findUserById,  // ✅ Ajouter
-    usersList      // ✅ Ajouter
+    findUserById,
+    usersList
 }) => (
-    <div className="teams-list-section">
-        <div className="teams-list-header">
-            <h3 className="section-subtitle">
+    <div className="team-list-section">
+        <div className="team-list-header">
+            <h3 className="team-section-subtitle">
                 <FaUsers />
                 Équipes ({teams.length})
             </h3>
-            <div className="search-box">
-                <FaSearch className="search-icon" />
+            <div className="team-search-box">
+                <FaSearch className="team-search-icon" />
                 <input
                     type="text"
                     placeholder="Rechercher une équipe..."
@@ -890,23 +927,23 @@ const TeamList = ({
         </div>
 
         {teams.length === 0 ? (
-            <div className="empty-state">
-                <img src={empty_team} alt="Aucune équipe" className="empty-image" />
+            <div className="team-empty-state">
+                <img src={empty_team} alt="Aucune équipe" className="team-empty-image" />
                 <p>Aucune équipe trouvée</p>
-                <button className="btn-primary" onClick={onAddTeam}>
+                <button className="team-btn-primary" onClick={onAddTeam}>
                     <FaPlus /> Ajouter une équipe
                 </button>
             </div>
         ) : (
-            <div className="grid-view">
+            <div className="team-grid-view">
                 {teams.map((team) => (
                     <TeamCard
                         key={team.id}
                         team={team}
                         onEdit={onEdit}
                         onDelete={onDelete}
-                        findUserById={findUserById}  // ✅ Maintenant passé
-                        usersList={usersList}        // ✅ Maintenant passé
+                        findUserById={findUserById}
+                        usersList={usersList}
                     />
                 ))}
             </div>
@@ -920,58 +957,58 @@ const TeamCard = ({ team, onEdit, onDelete, findUserById, usersList }) => {
     const memberUsers = teamMembers.map(userId => findUserById(userId)).filter(Boolean);
 
     return (
-        <div className="card">
-            <div className="card-header">
+        <div className="team-card">
+            <div className="team-card-header">
                 <div className="team-avatar">
                     <FaUsers />
                 </div>
-                <div className="info">
-                    <div className="title">{team.nom}</div>
+                <div className="team-info">
+                    <div className="team-title">{team.nom}</div>
                     {responsableUser && (
-                        <div className="subtitle">
-                            <FaUserTie className="responsable-icon" />
+                        <div className="team-subtitle">
+                            <FaUserTie className="team-responsable-icon" />
                             Responsable: {responsableUser.name} ({responsableUser.email})
                         </div>
                     )}
                     {team.responsable && !responsableUser && (
-                        <div className="subtitle warning">
+                        <div className="team-subtitle team-warning">
                             <FaExclamationTriangle />
                             Ancien responsable: {team.responsable}
                         </div>
                     )}
 
                     {memberUsers.length > 0 && (
-                        <div className="members-preview">
-                            <FaUsers className="members-icon" />
+                        <div className="team-members-preview">
+                            <FaUsers className="team-members-icon" />
                             <span>{memberUsers.length} membre(s)</span>
                         </div>
                     )}
                 </div>
-                <div className="actions">
-                    <button onClick={() => onEdit(team)} className="icon-btn edit" title="Modifier">
+                <div className="team-card-actions">
+                    <button onClick={() => onEdit(team)} className="team-icon-btn team-edit" title="Modifier">
                         <FaEdit />
                     </button>
-                    <button onClick={() => onDelete(team.id)} className="icon-btn delete" title="Supprimer">
+                    <button onClick={() => onDelete(team.id)} className="team-icon-btn team-delete" title="Supprimer">
                         <FaTrash />
                     </button>
                 </div>
             </div>
 
             {team.description && (
-                <div className="card-body">
+                <div className="team-card-body">
                     <p>{team.description}</p>
                 </div>
             )}
 
             {memberUsers.length > 0 && (
-                <div className="card-members">
+                <div className="team-card-members">
                     <h4>Membres de l'équipe:</h4>
-                    <div className="members-list">
+                    <div className="team-members-list">
                         {memberUsers.map(user => (
-                            <div key={user.id} className="member-item">
-                                <FaUser className="member-icon" />
-                                <span className="member-name">{user.name || user.email}</span>
-                                <span className={`member-role role-${user.role.toLowerCase()}`}>
+                            <div key={user.id} className="team-member-item">
+                                <FaUser className="team-member-icon" />
+                                <span className="team-member-name">{user.name || user.email}</span>
+                                <span className={`team-member-role team-role-${user.role.toLowerCase()}`}>
                                     {user.role}
                                 </span>
                             </div>
@@ -1005,19 +1042,19 @@ const ResponsableSelector = ({ users, selectedResponsableId, onResponsableChange
     };
 
     return (
-        <div className="responsable-selector">
-            <label>Responsable <span className="required">*</span></label>
-            <div className="dropdown-container">
+        <div className="team-responsable-selector">
+            <label>Responsable <span className="team-required">*</span></label>
+            <div className="team-dropdown-container">
                 <div
-                    className="dropdown-header"
+                    className="team-dropdown-header"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     {selectedUser ? (
-                        <div className="selected-user">
-                            <FaUser className="user-icon" />
-                            <div className="user-info">
-                                <span className="user-name">{selectedUser.name}</span>
-                                <span className="user-email">{selectedUser.email}</span>
+                        <div className="team-selected-user">
+                            <FaUser className="team-user-icon" />
+                            <div className="team-user-details">
+                                <span className="team-user-name">{selectedUser.name}</span>
+                                <span className="team-user-email">{selectedUser.email}</span>
                             </div>
                             <button
                                 type="button"
@@ -1025,52 +1062,52 @@ const ResponsableSelector = ({ users, selectedResponsableId, onResponsableChange
                                     e.stopPropagation();
                                     clearSelection();
                                 }}
-                                className="clear-btn"
+                                className="team-clear-btn"
                             >
                                 <FaTimes />
                             </button>
                         </div>
                     ) : (
-                        <span className="placeholder">{placeholder}</span>
+                        <span className="team-placeholder">{placeholder}</span>
                     )}
-                    <span className="dropdown-arrow">
+                    <span className="team-dropdown-arrow">
                         {isOpen ? <FaChevronUp /> : <FaChevronDown />}
                     </span>
                 </div>
 
                 {isOpen && (
-                    <div className="dropdown-list">
-                        <div className="search-box">
-                            <FaSearch className="search-icon" />
+                    <div className="team-dropdown-list">
+                        <div className="team-search-box">
+                            <FaSearch className="team-search-icon" />
                             <input
                                 type="text"
                                 placeholder="Rechercher un utilisateur..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
+                                className="team-search-input"
                             />
                         </div>
 
-                        <div className="users-list">
+                        <div className="team-users-list">
                             {filteredUsers.length === 0 ? (
-                                <div className="no-users">Aucun utilisateur trouvé</div>
+                                <div className="team-no-users">Aucun utilisateur trouvé</div>
                             ) : (
                                 filteredUsers.map(user => (
                                     <div
                                         key={user.id}
-                                        className={`user-option ${selectedResponsableId === user.id ? 'selected' : ''}`}
+                                        className={`team-user-option ${selectedResponsableId === user.id ? 'team-selected' : ''}`}
                                         onClick={() => handleSelect(user)}
                                     >
-                                        <FaUser className="user-icon" />
-                                        <div className="user-details">
-                                            <span className="user-name">{user.name || 'Non renseigné'}</span>
-                                            <span className="user-email">{user.email}</span>
-                                            <span className={`user-role role-${user.role.toLowerCase()}`}>
+                                        <FaUser className="team-user-icon" />
+                                        <div className="team-user-details">
+                                            <span className="team-user-name">{user.name || 'Non renseigné'}</span>
+                                            <span className="team-user-email">{user.email}</span>
+                                            <span className={`team-user-role team-role-${user.role.toLowerCase()}`}>
                                                 {user.role}
                                             </span>
                                         </div>
                                         {selectedResponsableId === user.id && (
-                                            <FaCheck className="check-icon" />
+                                            <FaCheck className="team-check-icon" />
                                         )}
                                     </div>
                                 ))
@@ -1082,7 +1119,6 @@ const ResponsableSelector = ({ users, selectedResponsableId, onResponsableChange
         </div>
     );
 };
-
 
 const MembersSelector = ({
     users,
@@ -1114,39 +1150,39 @@ const MembersSelector = ({
     };
 
     return (
-        <div className="members-selector">
+        <div className="team-members-selector">
             <label>Membres de l'équipe</label>
-            <div className="dropdown-container">
+            <div className="team-dropdown-container">
                 <div
-                    className="dropdown-header multi-select"
+                    className="team-dropdown-header team-multi-select"
                     onClick={() => setIsOpen(!isOpen)}
                 >
-                    <div className="selected-members">
+                    <div className="team-selected-members">
                         {selectedUsers.length === 0 ? (
-                            <span className="placeholder">{placeholder}</span>
+                            <span className="team-placeholder">{placeholder}</span>
                         ) : (
-                            <div className="members-list">
+                            <div className="team-members-list">
                                 {selectedUsers.slice(0, 3).map(user => (
-                                    <span key={user.id} className="member-tag">
+                                    <span key={user.id} className="team-member-tag">
                                         {user.name || user.email}
                                         <button
                                             type="button"
                                             onClick={(e) => removeMember(user.id, e)}
-                                            className="remove-btn"
+                                            className="team-remove-btn"
                                         >
                                             <FaTimes />
                                         </button>
                                     </span>
                                 ))}
                                 {selectedUsers.length > 3 && (
-                                    <span className="more-members">
+                                    <span className="team-more-members">
                                         +{selectedUsers.length - 3} autres
                                     </span>
                                 )}
                             </div>
                         )}
                     </div>
-                    <div className="dropdown-controls">
+                    <div className="team-dropdown-controls">
                         {selectedUsers.length > 0 && (
                             <button
                                 type="button"
@@ -1154,63 +1190,63 @@ const MembersSelector = ({
                                     e.stopPropagation();
                                     clearAll();
                                 }}
-                                className="clear-all-btn"
+                                className="team-clear-all-btn"
                                 title="Tout effacer"
                             >
                                 <FaTimes />
                             </button>
                         )}
-                        <span className="dropdown-arrow">
+                        <span className="team-dropdown-arrow">
                             {isOpen ? <FaChevronUp /> : <FaChevronDown />}
                         </span>
                     </div>
                 </div>
 
                 {isOpen && (
-                    <div className="dropdown-list multi-select">
-                        <div className="search-box">
-                            <FaSearch className="search-icon" />
+                    <div className="team-dropdown-list team-multi-select">
+                        <div className="team-search-box">
+                            <FaSearch className="team-search-icon" />
                             <input
                                 type="text"
                                 placeholder="Rechercher des utilisateurs..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
+                                className="team-search-input"
                             />
                         </div>
 
-                        <div className="selected-count">
+                        <div className="team-selected-count">
                             {selectedUsers.length} utilisateur(s) sélectionné(s)
                         </div>
 
-                        <div className="users-list">
+                        <div className="team-users-list">
                             {filteredUsers.length === 0 ? (
-                                <div className="no-users">Aucun utilisateur trouvé</div>
+                                <div className="team-no-users">Aucun utilisateur trouvé</div>
                             ) : (
                                 filteredUsers.map(user => {
                                     const isSelected = selectedMembers.includes(user.id);
                                     return (
                                         <div
                                             key={user.id}
-                                            className={`user-option ${isSelected ? 'selected' : ''}`}
+                                            className={`team-user-option ${isSelected ? 'team-selected' : ''}`}
                                             onClick={() => handleToggleMember(user.id, isSelected)}
                                         >
-                                            <div className="user-checkbox">
+                                            <div className="team-user-checkbox">
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
                                                     onChange={() => { }}
-                                                    className="hidden-checkbox"
+                                                    className="team-hidden-checkbox"
                                                 />
-                                                <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
-                                                    {isSelected && <FaCheck className="check-icon" />}
+                                                <div className={`team-custom-checkbox ${isSelected ? 'team-checked' : ''}`}>
+                                                    {isSelected && <FaCheck className="team-check-icon" />}
                                                 </div>
                                             </div>
-                                            <FaUser className="user-icon" />
-                                            <div className="user-details">
-                                                <span className="user-name">{user.name || 'Non renseigné'}</span>
-                                                <span className="user-email">{user.email}</span>
-                                                <span className={`user-role role-${user.role.toLowerCase()}`}>
+                                            <FaUser className="team-user-icon" />
+                                            <div className="team-user-details">
+                                                <span className="team-user-name">{user.name || 'Non renseigné'}</span>
+                                                <span className="team-user-email">{user.email}</span>
+                                                <span className={`team-user-role team-role-${user.role.toLowerCase()}`}>
                                                     {user.role}
                                                 </span>
                                             </div>
@@ -1225,8 +1261,9 @@ const MembersSelector = ({
         </div>
     );
 };
+
 // =============================================================================
-// COMPOSANT PRINCIPAL - VERSION CORRIGÉE
+// COMPOSANT PRINCIPAL
 // =============================================================================
 
 const TeamsPage = ({ checkPermission }) => {
@@ -1262,22 +1299,22 @@ const TeamsPage = ({ checkPermission }) => {
         loadData();
     }, [currentUser]);
 
-    // Fonctions utilitaires
     function generateRandomPassword() {
         return Math.random().toString(36).slice(-8) + 'A1!';
     }
 
     const getRoleIcon = (role) => {
         const icons = {
-            [ROLES.SUPADMIN]: <FaUserTie className="role-icon supadmin" />,
-            [ROLES.ADMIN]: <FaUserTie className="role-icon admin" />,
-            [ROLES.RH_DAF]: <FaUserTie className="role-icon rhdaf" />,
-            [ROLES.COMPTABLE]: <FaUserCog className="role-icon comptable" />,
-            [ROLES.CHARGE_COMPTE]: <FaUserEdit className="role-icon charge-compte" />,
-            [ROLES.LECTEUR]: <FaUser className="role-icon lecteur" />
+            [ROLES.SUPADMIN]: <FaUserTie className="team-role-icon team-supadmin" />,
+            [ROLES.ADMIN]: <FaUserTie className="team-role-icon team-admin" />,
+            [ROLES.RH_DAF]: <FaUserTie className="team-role-icon team-rhdaf" />,
+            [ROLES.COMPTABLE]: <FaUserCog className="team-role-icon team-comptable" />,
+            [ROLES.CHARGE_COMPTE]: <FaUserEdit className="team-role-icon team-charge-compte" />,
+            [ROLES.LECTEUR]: <FaUser className="team-role-icon team-lecteur" />
         };
-        return icons[role] || <FaUser className="role-icon default" />;
+        return icons[role] || <FaUser className="team-role-icon team-default" />;
     };
+
     const formatDate = (timestamp) => {
         if (!timestamp) return 'N/A';
         const date = timestamp.toDate();
@@ -1288,24 +1325,18 @@ const TeamsPage = ({ checkPermission }) => {
         setSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const containerStyle = {
-        minHeight: '100vh',
-        padding: '2rem'
-    };
-
     if (loading) {
         return <LoadingSpinner />;
     }
 
     return (
-        <div className="clients-section background-loaded" style={containerStyle}>
+        <div className={`team-container ${backgroundLoaded ? 'team-loaded' : ''}`}>
             <Notifications
                 success={notifications.success}
                 error={notifications.error}
                 onClose={clearNotifications}
             />
 
-            {/* Section Gestion des Utilisateurs */}
             {checkPermission('manageUsers') && (
                 <Section
                     title="Gestion des Utilisateurs"
@@ -1348,7 +1379,6 @@ const TeamsPage = ({ checkPermission }) => {
                 </Section>
             )}
 
-            {/* Section Ajout/Modification d'Équipe avec Liste intégrée */}
             <Section
                 title={teamsManager.teams.editing ? "Modifier l'équipe" : "Gestion des équipes"}
                 icon={teamsManager.teams.editing ? <FaEdit /> : <FaPlus />}
@@ -1382,4 +1412,5 @@ const TeamsPage = ({ checkPermission }) => {
         </div>
     );
 };
+
 export default TeamsPage;

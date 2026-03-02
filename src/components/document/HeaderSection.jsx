@@ -1,48 +1,32 @@
-import React, { useState } from "react";
+import React, {  } from "react";
 import {
   FaFileInvoiceDollar,
   FaSearch,
-  FaPlus,
   FaList,
   FaTh,
   FaSortAlphaDown,
   FaSortNumericDown,
-  FaSpinner
+  FaSpinner, FaFileExcel, FaFilePdf
 } from "react-icons/fa";
 
 const HeaderSection = ({
   title,
-  type,
   getTypeColor,
   filteredItemsCount,
   viewMode,
-  setViewMode,
   searchTerm,
   setSearchTerm,
   sortBy,
   sortOrder,
   toggleSort,
   navigate,
-  isMobile
+  isMobile,
+  onExport,
+  isChangingTab,
+  isChangingView,
+setViewMode
 }) => {
-  const [isChangingView, setIsChangingView] = useState(false);
 
-  // Fonction pour changer la vue avec indicateur de chargement
-  const handleViewChange = async (newViewMode) => {
-    if (viewMode === newViewMode || isChangingView) return;
-
-    setIsChangingView(true);
-
-    try {
-      // Simuler un délai pour le changement de vue
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setViewMode(newViewMode);
-    } catch (error) {
-      console.error("Erreur lors du changement de vue:", error);
-    } finally {
-      setIsChangingView(false);
-    }
-  };
 
   return (
     <div className="section-header">
@@ -58,7 +42,7 @@ const HeaderSection = ({
         {!isMobile && (
           <div className="view-controls">
             <button
-              onClick={() => handleViewChange("card")}
+              onClick={() => setViewMode("card")}
               className={`view-btn ${viewMode === "card" ? "active" : ""} ${isChangingView ? "disabled" : ""
                 }`}
               disabled={isChangingView}
@@ -71,7 +55,7 @@ const HeaderSection = ({
               )}
             </button>
             <button
-              onClick={() => handleViewChange("list")}
+              onClick={() => setViewMode("list")}
               className={`view-btn ${viewMode === "list" ? "active" : ""} ${isChangingView ? "disabled" : ""
                 }`}
               disabled={isChangingView}
@@ -86,7 +70,7 @@ const HeaderSection = ({
           </div>
         )}
 
-        <div className="search-box">
+        <div className="search-container">
           <FaSearch className="search-icon" />
           <input
             type="text"
@@ -94,14 +78,12 @@ const HeaderSection = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
-            disabled={isChangingView}
           />
         </div>
+
       </div>
 
       <div className="header-right">
-
-
         <div className="sort-options">
           <div className="sort-label">Trier par:</div>
           <button
@@ -132,20 +114,24 @@ const HeaderSection = ({
           </button>
         </div>
 
-        <button
-          onClick={() => !isChangingView && navigate("/invoice", { state: { type } })}
-          className="create-btn"
-          style={{ backgroundColor: getTypeColor() }}
-          disabled={isChangingView}
-        >
-          <FaPlus className="btn-icon" />
-          Créer{" "}
-          {type === "facture"
-            ? "une Facture"
-            : type === "devis"
-              ? "un Devis"
-              : "un Avoir"}
-        </button>
+
+
+        <div className="export-buttons">
+          <button
+            onClick={() => !isChangingTab && onExport('excel')}
+            className={`export-btn-excel ${isChangingTab ? "disabled" : ""}`}
+            disabled={isChangingTab}
+          >
+            <FaFileExcel /> Excel
+          </button>
+          <button
+            onClick={() => !isChangingTab && onExport('pdf')}
+            className={`export-btn-pdf ${isChangingTab ? "disabled" : ""}`}
+            disabled={isChangingTab}
+          >
+            <FaFilePdf /> PDF
+          </button>
+        </div>
       </div>
     </div>
   );

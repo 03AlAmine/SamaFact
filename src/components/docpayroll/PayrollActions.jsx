@@ -146,6 +146,7 @@ const PayrollActions = React.memo(({
     spaceBetween: 10,
     slidesPerView: 1,
     grabCursor: true,
+    speed: 800,
     modules: [Autoplay, Navigation],
     autoplay: {
       delay: 3000,

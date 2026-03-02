@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import DocumentSection from "../components/DocumentSection";
 import { exportToExcel, exportToPDF } from "../utils/exportUtils";
-import { FaFileExcel, FaFilePdf, FaSpinner } from "react-icons/fa";
+import { FaSpinner, FaPlus } from "react-icons/fa";
 import ModernDateRangePicker from "../components/docpayroll/ModernDateRangePicker";
 import { downloadPdf, previewPdf } from '../services/pdfService';
 import { invoiceService } from '../services/invoiceService';
@@ -9,14 +9,16 @@ import ModalPaiement from "../components/dialogs/ModalPaiement";
 import { message, Modal } from "antd";
 
 const InvoicesPage = ({
-    searchTerm,
-    setSearchTerm,
     navigate,
     selectedClient,
     companyId,
     getFacturesToDisplay,
     getDevisToDisplay,
     getAvoirsToDisplay,
+    viewMode,
+    setViewMode,
+    type,
+
 }) => {
 
     const [modalVisible, setModalVisible] = useState(false);
@@ -25,7 +27,9 @@ const InvoicesPage = ({
     const [dateRange, setDateRange] = useState({ from: null, to: null });
     const [activeTab, setActiveTab] = useState("factures");
     const [isChangingTab, setIsChangingTab] = useState(false);
-
+    const [localSearchTerm, setLocalSearchTerm] = useState("");
+    const searchTerm = localSearchTerm;
+    const setSearchTerm = setLocalSearchTerm;
     const currentTab = activeTab || "factures";
 
     const typeMapping = {
@@ -50,6 +54,8 @@ const InvoicesPage = ({
             setIsChangingTab(false);
         }
     }, [activeTab, isChangingTab]);
+
+    const [isChangingView,] = useState(false);
 
     // 🔥 OPTIMISATION : Mémoïsation des données filtrées par onglet
     const tabData = useMemo(() => {
@@ -103,7 +109,7 @@ const InvoicesPage = ({
     // Fonction pour obtenir le statut d'un document (optimisée)
     const getStatus = useCallback((document) => {
         if (!document) return "Attente";
-        
+
         // Si déjà un statut calculé, on le retourne
         if (document.calculatedStatus) {
             return document.calculatedStatus;
@@ -324,6 +330,23 @@ const InvoicesPage = ({
         }
     }, [currentDocument, companyId]);
 
+    // Remplacer le getTypeColor actuel par :
+    const getTypeColor = useCallback(() => {
+        switch (activeTab) {
+            case "factures": return "#4f46e5"; // Indigo pour les factures
+            case "devis": return "#10b981";    // Vert pour les devis
+            case "avoirs": return "#f59e0b";   // Orange pour les avoirs
+            default: return "#4f46e5";
+        }
+    }, [activeTab]); // Dépendance sur activeTab
+    const getSingularType = useCallback(() => {
+        switch (activeTab) {
+            case "factures": return "facture";
+            case "devis": return "devis";
+            case "avoirs": return "avoir";
+            default: return "facture";
+        }
+    }, [activeTab]);
     return (
         <div className="invoices-page-container">
             <div className="navbar-tabs">
@@ -364,21 +387,22 @@ const InvoicesPage = ({
                     ) : " (Toutes dates)"}
                 </div>
 
-                <div className="export-buttons">
+                <div style={{ marginLeft: 'auto' }}>
                     <button
-                        onClick={() => !isChangingTab && handleExport('excel')}
-                        className={`export-btn-excel ${isChangingTab ? "disabled" : ""}`}
+                        onClick={() => !isChangingView && navigate("/invoice", { state: { type: getSingularType() } })}
+                        className="create-btn"
+                        style={{ backgroundColor: getTypeColor() }}
                         disabled={isChangingTab}
                     >
-                        <FaFileExcel /> Excel
+                        <FaPlus className="btn-icon" />
+                        Créer{" "}
+                        {activeTab === "factures"
+                            ? "une Facture"
+                            : activeTab === "devis"
+                                ? "un Devis"
+                                : "un Avoir"}
                     </button>
-                    <button
-                        onClick={() => !isChangingTab && handleExport('pdf')}
-                        className={`export-btn-pdf ${isChangingTab ? "disabled" : ""}`}
-                        disabled={isChangingTab}
-                    >
-                        <FaFilePdf /> PDF
-                    </button>
+
                 </div>
             </div>
 
@@ -397,7 +421,8 @@ const InvoicesPage = ({
                 onMarkAsPaid={(id) => !isChangingTab && handlePayment(id, 'paid')}
                 onMarkAsPending={(id) => !isChangingTab && handlePayment(id, 'pending')}
                 getStatus={getStatus}
-                isChangingTab={isChangingTab}
+                onExport={handleExport}
+                getTypeColor={getTypeColor}
             />
 
             <ModalPaiement

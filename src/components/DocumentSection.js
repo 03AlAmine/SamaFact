@@ -26,6 +26,8 @@ const DocumentSection = ({
   onMarkAsPaid,
   onMarkAsPending,
   getStatus,
+  onExport,
+  getTypeColor
 }) => {
   const [sortBy, setSortBy] = useState("numero");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -51,7 +53,6 @@ const DocumentSection = ({
   const prevTypeRef = useRef(type);
   const prevItemsLengthRef = useRef(0);
   // 🔥 NOUVEAU : Référence pour suivre le mode précédent
-  const prevViewModeRef = useRef(viewMode);
 
   // Fonction pour charger plus d'éléments
   const loadMoreItems = useCallback(() => {
@@ -182,12 +183,6 @@ const DocumentSection = ({
     }
   }, [items, itemsPerPage, sortBy]);
 
-  // 🔥 CORRECTION : Gérer le changement de viewMode
-  const handleViewModeChange = useCallback((newViewMode) => {
-    // Ne pas réinitialiser si on change juste de mode d'affichage
-    setViewMode(newViewMode);
-    prevViewModeRef.current = newViewMode;
-  }, []);
 
   // 🔥 CORRECTION : Effet principal amélioré
   useEffect(() => {
@@ -291,14 +286,6 @@ const DocumentSection = ({
 
   const displayMode = isMobile ? "card" : viewMode;
 
-  const getTypeColor = useCallback(() => {
-    switch (type) {
-      case "facture": return "#4f46e5";
-      case "devis": return "#10b981";
-      case "avoir": return "#f59e0b";
-      default: return "#4f46e5";
-    }
-  }, [type]);
 
   const toggleSort = useCallback((field) => {
     setSortBy(current => {
@@ -450,7 +437,7 @@ const DocumentSection = ({
         getTypeColor={getTypeColor}
         filteredItemsCount={totalFilteredCount}
         viewMode={viewMode}
-        setViewMode={handleViewModeChange} // 🔥 Utiliser la nouvelle fonction
+        setViewMode={setViewMode} // 🔥 Utiliser la nouvelle fonction
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         sortBy={sortBy}
@@ -458,6 +445,8 @@ const DocumentSection = ({
         toggleSort={toggleSort}
         navigate={navigate}
         isMobile={isMobile}
+        onExport={onExport}
+
       />
 
       {totalFilteredCount === 0 ? (

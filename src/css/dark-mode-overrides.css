@@ -1,0 +1,90 @@
+/* ===== STYLES SPÉCIFIQUES POUR LE THÈME SOMBRE ===== */
+/* Ces styles s'appliquent quand la classe .theme-dark est présente sur <html> */
+
+/* ===== DOCUMENT SECTION - VERSION SOMBRE ===== */
+.theme-dark .document-section-container {
+  background: linear-gradient(
+    145deg,
+    rgba(15, 23, 42, 0.8),
+    rgba(30, 41, 59, 0.95)
+  );
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .section-title {
+  color: var(--text-dark);
+}
+
+.theme-dark .search-input {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.theme-dark .search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.theme-dark .card-header {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), transparent);
+}
+
+.theme-dark .card-details {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+/* Variantes de carte pour le thème sombre */
+.theme-dark .paid-card {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+}
+
+.theme-dark .partial-card {
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+}
+
+.theme-dark .pending-card {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+}
+
+/* Lignes du tableau pour le thème sombre */
+.theme-dark .paid-row {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), transparent);
+}
+
+.theme-dark .partial-row {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), transparent);
+}
+
+.theme-dark .pending-row {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.15), transparent);
+}
+
+.theme-dark .validated-row {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), transparent);
+}
+
+/* ===== SI TU AS D'AUTRES COMPOSANTS ===== */
+/* Navbar sombre */
+.theme-dark .navbar-premium {
+  background: linear-gradient(145deg, #020617, #0f172a);
+}
+
+/* Sidebar sombre */
+.theme-dark .sidebar {
+  background: #0f172a;
+  border-right-color: #334155;
+}
+
+/* Cards sombres */
+.theme-dark .card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+/* Modals sombres */
+.theme-dark .modal-content {
+  background: #1e293b;
+  border-color: #334155;
+}

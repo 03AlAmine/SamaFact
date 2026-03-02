@@ -1,8 +1,14 @@
+// src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './css/themes.css'; // Importez le thème ici
 import App from './App';
-import { AppProvider } from './contexts/AppContext'; // Chemin à adapter
+import { AppProvider } from './contexts/AppContext';
+
+// Initialiser le thème avant le rendu - PAR DÉFAUT = AUTO
+const savedTheme = localStorage.getItem('theme') || 'auto'; // Changé de 'light' à 'auto'
+document.documentElement.classList.add(`theme-${savedTheme}`);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -12,7 +18,3 @@ root.render(
     </AppProvider>
   </React.StrictMode>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
