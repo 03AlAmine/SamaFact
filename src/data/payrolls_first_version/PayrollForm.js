@@ -48,8 +48,7 @@ const PayrollForm = () => {
         }
     };
 
-    // Fonction utilitaire pour obtenir le premier et dernier jour du mois
-// Remplacez votre fonction getCurrentMonthDateRange par celle-ci
+    /*/ Fonction utilitaire pour obtenir le premier et dernier jour du mois
 const getCurrentMonthDateRange = () => {
     const now = new Date();
     
@@ -71,7 +70,37 @@ const getCurrentMonthDateRange = () => {
         du: formatLocalDate(firstDay),
         au: formatLocalDate(lastDay)
     };
+};*/
+const getPreviousMonthDateRange = () => {
+    const now = new Date();
+    
+    // Mois précédent (gère automatiquement le passage à l'année précédente)
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    
+    // Premier jour du mois précédent
+    const firstDay = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
+    
+    // Dernier jour du mois précédent
+    const lastDay = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
+    
+    // Exemple de débogage pour vérifier
+    console.log("Date actuelle:", now.toLocaleDateString('fr-FR'));
+    console.log("Période de paie (mois précédent):", 
+        `${firstDay.toLocaleDateString('fr-FR')} - ${lastDay.toLocaleDateString('fr-FR')}`);
+    
+    const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    return {
+        du: formatLocalDate(firstDay),
+        au: formatLocalDate(lastDay)
+    };
 };
+
 
     // Fonction pour calculer automatiquement l'IR selon le barème 2013
     const calculateIR = useCallback((brutFiscal, nbreofParts) => {
@@ -117,7 +146,7 @@ const getCurrentMonthDateRange = () => {
 
     // États pour le formulaire de paie
     const [formData, setFormData] = useState({
-        periode: getCurrentMonthDateRange(),
+        periode: getPreviousMonthDateRange(),
         remuneration: {
             tauxHoraire: '0',
             salaireBase: '0',
