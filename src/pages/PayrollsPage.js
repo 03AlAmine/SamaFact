@@ -793,13 +793,27 @@ const PayrollsPage = ({
     };
 
 
+    // Remplacez votre fonction getCurrentMonthDateRange par celle-ci
     const getCurrentMonthDateRange = () => {
         const now = new Date();
+
+        // Premier jour du mois en cours (00:00:00 local)
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        // Dernier jour du mois en cours (00:00:00 local)
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        // Fonction de formatage qui préserve la date locale
+        const formatLocalDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         return {
-            du: firstDay.toISOString().split('T')[0],
-            au: lastDay.toISOString().split('T')[0]
+            du: formatLocalDate(firstDay),
+            au: formatLocalDate(lastDay)
         };
     };
 
