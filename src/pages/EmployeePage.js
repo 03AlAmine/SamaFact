@@ -183,6 +183,7 @@ const EmployeeForm = ({
           options={[
             { value: "CDI", label: "CDI" },
             { value: "CDD", label: "CDD" },
+            { value: "CTT", label: "CTT" },
             { value: "Stage", label: "Stage" },
             { value: "Freelance", label: "Freelance" }
           ]}

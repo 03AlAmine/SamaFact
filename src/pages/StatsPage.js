@@ -110,6 +110,7 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
     const contractTypes = {
       CDI: employees?.filter(e => e.typeContrat === 'CDI').length || 0,
       CDD: employees?.filter(e => e.typeContrat === 'CDD').length || 0,
+      CTT: employees?.filter(e => e.typeContrat === 'CTT').length || 0,
       Stagiaire: employees?.filter(e => e.typeContrat === 'Stagiaire').length || 0,
       Freelance: employees?.filter(e => e.typeContrat === 'Freelance').length || 0
     };
@@ -498,10 +499,11 @@ const StatsPage = ({ stats, allFactures, allAvoirs, allDevis, clients, payrolls,
           label: "Employés",
           trend: "+5% ce mois-ci",
           trendClass: "up",
-          detail: `${advancedStats.contractTypes.CDI} CDI, ${advancedStats.contractTypes.CDD} CDD`,
+          detail: `${advancedStats.contractTypes.CDI} CDI, ${advancedStats.contractTypes.CDD} CDD, ${advancedStats.contractTypes.CTT} CTT`,
           subStats: [
             { label: "CDI", value: advancedStats.contractTypes.CDI },
-            { label: "CDD", value: advancedStats.contractTypes.CDD }
+            { label: "CDD", value: advancedStats.contractTypes.CDD },
+            { label: "CTT", value: advancedStats.contractTypes.CTT },
           ]
         },
         {

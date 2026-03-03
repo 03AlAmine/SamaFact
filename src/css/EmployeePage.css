@@ -365,6 +365,9 @@
 .employee-badge.CDD {
   background: #007bff;
 }
+.employee-badge.CTT {
+  background: #db13a9;
+}
 .employee-badge.Stage {
   background: #ff9800;
 }
@@ -700,6 +703,13 @@
   box-shadow:
     0 2px 6px rgba(245, 158, 11, 0.1),
     inset 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+.employee-detail__value--ctt {
+  color: #db13a9;
+  background: linear-gradient(to right, #fffbeb, #ffffff);
+  box-shadow:
+    0 2px 6px rgba(219, 19, 169, 0.1),
+    inset 0 0 0 1px rgba(219, 19, 169, 0.2);
 }
 
 .employee-detail__value--stage {

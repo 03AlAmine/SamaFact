@@ -143,6 +143,7 @@ export const employeeService = {
     }
   },
   // Ajoute un nouvel employé
+  // Dans employeeService.js, trouvez la fonction addEmployee (vers la ligne 180)
   addEmployee: async (companyId, employeeData) => {
     try {
       // Validation des données requises
@@ -159,21 +160,46 @@ export const employeeService = {
       // Générer le matricule automatiquement
       const matricule = await employeeService.generateMatricule(companyId);
 
+      // GESTION CORRIGÉE DE LA DATE D'EMBAUCHE
+      let dateEmbaucheValide = null;
+      if (employeeData.dateEmbauche) {
+        // Si c'est déjà une chaîne au format YYYY-MM-DD
+        if (typeof employeeData.dateEmbauche === 'string' &&
+          employeeData.dateEmbauche.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Créer une date à midi pour éviter les problèmes de fuseau horaire
+          const [annee, mois, jour] = employeeData.dateEmbauche.split('-').map(Number);
+          dateEmbaucheValide = new Date(annee, mois - 1, jour, 12, 0, 0);
+        }
+        // Si c'est déjà un objet Date
+        else if (employeeData.dateEmbauche instanceof Date &&
+          !isNaN(employeeData.dateEmbauche.getTime())) {
+          dateEmbaucheValide = employeeData.dateEmbauche;
+        }
+        // Si c'est une chaîne dans un autre format
+        else if (typeof employeeData.dateEmbauche === 'string') {
+          // Essayer de parser la date
+          const parsedDate = new Date(employeeData.dateEmbauche);
+          if (!isNaN(parsedDate.getTime())) {
+            dateEmbaucheValide = parsedDate;
+          }
+        }
+      }
+
       // S'assurer que les valeurs numériques sont correctement converties
       const validatedEmployeeData = {
         ...employeeData,
         categorie: categorie,
         matricule: matricule,
-        dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
+        dateEmbauche: dateEmbaucheValide, // Utiliser la date validée
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
         createdAt: new Date(),
         status: 'active',
         companyCode: matricule.split('-')[0],
         ipm: parseFloat(employeeData.ipm || 0),
         sursalaire: parseFloat(employeeData.sursalaire || 0),
-        avances: parseFloat(employeeData.avances || 0), // Assurez-vous que ce champ existe
+        avances: parseFloat(employeeData.avances || 0),
         indemniteDeplacement: parseFloat(employeeData.indemniteDeplacement || 0),
-        avantagesNature: parseFloat(employeeData.avantagesNature || 0) // Si ce champ existe
+        avantagesNature: parseFloat(employeeData.avantagesNature || 0)
       };
 
       const employeesRef = collection(db, `companies/${companyId}/employees`);
@@ -185,7 +211,10 @@ export const employeeService = {
         employee: {
           id: docRef.id,
           ...validatedEmployeeData,
-          dateEmbauche: employeeData.dateEmbauche
+          // Retourner la date au format string pour l'affichage
+          dateEmbauche: dateEmbaucheValide ?
+            `${dateEmbaucheValide.getFullYear()}-${String(dateEmbaucheValide.getMonth() + 1).padStart(2, '0')}-${String(dateEmbaucheValide.getDate()).padStart(2, '0')}` :
+            null
         }
       };
     } catch (error) {
@@ -197,15 +226,27 @@ export const employeeService = {
     }
   },
 
-  // Mettez aussi à jour updateEmployee pour inclure ces champs
   updateEmployee: async (companyId, employeeId, employeeData) => {
     try {
       const employeeRef = doc(db, `companies/${companyId}/employees/${employeeId}`);
 
+      // Gestion de la date d'embauche
+      let dateEmbaucheValide = null;
+      if (employeeData.dateEmbauche) {
+        if (typeof employeeData.dateEmbauche === 'string' &&
+          employeeData.dateEmbauche.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [annee, mois, jour] = employeeData.dateEmbauche.split('-').map(Number);
+          dateEmbaucheValide = new Date(annee, mois - 1, jour, 12, 0, 0);
+        } else if (employeeData.dateEmbauche instanceof Date &&
+          !isNaN(employeeData.dateEmbauche.getTime())) {
+          dateEmbaucheValide = employeeData.dateEmbauche;
+        }
+      }
+
       // Mise à jour avec les nouveaux champs
       const updatedData = {
         ...employeeData,
-        dateEmbauche: employeeData.dateEmbauche ? new Date(employeeData.dateEmbauche) : null,
+        dateEmbauche: dateEmbaucheValide,
         updatedAt: new Date(),
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
         ipm: typeof employeeData.ipm === 'number' ? employeeData.ipm : parseFloat(employeeData.ipm || 0),
@@ -221,7 +262,9 @@ export const employeeService = {
         updatedFields: Object.keys(employeeData),
         updatedEmployee: {
           ...employeeData,
-          dateEmbauche: employeeData.dateEmbauche
+          dateEmbauche: dateEmbaucheValide ?
+            `${dateEmbaucheValide.getFullYear()}-${String(dateEmbaucheValide.getMonth() + 1).padStart(2, '0')}-${String(dateEmbaucheValide.getDate()).padStart(2, '0')}` :
+            null
         }
       };
     } catch (error) {

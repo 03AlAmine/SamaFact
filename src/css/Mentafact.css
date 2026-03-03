@@ -1889,6 +1889,9 @@ body {
 .employee-type-badge.CDD {
   background: #007bff;
 }
+.employee-type-badge.CTT {
+  background: #db13a9;
+}
 .client-type-badge.fournisseur,
 .employee-type-badge.Stage {
   background: #ff9800;

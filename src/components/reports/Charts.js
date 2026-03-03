@@ -1069,6 +1069,7 @@ export const ContractTypeChart = ({ employees = [] }) => {
   const contractTypes = {
     'CDI': 0,
     'CDD': 0,
+    'CTT' : 0,
     'Stagiaire': 0,
     'Freelance': 0,
     'Autre': 0

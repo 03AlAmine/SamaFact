@@ -82,6 +82,54 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
         const day = String(date.getDate()).padStart(2, '0');
         return `${year} ${month} ${day}`;
     };
+    // Dans PayrollPDF.js, remplacez la fonction calculateJoursConges par celle-ci :
+
+    const calculateJoursConges = () => {
+        try {
+            if (!employee?.dateEmbauche) return employee?.joursConges || 0;
+
+            // Convertir la date d'embauche en objet Date de manière sécurisée
+            let dateEmbauche;
+
+            // Si c'est un Timestamp Firebase
+            if (employee.dateEmbauche && typeof employee.dateEmbauche === 'object' && employee.dateEmbauche.toDate) {
+                dateEmbauche = employee.dateEmbauche.toDate();
+            }
+            // Si c'est une string
+            else if (typeof employee.dateEmbauche === 'string') {
+                dateEmbauche = new Date(employee.dateEmbauche);
+            }
+            // Si c'est déjà un objet Date
+            else if (employee.dateEmbauche instanceof Date) {
+                dateEmbauche = employee.dateEmbauche;
+            }
+            else {
+                return employee?.joursConges || 0;
+            }
+
+            // Vérifier si la date est valide
+            if (isNaN(dateEmbauche.getTime())) {
+                return employee?.joursConges || 0;
+            }
+
+            const aujourdHui = new Date();
+            const moisEcoules = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12
+                + (aujourdHui.getMonth() - dateEmbauche.getMonth());
+
+            const joursAccumules = moisEcoules * 2;
+            const joursUtilises = parseInt(employee.joursCongesUtilises) || 0;
+
+            const solde = Math.max(0, joursAccumules - joursUtilises);
+
+            // Vérifier que le résultat est un nombre valide
+            return isNaN(solde) ? (employee?.joursConges || 0) : solde;
+
+        } catch (error) {
+            console.error("Erreur calcul congés:", error);
+            return employee?.joursConges || 0;
+        }
+    };
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
@@ -119,7 +167,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     <View style={styles.documentHeader}>
                         <Text style={styles.documentTitle}>BULLETIN DE PAIE</Text>
                         <Text style={styles.documentPeriod}>
-                            {formatDateShort(formData.periode.du)} - {formatDateShort(formData.periode.au)}
+                            {formatDateShort(formData.periode.du)} | {formatDateShort(formData.periode.au)}
                         </Text>
                     </View>
                 </View>
@@ -132,18 +180,8 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                             {employee.prenom} {employee.nom}
                         </Text>
                         <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Adresse: </Text>
-                            {employee.adresse}
-                        </Text>
-                    </View>
-                    <View>
-                        <Text style={styles.employeeInfoLine}>
                             <Text style={styles.employeeInfoPre}>Date embauche: </Text>
                             {formatDate(employee.dateEmbauche)}
-                        </Text>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Poste: </Text>
-                            {employee.poste}
                         </Text>
                     </View>
                     <View>
@@ -152,8 +190,30 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                             {employee.matricule}
                         </Text>
                         <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Nbres Parts: </Text>
+                            {employee.nbreofParts || 1}
+                        </Text>
+
+                    </View>
+                    <View>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Poste: </Text>
+                            {employee.poste}
+                        </Text>
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Solde congés: </Text>
+                            {calculateJoursConges()} jours
+                        </Text>
+                    </View>
+                    <View>
+                        <Text style={styles.employeeInfoLine}>
                             <Text style={styles.employeeInfoPre}>Catégorie: </Text>
                             {employee.categorie}
+                        </Text>
+
+                        <Text style={styles.employeeInfoLine}>
+                            <Text style={styles.employeeInfoPre}>Adresse: </Text>
+                            {employee.adresse}
                         </Text>
                     </View>
                 </View>

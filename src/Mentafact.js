@@ -921,130 +921,147 @@ const Mentafact = () => {
       const workbook = XLSX.read(data, {
         type: 'array',
         cellDates: true,
-        cellNF: false
+        cellNF: false,
+        raw: false
       });
 
       const worksheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[worksheetName];
 
+      // Convertir en JSON en gardant les en-têtes
       const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        raw: false,
-        dateNF: 'yyyy-mm-dd'
+        header: 1, // Lire comme un tableau de lignes
+        defval: '' // Valeur par défaut pour les cellules vides
       });
 
-      setImportProgress(`Conversion de ${jsonData.length} lignes...`);
+      if (jsonData.length < 2) {
+        setImportProgress("Fichier vide ou format incorrect");
+        return;
+      }
 
-      // 2. Transformer les données
+      // Extraire les en-têtes (première ligne)
+      const headers = jsonData[0];
+      console.log("En-têtes détectés:", headers);
+
+      // Traiter les données (à partir de la ligne 2)
       const employeesToImport = [];
       let errorCount = 0;
       let errors = [];
 
-      for (let i = 0; i < jsonData.length; i++) {
+      for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
-        try {
-          // Normalisation des noms de colonnes
-          const rowData = {};
-          Object.keys(row).forEach(key => {
-            const normalizedKey = key
-              .toLowerCase()
-              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-              .trim()
-              // Gestion des espaces et underscores
-              .replace(/\s+/g, '')
-              .replace('_', '');
 
-            rowData[normalizedKey] = row[key];
+        // Vérifier si la ligne est vide
+        if (!row || row.length === 0 || !row.some(cell => cell && cell.toString().trim())) {
+          continue; // Ignorer les lignes vides
+        }
+
+        try {
+          // Créer un objet avec les en-têtes comme clés
+          const rowData = {};
+          headers.forEach((header, index) => {
+            if (header && header.trim()) {
+              // Nettoyer le header (supprimer les espaces, mettre en minuscules)
+              let cleanHeader = header.toString()
+                .toLowerCase()
+                .trim()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
+                .replace(/\s+/g, ''); // Enlever les espences
+
+              rowData[cleanHeader] = row[index] || '';
+            }
           });
 
-          // Validation des champs requis
-          const nom = rowData.nom || rowData.name || '';
-          const prenom = rowData.prenom || rowData.firstname || rowData['prenom/nom']?.split(' ')[0] || '';
+          console.log("Ligne traitée:", i + 1, rowData);
 
-          if (!nom.trim() || !prenom.trim()) {
-            errors.push(`Ligne ${i + 2}: Nom et prénom requis`);
+          // Récupérer les champs avec leurs noms exacts dans votre fichier
+          const nom = rowData['nom'] || '';
+          const prenom = rowData['prenom'] || '';
+
+          // Vérifier les champs requis
+          if (!nom || !prenom) {
+            errors.push(`Ligne ${i + 1}: Nom ou prénom manquant (Nom="${nom}", Prénom="${prenom}")`);
             errorCount++;
             continue;
           }
 
           // Traitement de la date d'embauche
           let dateEmbauche = '';
-          const dateRaw = rowData.dateembauche || rowData['dateembauche'] || rowData.date_embauche || rowData.hiredate;
+          const dateRaw = rowData['dateembauche'] || rowData['dateembauche'] || rowData['dateembauche'] || '';
 
           if (dateRaw) {
-            if (dateRaw instanceof Date) {
-              dateEmbauche = dateRaw.toISOString().split('T')[0];
-            } else if (typeof dateRaw === 'string') {
-              const parsedDate = new Date(dateRaw);
-              if (!isNaN(parsedDate.getTime())) {
-                dateEmbauche = parsedDate.toISOString().split('T')[0];
+            try {
+              // Format: "2025-10-01 00:00:00"
+              const dateStr = dateRaw.toString().trim();
+              const datePart = dateStr.split(' ')[0]; // Prendre seulement la partie date
+
+              if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                dateEmbauche = datePart; // Déjà au bon format
               } else {
-                dateEmbauche = dateRaw;
+                // Essayer de parser
+                const parsedDate = new Date(dateStr);
+                if (!isNaN(parsedDate.getTime())) {
+                  const annee = parsedDate.getFullYear();
+                  const mois = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const jour = String(parsedDate.getDate()).padStart(2, '0');
+                  dateEmbauche = `${annee}-${mois}-${jour}`;
+                }
               }
+            } catch (error) {
+              console.warn("Erreur date:", error);
             }
           }
 
-          // Construction de l'objet employé avec les nouveaux champs
+          // Construire l'objet employé
           const employee = {
             nom: nom.toString().trim(),
             prenom: prenom.toString().trim(),
-            email: (rowData.email || rowData.mail || '').toString().trim(),
-            telephone: (rowData.telephone || rowData.phone || rowData.tel || '').toString().trim(),
-            adresse: (rowData.adresse || rowData.address || '').toString().trim(),
-            poste: (rowData.poste || rowData.job || rowData.position || '').toString().trim(),
-            departement: (rowData.departement || rowData.department || rowData.dept || '').toString().trim(),
-            // NOUVEAUX CHAMPS AJOUTÉS
-            ipm: parseFloat(rowData.ipm || rowData['ipm'] || 0),
-            sursalaire: parseFloat(rowData.sursalaire || rowData['sursalaire'] || 0),
-            // FIN DES NOUVEAUX CHAMPS
+            email: (rowData['email'] || '').toString().trim(),
+            telephone: (rowData['telephone'] || '').toString().trim(),
+            adresse: (rowData['adresse'] || '').toString().trim(),
+            poste: (rowData['poste'] || '').toString().trim(),
+            departement: (rowData['departement'] || '').toString().trim(),
+            typeContrat: (rowData['typecontrat'] || rowData['typecontrat'] || 'CDI').toString().trim(),
+            salaireBase: parseFloat(rowData['salairebase'] || 0),
+            sursalaire: parseFloat(rowData['sursalaire'] || 0),
+            ipm: parseFloat(rowData['ipm'] || 0),
+            categorie: (rowData['categorie'] || '').toString().trim(),
+            nbreofParts: parseInt(rowData['nbreparts'] || rowData['nbreparts'] || 1, 10),
+            indemniteTransport: parseFloat(rowData['indemnitetransport'] || 0),
+            primePanier: parseFloat(rowData['primepanier'] || 0),
+            indemniteResponsabilite: parseFloat(rowData['indemniteresponsabilite'] || 0),
+            indemniteDeplacement: parseFloat(rowData['indemnitedeplacement'] || 0),
             dateEmbauche: dateEmbauche,
-            typeContrat: (rowData.typecontrat || rowData['typecontrat'] || rowData.contracttype || 'CDI').toString().trim(),
-            salaireBase: parseFloat(rowData.salairebase || rowData['salairebase'] || rowData.basesalary || rowData.salaire || 0),
-            categorie: (rowData.categorie || rowData.category || rowData.grade || '').toString().trim(),
-            nbreofParts: parseInt(rowData.nbreofparts || rowData['nbreofparts'] || rowData.parts || rowData['nbreparts'] || 1, 10),
-            indemniteTransport: parseFloat(rowData.indemnitetransport || rowData['indemnitetransport'] || rowData.transportallowance || 26000),
-            primePanier: parseFloat(rowData.primepanier || rowData['primepanier'] || rowData.mealallowance || 0),
-            indemniteResponsabilite: parseFloat(rowData.indemniteresponsabilite || rowData['indemniteresponsabilite'] || rowData.responsibilityallowance || 0),
-            indemniteDeplacement: parseFloat(rowData.indemnitedeplacement || rowData['indemnitedeplacement'] || rowData.travelallowance || 0),
-            joursConges: parseInt(rowData.joursconges || rowData['joursconges'] || rowData.leavedays || 0, 10),
-            joursAbsence: parseInt(rowData.joursabsence || rowData['joursabsence'] || rowData.absencedays || 0, 10),
-            avanceSalaire: parseFloat(rowData.avancesalaire || rowData['avancesalaire'] || rowData.salaryadvance || 0),
-            joursCongesUtilises: parseInt(rowData.jourscongesutilises || rowData['jourscongesutilises'] || rowData.usedleavedays || 0, 10),
+            joursConges: parseInt(rowData['joursconges'] || 0, 10),
+            joursAbsence: parseInt(rowData['joursabsence'] || 0, 10),
+            avanceSalaire: parseFloat(rowData['avancesalaire'] || 0),
+            joursCongesUtilises: parseInt(rowData['jourscongesutilises'] || 0, 10),
           };
 
-          // Validation du salaire
-          if (employee.salaireBase < 0 || isNaN(employee.salaireBase)) {
-            errors.push(`Ligne ${i + 2}: Salaire base invalide`);
-            errorCount++;
-            continue;
+          // Validation du salaire de base
+          if (isNaN(employee.salaireBase) || employee.salaireBase < 0) {
+            employee.salaireBase = 0;
           }
 
-          // Validation IPM (doit être >= 0)
-          if (employee.ipm < 0 || isNaN(employee.ipm)) {
-            employee.ipm = 0;
-          }
-
-          // Validation Sursalaire (doit être >= 0)
-          if (employee.sursalaire < 0 || isNaN(employee.sursalaire)) {
-            employee.sursalaire = 0;
-          }
-
+          console.log("Employé à importer:", employee);
           employeesToImport.push(employee);
 
         } catch (error) {
-          errors.push(`Ligne ${i + 2}: ${error.message}`);
+          errors.push(`Ligne ${i + 1}: ${error.message}`);
           errorCount++;
-          continue;
         }
       }
 
       if (employeesToImport.length === 0) {
+        console.log("Erreurs détaillées:", errors);
         setImportProgress("Aucun employé valide trouvé dans le fichier");
         return;
       }
 
       setImportProgress(`Importation de ${employeesToImport.length} employés...`);
 
-      // 3. Importer les employés
+      // Importer les employés
       let importedCount = 0;
       let importErrors = [];
 
@@ -1055,8 +1072,6 @@ const Mentafact = () => {
 
           if (result.success) {
             importedCount++;
-
-            // Mise à jour du prochain matricule pour l'affichage UI
             if (i === employeesToImport.length - 1) {
               loadNextMatricule();
             }
@@ -1067,13 +1082,12 @@ const Mentafact = () => {
           importErrors.push(`Ligne ${i + 2}: ${error.message}`);
         }
 
-        // Mise à jour de la progression
         if (i % 5 === 0 || i === employeesToImport.length - 1) {
           setImportProgress(`Importation... ${importedCount}/${employeesToImport.length}`);
         }
       }
 
-      // 4. Résultats finaux
+      // Résultats
       let resultMessage = `${importedCount}/${employeesToImport.length} employés importés avec succès ✓`;
 
       if (errorCount > 0) {
@@ -1082,13 +1096,13 @@ const Mentafact = () => {
 
       if (importErrors.length > 0) {
         resultMessage += `\n${importErrors.length} erreur(s) d'import`;
-        console.warn("Erreurs d'import:", importErrors.slice(0, 3));
+        console.warn("Erreurs d'import:", importErrors);
       }
 
       setImportProgress(resultMessage);
 
     } catch (error) {
-      console.error("Erreur lors de l'import des employés:", error);
+      console.error("Erreur lors de l'import:", error);
       setImportProgress(`Erreur: ${error.message}`);
     } finally {
       if (e.target) {
@@ -1096,6 +1110,8 @@ const Mentafact = () => {
       }
     }
   };
+
+
   const { canToggleModules } = useAuth();
   const { activeModule, setModuleBasedOnRole } = useAppContext();
   // Initialisation au chargement
