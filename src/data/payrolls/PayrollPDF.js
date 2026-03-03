@@ -201,7 +201,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                             {employee.poste}
                         </Text>
                         <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Solde congés: </Text>
+                            <Text style={styles.employeeInfoPre}>J_Congés/Mois: </Text>
                             {calculateJoursConges()} jours
                         </Text>
                     </View>
