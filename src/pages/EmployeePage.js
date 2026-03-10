@@ -3,7 +3,8 @@ import {
   FaUsers, FaEdit, FaTrash, FaBuilding, FaPlus, FaSearch,
   FaFileAlt, FaFileExcel, FaList, FaTh,
   FaSortAlphaDown, FaIdCard, FaMoneyBillWave, FaCalendarAlt, FaEye,
-  FaChevronLeft, FaChevronRight
+  FaChevronLeft, FaChevronRight,
+  FaDownload
 } from "react-icons/fa";
 import empty_employee from '../assets/empty_employe.png';
 import '../css/EmployeePage.css';
@@ -541,12 +542,37 @@ const EmployeeTableRow = ({ employee, isSelected, onSelect, onView, onEdit, onDe
 };
 
 // Section fiches de paie
-const EmployeePayrollsSection = ({ selectedEmployee, onCreatePayroll, sectionRef }) => {
+// Section fiches de paie - VERSION CORRIGÉE AVEC AFFICHAGE DES BULLETINS
+const EmployeePayrollsSection = ({ selectedEmployee, onCreatePayroll, sectionRef, payrolls = [] }) => {
   if (!selectedEmployee) return null;
 
+  // Filtrer les bulletins pour cet employé
+  const employeePayrolls = payrolls.filter(p => p.employeeId === selectedEmployee.id);
+
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('fr-FR');
+  };
+
+  const formatCurrency = (amount) => {
+    return (amount || 0).toLocaleString('fr-FR') + ' FCFA';
+  };
+
+  const getStatusBadge = (statut) => {
+    const statusMap = {
+      draft: { label: 'Brouillon', class: 'draft' },
+      validated: { label: 'Validé', class: 'validated' },
+      paid: { label: 'Payé', class: 'paid' },
+      partially_paid: { label: 'Partiel', class: 'partial' }
+    };
+    const status = statusMap[statut] || { label: statut, class: '' };
+    return <span className={`status-badge ${status.class}`}>{status.label}</span>;
+  };
+
   return (
-    <div className="payrolls-section">
-      <div className="payrolls-header" ref={sectionRef}>
+    <div className="payrolls-section" ref={sectionRef}>
+      <div className="payrolls-header">
         <h2 className="section-title">
           <FaFileAlt /> Fiches de paie de {selectedEmployee.prenom} {selectedEmployee.nom}
         </h2>
@@ -556,6 +582,58 @@ const EmployeePayrollsSection = ({ selectedEmployee, onCreatePayroll, sectionRef
           </button>
         </div>
       </div>
+
+      {/* Affichage des bulletins */}
+      {employeePayrolls.length > 0 ? (
+        <div className="payrolls-list">
+          <table className="payrolls-table">
+            <thead>
+              <tr>
+                <th>Période</th>
+                <th>Numéro</th>
+                <th>Salaire net</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employeePayrolls.map(payroll => (
+                <tr key={payroll.id} className="payroll-row">
+                  <td>
+                    {formatDate(payroll.periode?.du)} - {formatDate(payroll.periode?.au)}
+                  </td>
+                  <td>{payroll.numero}</td>
+                  <td className="amount">{formatCurrency(payroll.calculations?.salaireNetAPayer)}</td>
+                  <td>{getStatusBadge(payroll.statut)}</td>
+                  <td className="actions">
+                    <button
+                      className="action-btn view"
+                      title="Aperçu"
+                      onClick={() => window.open(`/payroll-preview/${payroll.id}`, '_blank')}
+                    >
+                      <FaEye />
+                    </button>
+                    <button
+                      className="action-btn download"
+                      title="Télécharger"
+                      onClick={() => {/* Fonction téléchargement */ }}
+                    >
+                      <FaDownload />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="no-payrolls">
+          <p>Aucun bulletin de paie pour cet employé</p>
+          <p className="no-payrolls-hint">
+            Cliquez sur "Générer une fiche" pour créer le premier bulletin
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -736,7 +814,8 @@ const EmployeesPage = ({
   handleImportEmployees,
   importProgress,
   setImportProgress,
-  nextMatricule
+  nextMatricule,
+  payrolls
 }) => {
   const [viewMode, setViewMode] = useState('card');
   const [sortBy, setSortBy] = useState('nom');
@@ -1012,6 +1091,7 @@ const EmployeesPage = ({
         selectedEmployee={selectedEmployee}
         onCreatePayroll={handleCreatePayroll}
         sectionRef={payrollsSectionRef}
+        payrolls={payrolls}  // ← AJOUTEZ CETTE LIGNE
       />
 
       {/* Modaux */}

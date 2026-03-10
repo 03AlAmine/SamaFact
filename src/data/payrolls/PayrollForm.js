@@ -174,11 +174,6 @@ const PayrollForm = () => {
         // Dernier jour du mois précédent
         const lastDay = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
 
-        // Exemple de débogage pour vérifier
-        console.log("Date actuelle:", now.toLocaleDateString('fr-FR'));
-        console.log("Période de paie (mois précédent):",
-            `${firstDay.toLocaleDateString('fr-FR')} - ${lastDay.toLocaleDateString('fr-FR')}`);
-
         const formatLocalDate = (date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -583,6 +578,29 @@ const PayrollForm = () => {
         if (isSaved) return;
         await handleSave();
     };
+    /*/ Fonction pour calculer le solde de congés
+    const calculateSoldeConges = (employee) => {
+        if (!employee?.dateEmbauche) return 0;
+
+        const dateEmbauche = new Date(employee.dateEmbauche);
+        const aujourdHui = new Date();
+        const anneeCourante = aujourdHui.getFullYear();
+
+        // Début de l'année ou date d'embauche si plus récente
+        const debutAnnee = new Date(anneeCourante, 0, 1);
+        const dateDebut = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
+
+        // Mois écoulés
+        const moisEcoules = Math.max(0,
+            (aujourdHui.getFullYear() - dateDebut.getFullYear()) * 12 +
+            (aujourdHui.getMonth() - dateDebut.getMonth())
+        );
+
+        const congesAccumules = moisEcoules * 2;
+        const congesUtilises = parseInt(employee.joursCongesUtilisesAnnee || employee.joursCongesUtilises || 0);
+
+        return Math.max(0, congesAccumules - congesUtilises);
+    };*/
 
     const renderStatCard = (title, value, icon, color = 'primary') => {
         return (
@@ -804,6 +822,13 @@ const PayrollForm = () => {
                                                 <span className="payroll-detail-label">Nombre de parts:</span>
                                                 <span className="payroll-detail-value">{selectedEmployee.nbreofParts}</span>
                                             </div>
+                                            {/* Dans la section employé, après les autres détails 
+                                            <div className="payroll-detail-item">
+                                                <span className="payroll-detail-label">Solde congés:</span>
+                                                <span className="payroll-detail-value payroll-conges-value">
+                                                    {calculateSoldeConges(selectedEmployee)} jours
+                                                </span>
+                                            </div>*/}
                                         </div>
                                     </div>
                                 )}

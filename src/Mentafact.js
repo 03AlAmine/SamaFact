@@ -510,10 +510,53 @@ const Mentafact = () => {
   };
 
   // Handlers employés
-  const loadEmployeePayrolls = (employeeId) => {
-    const employeeObj = employees.find((e) => e.id === employeeId);
-    setSelectedEmployee(employeeObj);
-    // Chargez les bulletins de paie ici
+  // Dans Mentafact.js, remplacez la fonction loadEmployeePayrolls (vers ligne 430)
+  const loadEmployeePayrolls = async (employeeId) => {
+    try {
+      // Trouver l'employé sélectionné
+      const employeeObj = employees.find((e) => e.id === employeeId);
+      setSelectedEmployee(employeeObj);
+
+      // Charger les bulletins de l'employé depuis Firestore
+      if (companyId && employeeId) {
+        const result = await payrollService.getPayrollsByEmployee(companyId, employeeId);
+        if (result.success) {
+          setPayrolls(result.data);
+        } else {
+          console.error("Erreur chargement bulletins:", result.message);
+          setPayrolls([]);
+        }
+      }
+
+      // Faire défiler jusqu'à la section des bulletins
+      setTimeout(() => {
+        const payrollsSection = document.querySelector('.payrolls-section');
+        if (payrollsSection) {
+          payrollsSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 300);
+    } catch (error) {
+      console.error("Erreur loadEmployeePayrolls:", error);
+      setPayrolls([]);
+    }
+  };
+  // Ajoutez cette fonction dans Mentafact.js (vers ligne 500)
+  const handleCreatePayroll = () => {
+    if (!selectedEmployee) {
+      alert("Veuillez sélectionner un employé d'abord");
+      return;
+    }
+
+    // Naviguer vers le formulaire de bulletin avec l'employé sélectionné
+    navigate("/payroll", {
+      state: {
+        employee: selectedEmployee,
+        isEditing: false
+      }
+    });
   };
   const handleChangeemployee = (e) =>
     setEmployee({ ...employee, [e.target.name]: e.target.value });
@@ -802,7 +845,9 @@ const Mentafact = () => {
   const filteredEmployees = (employees || []).filter(
     (employee) =>
       employee.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.societe?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) || // ← AJOUTEZ PRÉNOM
+      employee.poste?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.matricule?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -1221,10 +1266,11 @@ const Mentafact = () => {
             handleUpdate={handleUpdateEmployee}
             handleUpdateSuivi={handleUpdateEmployeeSuivi}
             cancelEdit={cancelEditEmployee}
-            handleImportEmployees={handleImportEmployee} // ← Cette ligne
-            importProgress={importProgress} // ← Et cette ligne
-            nextMatricule={nextMatricule} // ← Ajoutez cette ligne
-
+            handleImportEmployees={handleImportEmployee}
+            importProgress={importProgress}
+            nextMatricule={nextMatricule}
+            handleCreatePayroll={handleCreatePayroll}
+            payrolls={payrolls}
           />
         );
       case "factures":
