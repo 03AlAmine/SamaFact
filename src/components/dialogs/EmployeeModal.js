@@ -10,16 +10,62 @@ export const EmployeeDetailsModal = ({
     onCancel,
     employee
 }) => {
-    // Calcul des jours de congés accumulés (2 jours par mois)
-    const calculateJoursConges = () => {
-        if (!employee?.dateEmbauche) return employee?.joursConges || 3;
+    // Calcul des congés accumulés depuis l'embauche (total)
+    const calculateCongesAccumules = () => {
+        if (!employee?.dateEmbauche) return employee?.joursConges || 0;
 
         const dateEmbauche = new Date(employee.dateEmbauche);
         const aujourdHui = new Date();
-        const moisEcoules = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12
+        
+        // Nombre total de mois depuis l'embauche
+        const moisTotaux = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12
             + (aujourdHui.getMonth() - dateEmbauche.getMonth());
+        
+        // 2 jours par mois depuis l'embauche
+        const congesTheoriques = Math.max(0, moisTotaux * 2);
+        
+        // Soustraire les congés déjà utilisés
+        return Math.max(0, congesTheoriques - (employee.joursCongesUtilises || 0));
+    };
 
-        return Math.max(0, moisEcoules * 2 - (employee.joursCongesUtilises || 0));
+    // Calcul des congés pour l'année en cours (janvier à aujourd'hui)
+    const calculateCongesEnCours = () => {
+        if (!employee?.dateEmbauche) return 0;
+
+        const dateEmbauche = new Date(employee.dateEmbauche);
+        const aujourdHui = new Date();
+        const anneeCourante = aujourdHui.getFullYear();
+
+        // Date de début pour l'année en cours (1er janvier)
+        const debutAnnee = new Date(anneeCourante, 0, 1);
+        
+        // Si l'employé a été embauché après le début de l'année
+        const dateDebutPeriode = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
+        
+        // Mois écoulés dans l'année en cours
+        let moisEcoules = 0;
+        if (dateDebutPeriode <= aujourdHui) {
+            moisEcoules = (aujourdHui.getFullYear() - dateDebutPeriode.getFullYear()) * 12
+                + (aujourdHui.getMonth() - dateDebutPeriode.getMonth());
+        }
+        
+        // 2 jours par mois pour l'année en cours
+        return Math.max(0, moisEcoules * 2);
+    };
+
+    // Calcul des congés utilisés dans l'année en cours
+    const calculateCongesUtilisesAnnee = () => {
+        // Logique pour extraire les congés utilisés dans l'année
+        // Pour l'instant, on retourne la valeur totale
+        // À améliorer si vous avez un historique par année
+        return employee.joursCongesUtilisesAnnee || 0;
+    };
+
+    // Calcul du solde de congés pour l'année en cours
+    const calculateSoldeConges = () => {
+        const congesEnCours = calculateCongesEnCours();
+        const congesUtilisesAnnee = calculateCongesUtilisesAnnee();
+        return Math.max(0, congesEnCours - congesUtilisesAnnee);
     };
 
     // Calcul du salaire net estimé
@@ -259,17 +305,37 @@ export const EmployeeDetailsModal = ({
                             </h4>
 
                             <div className="employee-details__grid">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Congés accumulés</span>
-                                    <span className="employee-detail__value">
-                                        {calculateJoursConges()} jours
+                                <div className="employee-detail highlight">
+                                    <span className="employee-detail__label">Congés accumulés (total)</span>
+                                    <span className="employee-detail__value employee-detail__value--highlight">
+                                        {calculateCongesAccumules()} jours
                                     </span>
+                                    <small className="employee-detail__hint">
+                                        Depuis l'embauche
+                                    </small>
+                                </div>
+
+                                <div className="employee-detail highlight">
+                                    <span className="employee-detail__label">Congés en cours</span>
+                                    <span className="employee-detail__value employee-detail__value--highlight">
+                                        {calculateCongesEnCours()} jours
+                                    </span>
+                                    <small className="employee-detail__hint">
+                                        Année {new Date().getFullYear()}
+                                    </small>
                                 </div>
 
                                 <div className="employee-detail">
-                                    <span className="employee-detail__label">Congés utilisés</span>
+                                    <span className="employee-detail__label">Congés utilisés (année)</span>
                                     <span className="employee-detail__value">
-                                        {employee.joursCongesUtilises || 0} jours
+                                        {employee.joursCongesUtilisesAnnee || 0} jours
+                                    </span>
+                                </div>
+
+                                <div className="employee-detail highlight">
+                                    <span className="employee-detail__label">Solde congés</span>
+                                    <span className="employee-detail__value employee-detail__value--highlight">
+                                        {calculateSoldeConges()} jours
                                     </span>
                                 </div>
 

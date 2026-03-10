@@ -88,64 +88,69 @@ export const payrollService = {
   },
 
   // 📝 Préparer les données de paie pour Firestore
-  preparePayrollData: (formData, calculations, employee) => {
+preparePayrollData: (formData, calculations, employee) => {
     return {
-      numero: formData.numero || "",
-      employeeId: employee.id,
-      employeeName: `${employee.nom} ${employee.prenom}`,
-      employeeMatricule: employee.matricule,
-      employeePosition: employee.poste,
-      employeeAddresse: employee.adresse,
-      employeeCategorie: employee.categorie,
-      nbreofParts: employee.nbreofParts || 1,
-      employeeEmail: employee.email || "",
-      periode: {
-        du: formData.periode.du,
-        au: formData.periode.au
-      },
-      remuneration: {
-        tauxHoraire: parseFloat(formData.remuneration.tauxHoraire) || 0,
-        salaireBase: parseFloat(formData.remuneration.salaireBase) || 0,
-        sursalaire: parseFloat(formData.remuneration.sursalaire) || 0,
-        indemniteDeplacement: parseFloat(formData.remuneration.indemniteDeplacement) || 0,
-        autresIndemnites: parseFloat(formData.remuneration.autresIndemnites) || 0,
-        avantagesNature: parseFloat(formData.remuneration.avantagesNature) || 0
-      },
-      primes: {
-        transport: parseFloat(formData.primes.transport) || 0,
-        panier: parseFloat(formData.primes.panier) || 0,
-        responsabilite: parseFloat(formData.primes.responsabilite) || 0,
-        autresPrimes: parseFloat(formData.primes.autresPrimes) || 0
-      },
-      retenues: {
-        retenueSalaire: parseFloat(formData.retenues.retenueSalaire) || 0,
-        qpartipm: parseFloat(formData.retenues.qpartipm) || 0,
-        avances: parseFloat(formData.retenues.avances) || 0,
-        trimf: parseFloat(formData.retenues.trimf) || 0,
-        cfce: parseFloat(formData.retenues.cfce) || 0,
-        ir: parseFloat(formData.retenues.ir) || 0
-      },
-      calculations: {
-        brutSocial: calculations.brutSocial || 0,
-        brutFiscal: calculations.brutFiscal || 0,
-        cotisationsSalariales: calculations.cotisationsSalariales || 0,
-        cotisationsPatronales: calculations.cotisationsPatronales || 0,
-        cotisationsEmployeur: calculations.cotisationsEmployeur || 0,
-        cotisationsEmp: calculations.cotisationsEmp || 0,
-        cotisationsTotales: calculations.cotisationsTotales || 0,
-        tooqpartipm: calculations.tooqpartipm || 0,
-        totalRetnues: calculations.totalRetnues || 0,
-        totalRetenuesPris: calculations.totalRetenuesPris || 0,
-        totalPrimes: calculations.totalPrimes || 0,
-        totalfiscales: calculations.totalfiscales || 0,
-        salaireNet: calculations.salaireNet || 0,
-        salaireNetAPayer: calculations.salaireNetAPayer || 0,
-      },
-      statut: "draft", // draft, validated, paid
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+        numero: formData.numero || "",
+        employeeId: employee.id,
+        employeeName: `${employee.nom} ${employee.prenom}`,
+        employeeMatricule: employee.matricule,
+        employeePosition: employee.poste,
+        employeeAddresse: employee.adresse,
+        employeeCategorie: employee.categorie,
+        nbreofParts: employee.nbreofParts || 1,
+        employeeEmail: employee.email || "",
+        // ✅ CONSERVER ces champs importants
+        dateEmbauche: employee.dateEmbauche || formData.dateEmbauche,
+        typeContrat: employee.typeContrat || formData.typeContrat || 'CDI',
+        nbreJoursConges: employee.nbreJoursConges || formData.nbreJoursConges || 0,
+        dateDepart: employee.dateDepart || formData.dateDepart || null,
+        periode: {
+            du: formData.periode.du,
+            au: formData.periode.au
+        },
+        remuneration: {
+            tauxHoraire: parseFloat(formData.remuneration.tauxHoraire) || 0,
+            salaireBase: parseFloat(formData.remuneration.salaireBase) || 0,
+            sursalaire: parseFloat(formData.remuneration.sursalaire) || 0,
+            indemniteDeplacement: parseFloat(formData.remuneration.indemniteDeplacement) || 0,
+            autresIndemnites: parseFloat(formData.remuneration.autresIndemnites) || 0,
+            avantagesNature: parseFloat(formData.remuneration.avantagesNature) || 0
+        },
+        primes: {
+            transport: parseFloat(formData.primes.transport) || 0,
+            panier: parseFloat(formData.primes.panier) || 0,
+            responsabilite: parseFloat(formData.primes.responsabilite) || 0,
+            autresPrimes: parseFloat(formData.primes.autresPrimes) || 0
+        },
+        retenues: {
+            retenueSalaire: parseFloat(formData.retenues.retenueSalaire) || 0,
+            qpartipm: parseFloat(formData.retenues.qpartipm) || 0,
+            avances: parseFloat(formData.retenues.avances) || 0,
+            trimf: parseFloat(formData.retenues.trimf) || 0,
+            cfce: parseFloat(formData.retenues.cfce) || 0,
+            ir: parseFloat(formData.retenues.ir) || 0
+        },
+        calculations: {
+            brutSocial: calculations.brutSocial || 0,
+            brutFiscal: calculations.brutFiscal || 0,
+            cotisationsSalariales: calculations.cotisationsSalariales || 0,
+            cotisationsPatronales: calculations.cotisationsPatronales || 0,
+            cotisationsEmployeur: calculations.cotisationsEmployeur || 0,
+            cotisationsEmp: calculations.cotisationsEmp || 0,
+            cotisationsTotales: calculations.cotisationsTotales || 0,
+            tooqpartipm: calculations.tooqpartipm || 0,
+            totalRetnues: calculations.totalRetnues || 0,
+            totalRetenuesPris: calculations.totalRetenuesPris || 0,
+            totalPrimes: calculations.totalPrimes || 0,
+            totalfiscales: calculations.totalfiscales || 0,
+            salaireNet: calculations.salaireNet || 0,
+            salaireNetAPayer: calculations.salaireNetAPayer || 0,
+        },
+        statut: "draft",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
-  },
+},
 
   // ➕ Création d'un bulletin de paie
   addPayroll: async (companyId, userId, payrollData) => {

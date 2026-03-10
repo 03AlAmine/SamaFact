@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { exportToExcel, exportToPDF } from "../utils/exportUtils";
 import { FaBuilding, FaPlus } from "react-icons/fa";
@@ -265,7 +266,6 @@ const PayrollsPage = ({
                         if (!selectedEmployee) {
                             throw new Error(`Employé non trouvé pour le bulletin ${payroll.numero}`);
                         }
-
                         const cleanDuplicatedPayroll = (original, newNum) => {
                             const { id, createdAt, updatedAt, statut, numero, paymentDetails, montantPaye, validatedAt, paidAt, cancelledAt, ...cleaned } = original;
 
@@ -280,7 +280,12 @@ const PayrollsPage = ({
                                 periode: {
                                     du: currentMonthRange.du,
                                     au: currentMonthRange.au
-                                }
+                                },
+                                // ✅ CONSERVER toutes les données importantes
+                                dateEmbauche: original.dateEmbauche,
+                                typeContrat: original.typeContrat,
+                                nbreJoursConges: original.nbreJoursConges,
+                                dateDepart: original.dateDepart
                             };
                         };
 
@@ -384,10 +389,10 @@ const PayrollsPage = ({
                             matricule: payroll.employeeMatricule || '',
                             poste: payroll.employeePosition || '',
                             salaireBase: payroll.remuneration?.salaireBase || 0,
-                            dateEmbauche: employee.dateEmbauche || new Date().toISOString(),
+                            dateEmbauche: payroll.dateEmbauche || employee.dateEmbauche || new Date().toISOString(),
                             adresse: payroll.employeeAddresse || employee.adresse || '',
                             categorie: payroll.employeeCategorie || employee.categorie || '',
-                            typeContrat: employee.typeContrat || 'CDI'
+                            typeContrat: payroll.typeContrat || employee.typeContrat || 'CDI'
                         },
                         formData: {
                             periode: {
@@ -647,29 +652,59 @@ const PayrollsPage = ({
     };
 
     // Fonction pour préparer les données
+    // Fonction pour préparer les données - VERSION CORRIGÉE
+    // Fonction pour préparer les données - VERSION AVEC CONGÉS
     const preparePayrollData = (payroll) => {
         const convertFirestoreDate = (date) => {
-            if (!date) return new Date().toISOString().split('T')[0];
-            return date.toDate ? date.toDate().toISOString().split('T')[0] : date;
+            if (!date) return null;
+            if (date && typeof date.toDate === 'function') {
+                return date.toDate();
+            }
+            if (typeof date === 'string') {
+                return date;
+            }
+            if (date instanceof Date) {
+                return date;
+            }
+            return null;
         };
+
+        // Trouver l'employé correspondant
+        const employee = employees.find(e => e.id === payroll.employeeId) || {};
+
+        // Calculer les congés disponibles
+        const congesAccumules = calculateCongesAccumules(employee);
+        const congesEnCours = calculateCongesEnCours(employee);
+        const soldeConges = congesEnCours - (employee.joursCongesUtilisesAnnee || 0);
 
         return {
             employee: {
                 id: payroll.employeeId,
-                nom: payroll.employeeName?.split(' ')[0] || 'Non',
-                prenom: payroll.employeeName?.split(' ').slice(1).join(' ') || 'spécifié',
-                matricule: payroll.employeeMatricule || '',
-                poste: payroll.employeePosition || '',
+                nom: employee.nom || payroll.employeeName?.split(' ')[0] || 'Non',
+                prenom: employee.prenom || payroll.employeeName?.split(' ').slice(1).join(' ') || 'spécifié',
+                matricule: payroll.employeeMatricule || employee.matricule || '',
+                poste: payroll.employeePosition || employee.poste || '',
                 salaireBase: payroll.remuneration?.salaireBase || 0,
-                dateEmbauche: payroll.dateEmbauche || new Date().toISOString(),
-                adresse: payroll.employeeAddresse || '',
-                categorie: payroll.employeeCategorie || '',
-                typeContrat: payroll.typeContrat || 'CDI'
+                dateEmbauche: employee.dateEmbauche || payroll.dateEmbauche || new Date().toISOString(),
+                adresse: payroll.employeeAddresse || employee.adresse || '',
+                categorie: payroll.employeeCategorie || employee.categorie || '',
+                typeContrat: employee.typeContrat || payroll.typeContrat || 'CDI',
+                nbreJoursConges: employee.nbreJoursConges || 0,
+                dateDepart: employee.dateDepart || payroll.dateDepart || null,
+                // ✅ NOUVEAUX CHAMPS POUR CONGÉS
+                conges: {
+                    accumules: congesAccumules,
+                    enCours: congesEnCours,
+                    utilisesAnnee: employee.joursCongesUtilisesAnnee || 0,
+                    solde: soldeConges,
+                    absences: employee.joursAbsence || 0,
+                    avanceSalaire: employee.avanceSalaire || 0
+                }
             },
             formData: {
                 periode: {
-                    du: convertFirestoreDate(payroll.periode?.du),
-                    au: convertFirestoreDate(payroll.periode?.au)
+                    du: convertFirestoreDate(payroll.periode?.du) || new Date().toISOString().split('T')[0],
+                    au: convertFirestoreDate(payroll.periode?.au) || new Date().toISOString().split('T')[0]
                 },
                 remuneration: {
                     salaireBase: payroll.remuneration?.salaireBase || 0,
@@ -695,7 +730,12 @@ const PayrollsPage = ({
                     cfce: payroll.retenues?.cfce || 0,
                     ir: payroll.retenues?.ir || 0
                 },
-                numero: payroll.numero || 'NONUM'
+                numero: payroll.numero || 'NONUM',
+                // ✅ AJOUTER LES CONGÉS DANS formData
+                conges: {
+                    pris: 0, // Nombre de jours de congés pris ce mois
+                    aDeduire: 0 // Montant à déduire pour congés sans solde
+                }
             },
             calculations: payroll.calculations || {},
             companyInfo: {
@@ -709,6 +749,40 @@ const PayrollsPage = ({
                 ninea: "0057262212 A2"
             }
         };
+    };
+
+    // Fonctions de calcul des congés (à ajouter dans PayrollsPage)
+    const calculateCongesAccumules = (employee) => {
+        if (!employee?.dateEmbauche) return employee?.joursConges || 0;
+
+        const dateEmbauche = new Date(employee.dateEmbauche);
+        const aujourdHui = new Date();
+
+        const moisTotaux = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12
+            + (aujourdHui.getMonth() - dateEmbauche.getMonth());
+
+        const congesTheoriques = Math.max(0, moisTotaux * 2);
+
+        return Math.max(0, congesTheoriques - (employee.joursCongesUtilises || 0));
+    };
+
+    const calculateCongesEnCours = (employee) => {
+        if (!employee?.dateEmbauche) return 0;
+
+        const dateEmbauche = new Date(employee.dateEmbauche);
+        const aujourdHui = new Date();
+        const anneeCourante = aujourdHui.getFullYear();
+
+        const debutAnnee = new Date(anneeCourante, 0, 1);
+        const dateDebutPeriode = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
+
+        let moisEcoules = 0;
+        if (dateDebutPeriode <= aujourdHui) {
+            moisEcoules = (aujourdHui.getFullYear() - dateDebutPeriode.getFullYear()) * 12
+                + (aujourdHui.getMonth() - dateDebutPeriode.getMonth());
+        }
+
+        return Math.max(0, moisEcoules * 2);
     };
 
     // Aperçu
@@ -753,8 +827,9 @@ const PayrollsPage = ({
                     employeeAddresse: payroll.employeeAddresse,
                     employeeCategorie: payroll.employeeCategorie,
                     nbreofParts: payroll.nbreofParts || 1,
-                    dateEmbauche: payroll.dateEmbauche,
-                    typeContrat: payroll.typeContrat,
+                    // ✅ CORRECTION: Utiliser la date d'embauche du bulletin
+                    dateEmbauche: payroll.dateEmbauche || selectedEmployee?.dateEmbauche,
+                    typeContrat: payroll.typeContrat || selectedEmployee?.typeContrat || 'CDI',
                     statut: payroll.statut,
                     numero: payroll.numero,
                     createdAt: payroll.createdAt,
@@ -785,6 +860,9 @@ const PayrollsPage = ({
                         ir: '0'
                     },
                     calculations: payroll.calculations || {},
+                    // ✅ CORRECTION: Ajouter ces champs si ils existent
+                    nbreJoursConges: payroll.nbreJoursConges || selectedEmployee?.nbreJoursConges,
+                    dateDepart: payroll.dateDepart || selectedEmployee?.dateDepart
                 },
                 employee: selectedEmployee,
                 isEditing: true
@@ -855,8 +933,8 @@ const PayrollsPage = ({
             const cleanDuplicatedPayroll = (originalPayroll, newNumber) => {
                 const { id, createdAt, updatedAt, statut, numero, paymentDetails, montantPaye, validatedAt, paidAt, cancelledAt, ...cleanedData } = originalPayroll;
 
-                // Utiliser la période du mois en cours
-                const currentMonthRange = getPreviousMonthDateRange();
+                // Utiliser la période du mois précédent
+                const previousMonthRange = getPreviousMonthDateRange();
 
                 return {
                     ...cleanedData,
@@ -865,9 +943,19 @@ const PayrollsPage = ({
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     periode: {
-                        du: currentMonthRange.du,
-                        au: currentMonthRange.au
-                    }
+                        du: previousMonthRange.du,
+                        au: previousMonthRange.au
+                    },
+                    // ✅ CONSERVER toutes les données importantes
+                    employeeName: originalPayroll.employeeName,
+                    employeeMatricule: originalPayroll.employeeMatricule,
+                    employeePosition: originalPayroll.employeePosition,
+                    employeeAddresse: originalPayroll.employeeAddresse,
+                    employeeCategorie: originalPayroll.employeeCategorie,
+                    dateEmbauche: originalPayroll.dateEmbauche,  // ← AJOUTÉ
+                    typeContrat: originalPayroll.typeContrat,    // ← AJOUTÉ
+                    nbreJoursConges: originalPayroll.nbreJoursConges, // ← AJOUTÉ
+                    dateDepart: originalPayroll.dateDepart       // ← AJOUTÉ
                 };
             };
 
@@ -908,8 +996,8 @@ const PayrollsPage = ({
                     const cleanDuplicatedPayroll = (originalPayroll, newNumber) => {
                         const { id, createdAt, updatedAt, statut, numero, paymentDetails, montantPaye, validatedAt, paidAt, cancelledAt, ...cleanedData } = originalPayroll;
 
-                        // Utiliser la période du mois en cours
-                        const currentMonthRange = getPreviousMonthDateRange();
+                        // Utiliser la période du mois précédent
+                        const previousMonthRange = getPreviousMonthDateRange();
 
                         return {
                             ...cleanedData,
@@ -918,9 +1006,19 @@ const PayrollsPage = ({
                             createdAt: new Date(),
                             updatedAt: new Date(),
                             periode: {
-                                du: currentMonthRange.du,
-                                au: currentMonthRange.au
-                            }
+                                du: previousMonthRange.du,
+                                au: previousMonthRange.au
+                            },
+                            // ✅ CONSERVER toutes les données importantes
+                            employeeName: originalPayroll.employeeName,
+                            employeeMatricule: originalPayroll.employeeMatricule,
+                            employeePosition: originalPayroll.employeePosition,
+                            employeeAddresse: originalPayroll.employeeAddresse,
+                            employeeCategorie: originalPayroll.employeeCategorie,
+                            dateEmbauche: originalPayroll.dateEmbauche,  // ← AJOUTÉ
+                            typeContrat: originalPayroll.typeContrat,    // ← AJOUTÉ
+                            nbreJoursConges: originalPayroll.nbreJoursConges, // ← AJOUTÉ
+                            dateDepart: originalPayroll.dateDepart       // ← AJOUTÉ
                         };
                     };
 
@@ -941,10 +1039,14 @@ const PayrollsPage = ({
                     if (result.success) {
                         message.success("Bulletin généré et enregistré avec succès !");
 
+                        // ✅ S'assurer que toutes les données sont passées au PDF
                         const payrollDataForPdf = preparePayrollData({
                             ...payrollData,
                             id: result.id,
-                            numero: newNumber
+                            numero: newNumber,
+                            dateEmbauche: generatedPayroll.dateEmbauche, // ← AJOUTÉ
+                            typeContrat: generatedPayroll.typeContrat,   // ← AJOUTÉ
+                            nbreJoursConges: generatedPayroll.nbreJoursConges // ← AJOUTÉ
                         });
 
                         await downloadPayrollPdf(
@@ -965,9 +1067,10 @@ const PayrollsPage = ({
                 }
             },
             zIndex: Z_INDEX.CONFIRM_MODAL,
-            getContainer: false, // Évite les problèmes de hiérarchie
+            getContainer: false,
         });
     };
+
     // Fonction pour obtenir le nom affiché de l'onglet
     const getTabDisplayName = (tab) => {
         const names = {

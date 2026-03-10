@@ -129,6 +129,51 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
             return employee?.joursConges || 0;
         }
     };
+    // Dans PayrollPDF.js, ajoutez cette fonction
+    const calculateSoldeConges = () => {
+        try {
+            if (!employee?.dateEmbauche) return 0;
+
+            // Convertir la date d'embauche
+            let dateEmbauche;
+            if (employee.dateEmbauche && typeof employee.dateEmbauche === 'object' && employee.dateEmbauche.toDate) {
+                dateEmbauche = employee.dateEmbauche.toDate();
+            } else if (typeof employee.dateEmbauche === 'string') {
+                dateEmbauche = new Date(employee.dateEmbauche);
+            } else if (employee.dateEmbauche instanceof Date) {
+                dateEmbauche = employee.dateEmbauche;
+            } else {
+                return 0;
+            }
+
+            if (isNaN(dateEmbauche.getTime())) return 0;
+
+            const aujourdHui = new Date();
+            const anneeCourante = aujourdHui.getFullYear();
+
+            // Calculer les mois depuis le début de l'année OU depuis l'embauche si c'est dans l'année
+            const debutAnnee = new Date(anneeCourante, 0, 1);
+            const dateDebut = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
+
+            // Mois écoulés dans l'année en cours
+            const moisEcoules = Math.max(0,
+                (aujourdHui.getFullYear() - dateDebut.getFullYear()) * 12 +
+                (aujourdHui.getMonth() - dateDebut.getMonth())
+            );
+
+            // Congés accumulés dans l'année (2 jours par mois)
+            const congesAccumulesAnnee = moisEcoules * 2;
+
+            // Congés utilisés (total ou spécifique à l'année)
+            const congesUtilises = parseInt(employee.joursCongesUtilisesAnnee || employee.joursCongesUtilises || 0);
+
+            return Math.max(0, congesAccumulesAnnee - congesUtilises);
+
+        } catch (error) {
+            console.error("Erreur calcul solde congés:", error);
+            return 0;
+        }
+    };
 
     return (
         <Document>
@@ -202,8 +247,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                         </Text>
                         <Text style={styles.employeeInfoLine}>
                             <Text style={styles.employeeInfoPre}>J_Congés/Mois: </Text>
-                            {calculateJoursConges()} jours
-                        </Text>
+                            {calculateSoldeConges()} jours</Text>
                     </View>
                     <View>
                         <Text style={styles.employeeInfoLine}>
