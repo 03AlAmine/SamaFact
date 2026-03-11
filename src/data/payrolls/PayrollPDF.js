@@ -82,8 +82,8 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
         const day = String(date.getDate()).padStart(2, '0');
         return `${year} ${month} ${day}`;
     };
-    // Dans PayrollPDF.js, remplacez la fonction calculateJoursConges par celle-ci :
 
+    /*/ Dans PayrollPDF.js, remplacez la fonction calculateJoursConges par celle-ci :
     const calculateJoursConges = () => {
         try {
             if (!employee?.dateEmbauche) return employee?.joursConges || 0;
@@ -128,7 +128,8 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
             console.error("Erreur calcul congés:", error);
             return employee?.joursConges || 0;
         }
-    };
+    };*/
+
     // Dans PayrollPDF.js, ajoutez cette fonction
     const calculateSoldeConges = () => {
         try {

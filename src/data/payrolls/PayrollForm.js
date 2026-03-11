@@ -23,6 +23,7 @@ import {
     FaChevronRight,
     FaChevronLeft,
     FaTimes,
+    FaSearch,
 
 } from "react-icons/fa";
 import { payrollService } from '../../services/payrollService';
@@ -50,6 +51,9 @@ const PayrollForm = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const formRef = useRef(null);
 
+    const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
+    const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+    const dropdownRef = useRef(null);
     const tabs = [
         { id: 'employee', label: 'Employé', icon: <FaUser /> },
         { id: 'period', label: 'Période', icon: <FaCalendarAlt /> },
@@ -58,6 +62,28 @@ const PayrollForm = () => {
         { id: 'bonuses', label: 'Primes', icon: <FaCoins /> },
         { id: 'summary', label: 'Récapitulatif', icon: <FaChartPie /> }
     ];
+
+    const filteredEmployees = useMemo(() => {
+        if (!employeeSearchTerm.trim()) return employees;
+
+        const searchLower = employeeSearchTerm.toLowerCase();
+        return employees.filter(emp =>
+            emp.nom?.toLowerCase().includes(searchLower) ||
+            emp.prenom?.toLowerCase().includes(searchLower) ||
+            emp.matricule?.toLowerCase().includes(searchLower) ||
+            emp.poste?.toLowerCase().includes(searchLower)
+        );
+    }, [employees, employeeSearchTerm]);
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowEmployeeDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Fonction pour afficher la modal
     const handleShowPdfModal = () => {
@@ -578,7 +604,7 @@ const PayrollForm = () => {
         if (isSaved) return;
         await handleSave();
     };
-    /*/ Fonction pour calculer le solde de congés
+    // Fonction pour calculer le solde de congés
     const calculateSoldeConges = (employee) => {
         if (!employee?.dateEmbauche) return 0;
 
@@ -600,7 +626,7 @@ const PayrollForm = () => {
         const congesUtilises = parseInt(employee.joursCongesUtilisesAnnee || employee.joursCongesUtilises || 0);
 
         return Math.max(0, congesAccumules - congesUtilises);
-    };*/
+    };
 
     const renderStatCard = (title, value, icon, color = 'primary') => {
         return (
@@ -774,34 +800,90 @@ const PayrollForm = () => {
 
                         {showEmployeeInfo && (
                             <div className="payroll-form-grid">
-                                <div className="payroll-form-group">
+                                <div className="payroll-form-group payroll-employee-search-group">
                                     <label className="payroll-label">
                                         <FaUser className="payroll-input-icon-employee" />
-                                        Sélectionner un employé
+                                        Rechercher un employé
                                     </label>
-                                    <select
-                                        value={selectedEmployeeId}
-                                        onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                                        className="payroll-select payroll-select-employee"
-                                        required
-                                    >
-                                        <option value="">Choisir un employé...</option>
-                                        {employees.map(employee => (
-                                            <option key={employee.id} value={employee.id}>
-                                                {employee.nom} {employee.prenom} - {employee.poste} (Mat: {employee.matricule})
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="payroll-employee-search-container" ref={dropdownRef}>
+                                        <div className="payroll-input-wrapper">
+                                            <FaSearch className="payroll-input-icon" />
+                                            <input
+                                                type="text"
+                                                className="payroll-input payroll-employee-search-input"
+                                                placeholder="Tapez pour rechercher un employé..."
+                                                value={employeeSearchTerm}
+                                                onChange={(e) => {
+                                                    setEmployeeSearchTerm(e.target.value);
+                                                    setShowEmployeeDropdown(true);
+                                                }}
+                                                onFocus={() => setShowEmployeeDropdown(true)}
+                                            />
+                                            {selectedEmployeeId && (
+                                                <button
+                                                    className="payroll-clear-search"
+                                                    onClick={() => {
+                                                        setEmployeeSearchTerm("");
+                                                        setSelectedEmployeeId("");
+                                                    }}
+                                                    title="Effacer la sélection"
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Dropdown des résultats */}
+                                        {showEmployeeDropdown && (
+                                            <div className="payroll-employee-dropdown">
+                                                {filteredEmployees.length > 0 ? (
+                                                    filteredEmployees.map(emp => (
+                                                        <div
+                                                            key={emp.id}
+                                                            className={`payroll-employee-option ${selectedEmployeeId === emp.id ? 'selected' : ''}`}
+                                                            onClick={() => {
+                                                                setSelectedEmployeeId(emp.id);
+                                                                setEmployeeSearchTerm(`${emp.prenom} ${emp.nom} - ${emp.matricule}`);
+                                                                setShowEmployeeDropdown(false);
+                                                            }}
+                                                        >
+                                                            <div className="payroll-employee-option-avatar">
+                                                                {emp.prenom?.charAt(0)}{emp.nom?.charAt(0)}
+                                                            </div>
+                                                            <div className="payroll-employee-option-info">
+                                                                <div className="payroll-employee-option-name">
+                                                                    {emp.prenom} {emp.nom}
+                                                                </div>
+                                                                <div className="payroll-employee-option-details">
+                                                                    <span className="payroll-employee-option-matricule">
+                                                                        {emp.matricule}
+                                                                    </span>
+                                                                    <span className="payroll-employee-option-poste">
+                                                                        {emp.poste}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="payroll-employee-no-results">
+                                                        Aucun employé trouvé
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
+                                {/* Affichage de la carte employé quand sélectionné */}
                                 {selectedEmployeeId && (
                                     <div className="payroll-employee-card">
                                         <div className="payroll-employee-header">
                                             <div className="payroll-employee-avatar">
-                                                {selectedEmployee.nom?.charAt(0)}{selectedEmployee.prenom?.charAt(0)}
+                                                {selectedEmployee.prenom?.charAt(0)}{selectedEmployee.nom?.charAt(0)}
                                             </div>
                                             <div className="payroll-employee-info">
-                                                <h3>{selectedEmployee.nom} {selectedEmployee.prenom}</h3>
+                                                <h3>{selectedEmployee.prenom} {selectedEmployee.nom}</h3>
                                                 <p className="payroll-employee-position">{selectedEmployee.poste}</p>
                                             </div>
                                         </div>
@@ -813,6 +895,7 @@ const PayrollForm = () => {
                                             <div className="payroll-detail-item">
                                                 <span className="payroll-detail-label">Date d'embauche:</span>
                                                 <span className="payroll-detail-value">{formatFirestoreDate(selectedEmployee.dateEmbauche)}</span>
+
                                             </div>
                                             <div className="payroll-detail-item">
                                                 <span className="payroll-detail-label">Type de contrat:</span>
@@ -820,15 +903,15 @@ const PayrollForm = () => {
                                             </div>
                                             <div className="payroll-detail-item">
                                                 <span className="payroll-detail-label">Nombre de parts:</span>
-                                                <span className="payroll-detail-value">{selectedEmployee.nbreofParts}</span>
+                                                <span className="payroll-detail-value">{selectedEmployee.nbreofParts || 1}</span>
                                             </div>
-                                            {/* Dans la section employé, après les autres détails 
+                                            {/* Ajoutez le solde de congés si vous voulez */}
                                             <div className="payroll-detail-item">
                                                 <span className="payroll-detail-label">Solde congés:</span>
                                                 <span className="payroll-detail-value payroll-conges-value">
                                                     {calculateSoldeConges(selectedEmployee)} jours
                                                 </span>
-                                            </div>*/}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
