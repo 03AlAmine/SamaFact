@@ -71,7 +71,8 @@ const PayrollForm = () => {
             emp.nom?.toLowerCase().includes(searchLower) ||
             emp.prenom?.toLowerCase().includes(searchLower) ||
             emp.matricule?.toLowerCase().includes(searchLower) ||
-            emp.poste?.toLowerCase().includes(searchLower)
+            emp.poste?.toLowerCase().includes(searchLower) ||
+            emp.departement?.toLowerCase().includes(searchLower)
         );
     }, [employees, employeeSearchTerm]);
     useEffect(() => {
@@ -843,7 +844,7 @@ const PayrollForm = () => {
                                                             className={`payroll-employee-option ${selectedEmployeeId === emp.id ? 'selected' : ''}`}
                                                             onClick={() => {
                                                                 setSelectedEmployeeId(emp.id);
-                                                                setEmployeeSearchTerm(`${emp.prenom} ${emp.nom} - ${emp.matricule}`);
+                                                                setEmployeeSearchTerm(`${emp.prenom} ${emp.nom} - ${emp.matricule} - ${emp.departement}`);
                                                                 setShowEmployeeDropdown(false);
                                                             }}
                                                         >
@@ -860,6 +861,9 @@ const PayrollForm = () => {
                                                                     </span>
                                                                     <span className="payroll-employee-option-poste">
                                                                         {emp.poste}
+                                                                    </span>
+                                                                    <span className="payroll-employee-option-departement">
+                                                                        {emp.departement}
                                                                     </span>
                                                                 </div>
                                                             </div>

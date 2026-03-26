@@ -2388,7 +2388,14 @@
   color: var(--payroll-dark);
   font-weight: 500;
 }
-
+.payroll-employee-option-departement {
+  background: var(--payroll-surface-alt);
+  padding: 2px 8px;
+  border-radius: var(--payroll-radius-full);
+  font-weight: 600;
+  color: var(--payroll-success);
+  border: 1px solid var(--payroll-border);
+}
 /* Message pas de résultats */
 .payroll-employee-no-results {
   padding: var(--payroll-spacing-xl);
