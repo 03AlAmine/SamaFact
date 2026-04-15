@@ -17,13 +17,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build project with production API URL
+      - name: Build project
         run: CI=false npm run build
         env:
           REACT_APP_ADMIN_SECRET: ${{ secrets.REACT_APP_ADMIN_SECRET }}
           REACT_APP_API_KEY: ${{ secrets.REACT_APP_API_KEY }}
+          GENERATE_SOURCEMAP: false
           REACT_APP_ENV: production
-          REACT_APP_API_URL: https://samafact-backend.onrender.com
+          REACT_APP_API_URL: https://samafact.onrender.com
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0

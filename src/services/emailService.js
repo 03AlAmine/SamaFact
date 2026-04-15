@@ -3,8 +3,12 @@ import { generatePdfBlob } from "./pdfService";
 import { generatePayrollPdfBlob } from "./pdf_payrollService";
 
 // Configuration de l'API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://samafact.onrender.com'  // URL Render
+    : 'http://localhost:3001');
 
+console.log('📧 API URL:', API_BASE_URL); // Pour déboguer
 // ========== SERVICE PRINCIPAL ==========
 
 export const emailService = {
