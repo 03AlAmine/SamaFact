@@ -1,0 +1,13 @@
+# render.yaml
+services:
+  - type: web
+    name: samafact-backend
+    runtime: node
+    repo: https://github.com/votre-username/votre-repo
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: RESEND_API_KEY
+        sync: false
+      - key: PORT
+        value: 3001
