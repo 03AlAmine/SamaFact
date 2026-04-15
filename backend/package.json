@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend pour l'envoi d'emails et WhatsApp avec Resend",
+  "description": "Backend pour l'envoi d'emails avec Resend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

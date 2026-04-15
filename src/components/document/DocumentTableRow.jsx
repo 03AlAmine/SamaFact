@@ -56,9 +56,7 @@ const DocumentTableRow = React.memo(({
   selectedClient,
   sendingEmails,
   onSendEmail,
-  onShowInfo,
-  onSendWhatsApp,    // ← AJOUTER
-  sendingWhatsApp    // ← AJOUTER
+  onShowInfo
 }) => {
   const status = getStatus(document);
   const statusClass = getStatusClass(status);
@@ -67,8 +65,8 @@ const DocumentTableRow = React.memo(({
   // Gestion du clic sur la ligne (sauf les actions)
   const handleRowClick = (e) => {
     // Empêche le déclenchement si on clique sur les actions
-    if (e.target.closest('.actions-celle') || e.target.closest('.action-btn') ||
-      e.target.closest('.swiper') || e.target.closest('.table-actions')) {
+    if (e.target.closest('.actions-celle') || e.target.closest('.action-btn') || 
+        e.target.closest('.swiper') || e.target.closest('.table-actions')) {
       return;
     }
     onPreview(document);
@@ -150,8 +148,6 @@ const DocumentTableRow = React.memo(({
           onSendEmail={onSendEmail}
           onShowInfo={onShowInfo}
           viewMode="table"
-          onSendWhatsApp={onSendWhatsApp}
-          sendingWhatsApp={sendingWhatsApp}
         />
       </td>
     </tr>

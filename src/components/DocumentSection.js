@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Spin } from "antd";
+import {  Spin } from "antd";
 import DocumentCard from "./document/DocumentCard";
 import DocumentTableRow from "./document/DocumentTableRow";
 import DocumentDetailsModal from "./document/DocumentDetailsModal";
 import LoadingState from "./common/LoadingState";
 import HeaderSection from "./document/HeaderSection";
 import EmptyState from "./common/EmptyState";
-import { useWhatsAppSender } from "../hooks/useWhatsAppSender"; // ← AJOUTER
 
 
 const DocumentSection = ({
@@ -29,7 +28,6 @@ const DocumentSection = ({
   selectedFilterClient,
   onClearClientFilter,
   onSendEmail,
-  companyId
 }) => {
   const [sortBy, setSortBy] = useState("numero");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -107,11 +105,7 @@ const DocumentSection = ({
   }, [items, searchTerm]);
 
 
-  const {
-    sendingWhatsApp,
-    sendByWhatsApp,
-    WhatsAppModal
-  } = useWhatsAppSender(companyId);
+
 
   // Détection responsive
   useEffect(() => {
@@ -344,10 +338,6 @@ const DocumentSection = ({
     onSendEmail(doc);
   }, [onSendEmail]);
 
-  // Fonction d'envoi WhatsApp
-  const sendWhatsApp = useCallback((document) => {
-    sendByWhatsApp(document, type);
-  }, [sendByWhatsApp, type]);
 
   if (loading) {
     return <LoadingState />;
@@ -408,8 +398,6 @@ const DocumentSection = ({
                   sendingEmails={sendingEmails}
                   onSendEmail={sendEmail}
                   onShowInfo={showInfoModal}
-                  onSendWhatsApp={sendWhatsApp}        // ← AJOUTER
-                  sendingWhatsApp={sendingWhatsApp}
                 />
               ))}
 
@@ -498,8 +486,6 @@ const DocumentSection = ({
                       sendingEmails={sendingEmails}
                       onSendEmail={sendEmail}
                       onShowInfo={showInfoModal}
-                      onSendWhatsApp={sendWhatsApp}        // ← À AJOUTER
-                      sendingWhatsApp={sendingWhatsApp}
                     />
                   ))}
 
@@ -544,7 +530,6 @@ const DocumentSection = ({
           )}
         </div>
       )}
-      <WhatsAppModal />
 
       <DocumentDetailsModal
         isVisible={isInfoModalVisible}

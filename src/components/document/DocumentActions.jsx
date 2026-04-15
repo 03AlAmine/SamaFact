@@ -12,8 +12,7 @@ import {
   FaPlus,
   FaSpinner,
   FaChevronLeft,
-  FaChevronRight,
-  FaWhatsapp
+  FaChevronRight
 } from "react-icons/fa";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
@@ -36,9 +35,7 @@ const DocumentActions = ({
   onSendEmail,
   onShowInfo,
   viewMode,
-  showActions = true,
-  onSendWhatsApp,  // ← AJOUTER CETTE PROP
-  sendingWhatsApp
+  showActions = true
 }) => {
   const status = getStatus(document);
   const isPaid = status === "Payé";
@@ -161,24 +158,12 @@ const DocumentActions = ({
           }}
           disabled={sendingEmails[document.id]}
         />
-        {/* NOUVEAU BOUTON WHATSAPP */}
         <ActionButton
-          className="whatsapp"
-          icon={sendingWhatsApp?.[document.id] ? <FaSpinner className="spinnerr" /> : <FaWhatsapp />}
-          title="Envoyer par WhatsApp"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSendWhatsApp?.(document);
-          }}
-          disabled={sendingWhatsApp?.[document.id]}
-          style={{ backgroundColor: '#25D366', color: 'white' }}
-        />
-      {/*  <ActionButton
           className="add"
           icon={<FaPlus />}
           title="Ajouter"
           onClick={(e) => e.stopPropagation()}
-        />*/}
+        />
       </SwiperSlide>
     </>
   );
