@@ -1,1178 +1,202 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, } from "react-router-dom";
+// Mentafact.js - Version corrigée
+
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
-import { clientService } from "./services/clientService";
-import { employeeService } from "./services/employeeService";
-import { invoiceService } from "./services/invoiceService";
-import { payrollService } from "./services/payrollService";
-import { teamService } from "./services/teamService";
-import { getDoc, doc, deleteDoc } from "firebase/firestore";
-import { db } from "./firebase";
-
-// Import pages and components
-import DashboardPage from "./pages/DashboardPage";
-import ClientsPage from "./pages/ClientsPage";
-import EmployeesPage from "./pages/EmployeePage";
-import InvoicesPage from "./pages/InvoicesPage";
-import PayrollsPage from "./pages/PayrollsPage";
-import StatsPage from "./pages/StatsPage";
-import TeamsPage from "./pages/TeamsPage";
-import Sidebar from "./pages/Sidebare";
-//import Preloader from './components/Preloader';
-import NavbarPremium from "./components/ui/Navbar"
-
+import { useUi } from "./contexts/uiContext";
 import { useAppContext } from "./contexts/AppContext";
-import { useUi } from "./contexts/uiContext"; // Ajoutez cette importation
 
-import logo from "./assets/Logo_Mf.png";
-import "./css/Mentafact.css";
-import "./css/Dashboard.css";
-import "./css/Navbar.css";
-import './css/dark-mode-overrides.css';
-import * as XLSX from "xlsx";
+// ── Contexts métier ──────────────────────────────────────────────────────────
+import { AuditProvider } from "./contexts/AuditContext";  // ← DOIT ÊTRE AVANT
+import { ClientProvider, useClientContext } from "./contexts/ClientContext";
+import { InvoiceProvider, useInvoiceContext } from "./contexts/InvoiceContext";
+import { EmployeeProvider, useEmployeeContext } from "./contexts/EmployeeContext";
+import { TeamProvider, useTeamContext } from "./contexts/TeamContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+
+// ── Imports statiques ─────────────────────────────────────────────────────────
+import Sidebar from "./pages/Sidebare";
+import NavbarPremium from "./components/ui/Navbar";
+
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "./firebase";
 import { FaArrowUp } from "react-icons/fa";
+import logo from "./assets/Logo_Mf.png";
 
-const Mentafact = () => {
-  const { currentUser, logout, shouldDefaultToPayroll } = useAuth();
+import { useEmailSender } from "./hooks/useEmailSender";
+
+// ── Lazy loading ─────────────────────────────────────────────────────────────
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ClientsPage = lazy(() => import("./pages/ClientsPage"));
+const EmployeesPage = lazy(() => import("./pages/EmployeePage"));
+const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
+const PayrollsPage = lazy(() => import("./pages/PayrollsPage"));
+const StatsPage = lazy(() => import("./pages/StatsPage"));
+const TeamsPage = lazy(() => import("./pages/TeamsPage"));
+const AuditPage = lazy(() => import("./pages/AuditPage"));  // ← AJOUTER
+
+const SectionSkeleton = () => (
+  <div style={{ padding: "24px", animation: "pulse 1.5s ease-in-out infinite" }}>
+    {[...Array(5)].map((_, i) => (
+      <div
+        key={i}
+        style={{
+          height: "48px",
+          background: "var(--skeleton-color, #e2e8f0)",
+          borderRadius: "8px",
+          marginBottom: "12px",
+          opacity: 1 - i * 0.15,
+        }}
+      />
+    ))}
+    <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
+  </div>
+);
+
+const CompanyLoader = () => (
+  <div style={{
+    display: "flex", flexDirection: "column", alignItems: "center",
+    justifyContent: "center", height: "100vh",
+    fontFamily: "Inter, sans-serif", color: "#64748b", gap: "16px",
+  }}>
+    <div style={{
+      width: "32px", height: "32px",
+      border: "3px solid #e2e8f0", borderTop: "3px solid #3b82f6",
+      borderRadius: "50%", animation: "spin 0.8s linear infinite",
+    }} />
+    <span style={{ fontSize: "14px" }}>Connexion en cours…</span>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
+// ─── Composant interne — consomme les contexts ────────────────────────────────
+const MentafactInner = ({ companyId }) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [companyId, setCompanyId] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { activeTab, setActiveTab } = useUi(); // Remplacer l'ancien useState
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab_0, setActiveTab_0] = useState("factures");
-  // eslint-disable-next-line no-unused-vars
-  const [error, setError] = useState(null);
-  const [importProgress, setImportProgress] = useState(""); // Ajouté pour l'import de clients
-
-  // States for data
-  const [client, setClient] = useState({
-    nom: "",
-    adresse: "",
-    email: "",
-    telephone: "",
-    societe: "",
-    type: "client",
-    anciensNoms: [],
-  });
-  const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [editingClient, setEditingClient] = useState(null);
-  // eslint-disable-next-line no-unused-vars
-  const [isEditing, setIsEditing] = useState(false);
-  const [societeInput, setSocieteInput] = useState("");
-
-  const [allFactures, setAllFactures] = useState([]);
-  const [clientFactures, setClientFactures] = useState([]);
-  const [allDevis, setAllDevis] = useState([]);
-  const [clientDevis, setClientDevis] = useState([]);
-  const [allAvoirs, setAllAvoirs] = useState([]);
-  const [clientAvoirs, setClientAvoirs] = useState([]);
-  const [, setUsers] = useState([]);
-
-  const [equipe, setEquipe] = useState({
-    nom: "",
-    description: "",
-    responsable: "",
-  });
-  const [equipes, setEquipes] = useState([]);
-  const [editingEquipe, setEditingEquipe] = useState(null);
-  const [isEditingEquipe, setIsEditingEquipe] = useState(false);
-  const { createSubUser, checkPermission } = useAuth();
-
-  const [employee, setEmployee] = useState({
-    nom: "",
-    prenom: "",
-    adresse: "",
-    categorie: "",
-    poste: "",
-    departement: "",
-    dateEmbauche: "",
-    typeContrat: "CDI",
-    salaireBase: 0,
-    ipm: 0,
-    sursalaire: 0,
-    avances: 0,
-    indemniteTransport: 26000,
-    primePanier: 0,
-    indemniteResponsabilite: 0,
-    indemniteDeplacement: 0,
-    joursConges: 0,
-    joursAbsence: 0,
-    avanceSalaire: 0,
-    joursCongesUtilises: 0,
-  });
-  const [employees, setEmployees] = useState([]);
-
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [payrolls, setPayrolls] = useState([]);
-
-  const [stats, setStats] = useState({
-    totalClients: 0,
-    totalFactures: 0,
-    revenusMensuels: 0,
-    facturesImpayees: 0,
-    facturesPayees: 0,
-    totalEquipes: 0,
-    totalUsers: 0,
-    totalemployees: 0,
-    totalpayrolls: 0,
-  });
-
-
-  useEffect(() => {
-    const fetchCompanyId = async () => {
-      if (!currentUser) return;
-
-      try {
-        let companyIdToSet = currentUser.companyId;
-        if (!companyIdToSet) {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            companyIdToSet = userDoc.data().companyId;
-          }
-        }
-        setCompanyId(companyIdToSet);
-        return companyIdToSet;
-      } catch (error) {
-        console.error("Error fetching companyId:", error);
-        setError("Erreur de chargement des informations de l'entreprise");
-        return null;
-      }
-    };
-
-    // Cette fonction gère les abonnements aux données
-    const setupDataSubscriptions = async (companyId) => {
-      if (!companyId) return;
-
-      const unsubscribers = [];
-
-      const clientsUnsub = clientService.getClients(
-        companyId,
-        (clientsData) => {
-          setClients(clientsData);
-          setStats((prev) => ({
-            ...prev,
-            totalClients: clientsData.length,
-          }));
-        }
-      );
-      if (typeof clientsUnsub === "function") unsubscribers.push(clientsUnsub);
-
-      const employeesUnsub = employeeService.getEmployees(
-        companyId,
-        (employeesData) => {
-          setEmployees(employeesData);
-          setStats((prev) => ({
-            ...prev,
-            totalEmployees: employeesData.length,
-          }));
-        }
-      );
-      if (typeof employeesUnsub === "function")
-        unsubscribers.push(employeesUnsub);
-
-      const payrollsUnsub = payrollService.getPayrolls(
-        companyId,
-        (payrollsData) => {
-          setPayrolls(payrollsData); // Correction ici - utiliser setPayrolls au lieu de setEmployees
-          setStats((prev) => ({
-            ...prev,
-            totalPayrolls: payrollsData.length,
-          }));
-        }
-      );
-      if (typeof payrollsUnsub === "function")
-        unsubscribers.push(payrollsUnsub);
-
-      // 🔥 CORRECTION - Modifiez cette partie
-      const invoicesUnsub = invoiceService.getInvoices(
-        companyId,
-        "facture",
-        (invoicesData) => {
-          // Déplacer le filtrage ICI, après que currentUser soit disponible
-          let filteredFactures = invoicesData;
-
-          // Le filtrage se fait maintenant dans le callback, pas dans setupDataSubscriptions
-          if (currentUser?.role === "charge_compte") {
-            filteredFactures = invoicesData.filter(
-              (f) => f.userId === currentUser.uid
-            );
-          }
-
-          setAllFactures(filteredFactures);
-          setStats((prev) => ({
-            ...prev,
-            totalFactures: filteredFactures.length,
-            revenusMensuels: filteredFactures
-              .filter(
-                (f) =>
-                  f?.date &&
-                  new Date(f.date).getMonth() === new Date().getMonth()
-              )
-              .reduce((sum, f) => sum + (parseFloat(f?.totalTTC) || 0), 0),
-            facturesImpayees: filteredFactures.filter(
-              (f) => f.statut === "en attente"
-            ).length,
-            facturesPayees: filteredFactures.filter((f) => f.statut === "payé")
-              .length,
-          }));
-        }
-      );
-      if (typeof invoicesUnsub === "function")
-        unsubscribers.push(invoicesUnsub);
-
-      // Devis
-      const devisUnsub = invoiceService.getInvoices(
-        companyId,
-        "devis",
-        (devisData) => {
-          let filteredDevis = devisData;
-          if (currentUser?.role === "charge_compte") {
-            filteredDevis = devisData.filter(
-              (d) => d.userId === currentUser.uid
-            );
-          }
-          setAllDevis(filteredDevis);
-          setStats((prev) => ({
-            ...prev,
-            totalDevis: filteredDevis.length,
-          }));
-        }
-      );
-      if (typeof devisUnsub === "function") unsubscribers.push(devisUnsub);
-
-      // Avoirs
-      const avoirsUnsub = invoiceService.getInvoices(
-        companyId,
-        "avoir",
-        (avoirsData) => {
-          let filteredAvoirs = avoirsData;
-          if (currentUser?.role === "charge_compte") {
-            filteredAvoirs = avoirsData.filter(
-              (a) => a.userId === currentUser.uid
-            );
-          }
-          setAllAvoirs(filteredAvoirs);
-          setStats((prev) => ({
-            ...prev,
-            totalAvoirs: filteredAvoirs.length,
-          }));
-        }
-      );
-      if (typeof avoirsUnsub === "function") unsubscribers.push(avoirsUnsub);
-
-      // Equipes
-      const equipesUnsub = teamService.getTeamsRealtime(companyId, (equipesData) => {
-        setEquipes(equipesData);
-        setStats((prev) => ({
-          ...prev,
-          totalEquipes: equipesData.length,
-        }));
-      });
-      if (typeof equipesUnsub === "function") unsubscribers.push(equipesUnsub);
-      const usersUnsub = teamService.getUsersRealtime(
-        companyId,
-        (usersData) => {
-          setUsers(usersData);
-          setStats((prev) => ({
-            ...prev,
-            totalUsers: usersData.length,
-          }));
-        }
-      );
-
-      if (typeof usersUnsub === "function") unsubscribers.push(usersUnsub);
-
-      return () => {
-        unsubscribers.forEach((unsub) => unsub());
-      };
-    };
-
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const companyId = await fetchCompanyId();
-        if (!companyId) return;
-
-        const unsubscribe = await setupDataSubscriptions(companyId);
-        setInitialLoadComplete(true);
-        setIsLoading(false);
-
-        return unsubscribe;
-      } catch (error) {
-        console.error("Error loading data:", error);
-        setError("Erreur de chargement des données");
-        setIsLoading(false);
-      }
-    };
-
-    const unsubscribePromise = loadData();
-
-    return () => {
-      // Cleanup function
-      unsubscribePromise.then((unsubscribe) => unsubscribe?.());
-    };
-  }, [currentUser]);
-
-  const handleSocieteBlur = () => {
-    const currentName = (editingClient.societe || "").trim();
-    const newName = societeInput.trim();
-    if (!newName || currentName === newName) return;
-
-    const updatedClient = {
-      ...editingClient,
-      societe: newName,
-      anciensNoms: [
-        ...(editingClient.anciensNoms || []),
-        { nom: currentName, dateChangement: new Date().toISOString() },
-      ],
-    };
-    setEditingClient(updatedClient);
-  };
-  // Handlers et fonctions utilitaires...
-  // Handlers clients
-  const handleChange = (e) =>
-    setClient({ ...client, [e.target.name]: e.target.value });
-  const handleEditChange = (e) =>
-    setEditingClient({ ...editingClient, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const result = await clientService.addClient(companyId, client);
-    if (result.success) {
-      alert(result.message);
-      setClient({
-        nom: "",
-        adresse: "",
-        email: "",
-        telephone: "",
-        societe: "",
-        type: "client",
-        anciensNoms: [],
-      });
-
-      // SUPPRIMEZ cette partie qui cause le double comptage
-      // setClients(prevClients => [...prevClients, {
-      //    id: result.client.id,
-      //    ...client,
-      //    createdAt: new Date()
-      // }]);
-    } else {
-      alert(result.message);
-    }
-  };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-
-    try {
-      const currentClientData = clients.find(c => c.id === editingClient.id);
-      const isNameChanged = currentClientData?.nom !== editingClient.nom;
-
-      let anciensNoms = [...(editingClient.anciensNoms || [])];
-
-      // Si le nom change, l'ajouter à l'historique
-      if (isNameChanged && currentClientData?.nom) {
-        anciensNoms.push({
-          nom: currentClientData.nom,
-          date: new Date().toISOString(),
-          userId: currentUser.uid,
-          raison: "Modification manuelle"
-        });
-      }
-
-      const updatedClient = {
-        ...editingClient,
-        anciensNoms,
-        updatedAt: new Date().toISOString(),
-        nomNormalized: editingClient.nom.toLowerCase().trim() // Pour faciliter les recherches
-      };
-
-      // Mettre à jour le client dans Firestore
-      const result = await clientService.updateClient(
-        companyId,
-        editingClient.id,
-        updatedClient
-      );
-
-      if (result.success) {
-        // Mettre à jour l'état local AVANT de fermer le mode édition
-        const updatedClients = clients.map(c =>
-          c.id === editingClient.id ? updatedClient : c
-        );
-        setClients(updatedClients);
-
-        // Mettre à jour également le client sélectionné si c'est celui-là
-        if (selectedClient?.id === editingClient.id) {
-          setSelectedClient(updatedClient);
-        }
-
-        alert(`Client "${updatedClient.nom}" mis à jour avec succès ✅`);
-
-        if (isNameChanged) {
-          alert(
-            `Note : Le nom a été changé de "${currentClientData.nom}" à "${updatedClient.nom}".\n` +
-            `• Les nouvelles factures utiliseront le nouveau nom\n` +
-            `• Les duplications de factures utiliseront le nouveau nom\n` +
-            `• Les anciennes factures garderont l'ancien nom pour l'historique`
-          );
-        }
-
-        cancelEdit();
-      } else {
-        alert(result.message);
-      }
-    } catch (error) {
-      console.error('Erreur mise à jour client:', error);
-      alert('Erreur lors de la mise à jour du client');
-    }
-  };
-
-  const handleDeleteClient = async (clientId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) {
-      return false;
-    }
-
-    try {
-      // Utilisez clientService.deleteClient au lieu de deleteDoc directement
-      const result = await clientService.deleteClient(companyId, clientId);
-
-      if (result.success) {
-        // 2. Mise à jour de tous les états concernés
-        setClients((prev) => prev.filter((client) => client.id !== clientId));
-
-        // 3. Réinitialiser le client sélectionné si c'est celui supprimé
-        if (selectedClient?.id === clientId) {
-          setSelectedClient(null);
-          setClientFactures([]);
-          setClientDevis([]);
-          setClientAvoirs([]);
-        }
-
-        // 4. Feedback utilisateur
-        alert("Client supprimé avec succès");
-        return true;
-      } else {
-        alert(result.message || "Échec de la suppression");
-        return false;
-      }
-    } catch (error) {
-      console.error("Erreur suppression client:", error);
-
-      // Gestion d'erreur plus détaillée
-      let errorMessage = "Échec de la suppression du client";
-      if (error.code === "permission-denied") {
-        errorMessage = "Vous n'avez pas les droits pour supprimer ce client";
-      } else if (error.code === "not-found") {
-        errorMessage = "Client déjà supprimé ou introuvable";
-      }
-
-      alert(errorMessage);
-      return false;
-    }
-  };
-
-  const handleEdit = (client) => {
-    // Si le client a un nom différent de celui enregistré, demander confirmation
-    const currentClient = clients.find(c => c.id === client.id);
-
-    if (currentClient && currentClient.nom !== client.nom) {
-      const confirmMessage = `Vous allez modifier le nom du client de "${currentClient.nom}" à "${client.nom}".\n\n` +
-        `⚠️ Important :\n` +
-        `• Les nouvelles factures utiliseront le nouveau nom\n` +
-        `• Les anciennes factures garderont l'ancien nom\n` +
-        `• Les duplications futures utiliseront le nouveau nom\n` +
-        `• Souhaitez-vous continuer ?`;
-
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-    }
-
-    // Mettre à jour l'état d'édition
-    setEditingClient({ ...client });
-    setIsEditing(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Annuler l'édition d'un client
-  const cancelEdit = () => {
-    // Demander confirmation si des changements ont été faits
-    if (editingClient && (editingClient.nom !== client.nom || editingClient.email !== client.email)) {
-    }
-
-    setEditingClient(null);
-    setIsEditing(false);
-  };
-
-  // Handlers employés
-  // Dans Mentafact.js, remplacez la fonction loadEmployeePayrolls (vers ligne 430)
-  const loadEmployeePayrolls = async (employeeId) => {
-    try {
-      // Trouver l'employé sélectionné
-      const employeeObj = employees.find((e) => e.id === employeeId);
-      setSelectedEmployee(employeeObj);
-
-      // Charger les bulletins de l'employé depuis Firestore
-      if (companyId && employeeId) {
-        const result = await payrollService.getPayrollsByEmployee(companyId, employeeId);
-        if (result.success) {
-          setPayrolls(result.data);
-        } else {
-          console.error("Erreur chargement bulletins:", result.message);
-          setPayrolls([]);
-        }
-      }
-
-      // Faire défiler jusqu'à la section des bulletins
-      setTimeout(() => {
-        const payrollsSection = document.querySelector('.payrolls-section');
-        if (payrollsSection) {
-          payrollsSection.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }
-      }, 300);
-    } catch (error) {
-      console.error("Erreur loadEmployeePayrolls:", error);
-      setPayrolls([]);
-    }
-  };
-  // Ajoutez cette fonction dans Mentafact.js (vers ligne 500)
-  const handleCreatePayroll = () => {
-    if (!selectedEmployee) {
-      alert("Veuillez sélectionner un employé d'abord");
-      return;
-    }
-
-    // Naviguer vers le formulaire de bulletin avec l'employé sélectionné
-    navigate("/payroll", {
-      state: {
-        employee: selectedEmployee,
-        isEditing: false
-      }
-    });
-  };
-  const handleChangeemployee = (e) =>
-    setEmployee({ ...employee, [e.target.name]: e.target.value });
-  const handleEditChangeemployee = (e) =>
-    setEditingEmployee({ ...editingEmployee, [e.target.name]: e.target.value });
-  const [nextMatricule, setNextMatricule] = useState("");
-
-  // Fonction pour charger le prochain matricule
-  const loadNextMatricule = useCallback(async () => {
-    if (!companyId) return;
-
-    try {
-      const matricule = await employeeService.previewMatricule(companyId);
-      setNextMatricule(matricule);
-    } catch (error) {
-      console.error("Erreur chargement matricule:", error);
-      setNextMatricule("CODE-0001");
-    }
-  }, [companyId]);
-
-  // Charger le matricule quand companyId change
-  useEffect(() => {
-    if (companyId && activeTab === "employees") {
-      loadNextMatricule();
-    }
-  }, [companyId, activeTab, loadNextMatricule]);
-
-  const handleSubmitemployee = async (e) => {
-    e.preventDefault();
-
-    // Ajoutez automatiquement le prochain matricule
-    const employeeWithMatricule = {
-      ...employee,
-      matricule: nextMatricule // Utilise le matricule généré
-    };
-
-    const result = await employeeService.addEmployee(companyId, employeeWithMatricule);
-    if (result.success) {
-      alert(result.message);
-      // Réinitialiser le formulaire
-      setEmployee({
-        nom: "",
-        prenom: "",
-        adresse: "",
-        categorie: "",
-        poste: "",
-        departement: "",
-        dateEmbauche: "",
-        typeContrat: "CDI",
-        salaireBase: 0,
-        indemniteTransport: 26000,
-        primePanier: 0,
-        indemniteResponsabilite: 0,
-        indemniteDeplacement: 0,
-        joursConges: 0,
-        joursAbsence: 0,
-        avanceSalaire: 0,
-        joursCongesUtilises: 0,
-      });
-      // Recharger le prochain matricule
-      await loadNextMatricule();
-    } else {
-      alert(result.message);
-    }
-  };
-  const handleEditEmployee = (employee) => {
-    if (!employee) return;
-
-    setEditingEmployee({ ...employee });
-    setIsEditing(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleDeleteEmployee = async (employeeId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet employé ?")) {
-      return false;
-    }
-
-    try {
-      const result = await employeeService.deleteEmployee(companyId, employeeId);
-
-      if (result.success) {
-        // Mettre à jour la liste des employés
-        setEmployees((prev) => prev.filter((emp) => emp.id !== employeeId));
-
-        // Réinitialiser l'employé sélectionné si c'est celui supprimé
-        if (selectedEmployee?.id === employeeId) {
-          setSelectedEmployee(null);
-        }
-
-        alert("Employé supprimé avec succès");
-        return true;
-      } else {
-        alert(result.message || "Échec de la suppression");
-        return false;
-      }
-
-    } catch (error) {
-      console.error("Erreur suppression employé:", error);
-
-      let errorMessage = "Échec de la suppression de l'employé";
-      if (error.code === "permission-denied") {
-        errorMessage = "Vous n'avez pas les droits pour supprimer cet employé";
-      } else if (error.code === "not-found") {
-        errorMessage = "Employé déjà supprimé ou introuvable";
-      }
-
-      alert(errorMessage);
-      return false;
-    }
-  };
-  const handleUpdateEmployee = async (e) => {
-    e.preventDefault();
-    const result = await employeeService.updateEmployee(
-      companyId,
-      editingEmployee.id,
-      editingEmployee
-    );
-    if (result.success) {
-      alert(result.message);
-      cancelEditEmployee();
-    } else {
-      alert(result.message);
-    }
-  };
-
-  const handleUpdateEmployeeSuivi = async (employeeData) => {
-    try {
-      const result = await employeeService.updateEmployee(
-        companyId,
-        employeeData.id,
-        employeeData
-      );
-
-      if (result.success) {
-        setEmployees(
-          employees.map((emp) =>
-            emp.id === employeeData.id ? employeeData : emp
-          )
-        );
-        alert(result.message);
-        cancelEditEmployee();
-      } else {
-        alert(result.message);
-      }
-    } catch (error) {
-      console.error("Erreur mise à jour employé:", error);
-      alert("Erreur lors de la mise à jour");
-    }
-  };
-
-  // Annuler l'édition d'un client
-  const cancelEditEmployee = () => {
-    setEditingEmployee(null);
-    setIsEditing(false);
-  };
-
-  // Handlers équipes
-  const handleEquipeChange = (e) =>
-    setEquipe({ ...equipe, [e.target.name]: e.target.value });
-  const handleEquipeEditChange = (e) =>
-    setEditingEquipe({ ...editingEquipe, [e.target.name]: e.target.value });
-
-  const handleEquipeSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const result = await teamService.addTeam(companyId, equipe);
-      if (result.success) {
-        setEquipes([...equipes, { ...equipe, id: result.id }]);
-        setStats((prev) => ({ ...prev, totalEquipes: prev.totalEquipes + 1 }));
-        alert(result.message);
-        setEquipe({ nom: "", description: "", responsable: "" });
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur lors de l'ajout de l'équipe.");
-    }
-  };
-
-  const handleEquipeUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const result = await teamService.updateTeam(
-        editingEquipe.id,
-        editingEquipe
-      );
-      if (result.success) {
-        setEquipes(
-          equipes.map((eq) => (eq.id === editingEquipe.id ? editingEquipe : eq))
-        );
-        alert(result.message);
-        cancelEquipeEdit();
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur lors de la modification de l'équipe.");
-    }
-  };
-
-  const handleEquipeDelete = async (equipeId) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette équipe ?")) {
-      try {
-        const result = await teamService.deleteTeam(equipeId);
-        if (result.success) {
-          setEquipes(equipes.filter((eq) => eq.id !== equipeId));
-          setStats((prev) => ({
-            ...prev,
-            totalEquipes: prev.totalEquipes - 1,
-          }));
-          alert(result.message);
-        }
-      } catch (error) {
-        console.error("Erreur:", error);
-        alert("Erreur lors de la suppression de l'équipe.");
-      }
-    }
-  };
-
-  const handleEquipeEdit = (equipe) => {
-    setEditingEquipe({ ...equipe });
-    setIsEditingEquipe(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Annuler l'édition d'une équipe
-  const cancelEquipeEdit = () => {
-    setEditingEquipe(null);
-    setIsEditingEquipe(false);
-  };
-
-  // Handlers factures
-
-  const handleDeleteFacture = async (docId, type) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer ce ${type} ?`)) {
-      try {
-        // Supprimer la facture complète
-        await deleteDoc(
-          doc(db, `companies/${currentUser.companyId}/factures`, docId)
-        );
-
-        // Supprimer le résumé aussi
-        await deleteDoc(
-          doc(db, `companies/${currentUser.companyId}/factures_resume`, docId)
-        );
-
-        // Mettre à jour l’état local
-        setAllFactures((prev) => prev.filter((doc) => doc.id !== docId));
-
-        alert(`${type} supprimé avec succès`);
-        return true;
-      } catch (error) {
-        console.error("Erreur suppression:", error);
-        alert("Échec de la suppression");
-        return false;
-      }
-    }
-  };
-
-  const handleCreateInvoice = () => {
-    if (!selectedClient) {
-      alert("Veuillez sélectionner un client d'abord");
-      return;
-    }
-
-    // Naviguer vers la nouvelle version (InvoiceEditor)
-    navigate("/invoice", {
-      state: {
-        client: selectedClient,
-        type: "facture" // ou le type par défaut que vous voulez
-      }
-    });
-  };
-
-  /*  const getLastThreeInvoices = () => [...allFactures]
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 3); */
-
-  // Filtres
-  const filteredClients = (clients || []).filter(
-    (client) =>
-      client.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.societe?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredEmployees = (employees || []).filter(
-    (employee) =>
-      employee.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) || // ← AJOUTEZ PRÉNOM
-      employee.poste?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.matricule?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredEquipes = equipes.filter(
-    (equipe) =>
-      equipe.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      equipe.responsable?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Déterminer quelles factures afficher selon l'onglet
-  const getFacturesToDisplay = () => {
-    if (activeTab === "clients" && selectedClient) {
-      return clientFactures;
-    }
-    return allFactures;
-  };
-
-  // Fonction pour charger les factures d'un client sélectionné
-  const loadClientInvoices = (clientId) => {
-    const clientObj = clients.find((c) => c.id === clientId);
-    setSelectedClient(clientObj);
-
-    // Filtrer les factures, devis et avoirs du client sélectionné
-    setClientFactures(allFactures.filter((f) => f.clientId === clientId));
-    setClientDevis(allDevis.filter((d) => d.clientId === clientId));
-    setClientAvoirs(allAvoirs.filter((a) => a.clientId === clientId));
-  };
-
-  const getDevisToDisplay = () => {
-    if (activeTab === "clients" && selectedClient) {
-      return clientDevis;
-    }
-    return allDevis;
-  };
-
-  const getAvoirsToDisplay = () => {
-    if (activeTab === "clients" && selectedClient) {
-      return clientAvoirs;
-    }
-    return allAvoirs;
-  };
-  const handleImportClient = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setImportProgress("Début de l'import...");
-
-    try {
-      // 1. Lire le fichier Excel
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-      setImportProgress("Conversion des données...");
-
-      // 2. Transformer les données
-      const clientsToImport = jsonData
-        .map((row) => ({
-          societe: row["Responsable"] || row["Nom"] || "",
-          nom: row["Raison sociale"] || row["Société"] || "",
-          email: row["Email"] || row["E-mail"] || "",
-          telephone: row["Téléphone"] || row["Phone"] || "",
-          adresse: row["Adresse"] || row["Address"] || "",
-          ville: row["Ville"] || row["City"] || "",
-          type: (row["Type"] || "client").toLowerCase(),
-        }))
-        .filter((client) => client.nom.trim() !== "");
-
-      if (clientsToImport.length === 0) {
-        setImportProgress("Aucun client valide trouvé dans le fichier");
-        return;
-      }
-
-      setImportProgress(`Importation de ${clientsToImport.length} clients...`);
-
-      // 3. Importer les clients
-      let importedCount = 0;
-      for (const client of clientsToImport) {
-        try {
-          const result = await clientService.addClient(companyId, client);
-          if (result.success) {
-            importedCount++;
-          }
-        } catch (error) {
-          console.error("Erreur lors de l'import d'un client:", error);
-        }
-      }
-
-      // 4. Mettre à jour la liste des clients
-      //   const updatedClients = await clientService.getClients(companyId);
-      // setClients(updatedClients);
-
-      setImportProgress(
-        `${importedCount}/${clientsToImport.length} clients importés avec succès`
-      );
-    } catch (error) {
-      console.error("Erreur lors de l'import:", error);
-      setImportProgress("Erreur lors de l'import: " + error.message);
-    } finally {
-      // Réinitialiser le champ de fichier
-      e.target.value = "";
-    }
-  };
-
-
-  const handleImportEmployee = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setImportProgress("Début de l'import des employés...");
-
-    try {
-      // 1. Lire le fichier Excel
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, {
-        type: 'array',
-        cellDates: true,
-        cellNF: false,
-        raw: false
-      });
-
-      const worksheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[worksheetName];
-
-      // Convertir en JSON en gardant les en-têtes
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1, // Lire comme un tableau de lignes
-        defval: '' // Valeur par défaut pour les cellules vides
-      });
-
-      if (jsonData.length < 2) {
-        setImportProgress("Fichier vide ou format incorrect");
-        return;
-      }
-
-      // Extraire les en-têtes (première ligne)
-      const headers = jsonData[0];
-      console.log("En-têtes détectés:", headers);
-
-      // Traiter les données (à partir de la ligne 2)
-      const employeesToImport = [];
-      let errorCount = 0;
-      let errors = [];
-
-      for (let i = 1; i < jsonData.length; i++) {
-        const row = jsonData[i];
-
-        // Vérifier si la ligne est vide
-        if (!row || row.length === 0 || !row.some(cell => cell && cell.toString().trim())) {
-          continue; // Ignorer les lignes vides
-        }
-
-        try {
-          // Créer un objet avec les en-têtes comme clés
-          const rowData = {};
-          headers.forEach((header, index) => {
-            if (header && header.trim()) {
-              // Nettoyer le header (supprimer les espaces, mettre en minuscules)
-              let cleanHeader = header.toString()
-                .toLowerCase()
-                .trim()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
-                .replace(/\s+/g, ''); // Enlever les espences
-
-              rowData[cleanHeader] = row[index] || '';
-            }
-          });
-
-          console.log("Ligne traitée:", i + 1, rowData);
-
-          // Récupérer les champs avec leurs noms exacts dans votre fichier
-          const nom = rowData['nom'] || '';
-          const prenom = rowData['prenom'] || '';
-
-          // Vérifier les champs requis
-          if (!nom || !prenom) {
-            errors.push(`Ligne ${i + 1}: Nom ou prénom manquant (Nom="${nom}", Prénom="${prenom}")`);
-            errorCount++;
-            continue;
-          }
-
-          // Traitement de la date d'embauche
-          let dateEmbauche = '';
-          const dateRaw = rowData['dateembauche'] || rowData['dateembauche'] || rowData['dateembauche'] || '';
-
-          if (dateRaw) {
-            try {
-              // Format: "2025-10-01 00:00:00"
-              const dateStr = dateRaw.toString().trim();
-              const datePart = dateStr.split(' ')[0]; // Prendre seulement la partie date
-
-              if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                dateEmbauche = datePart; // Déjà au bon format
-              } else {
-                // Essayer de parser
-                const parsedDate = new Date(dateStr);
-                if (!isNaN(parsedDate.getTime())) {
-                  const annee = parsedDate.getFullYear();
-                  const mois = String(parsedDate.getMonth() + 1).padStart(2, '0');
-                  const jour = String(parsedDate.getDate()).padStart(2, '0');
-                  dateEmbauche = `${annee}-${mois}-${jour}`;
-                }
-              }
-            } catch (error) {
-              console.warn("Erreur date:", error);
-            }
-          }
-
-          // Construire l'objet employé
-          const employee = {
-            nom: nom.toString().trim(),
-            prenom: prenom.toString().trim(),
-            email: (rowData['email'] || '').toString().trim(),
-            telephone: (rowData['telephone'] || '').toString().trim(),
-            adresse: (rowData['adresse'] || '').toString().trim(),
-            poste: (rowData['poste'] || '').toString().trim(),
-            departement: (rowData['departement'] || '').toString().trim(),
-            typeContrat: (rowData['typecontrat'] || rowData['typecontrat'] || 'CDI').toString().trim(),
-            salaireBase: parseFloat(rowData['salairebase'] || 0),
-            sursalaire: parseFloat(rowData['sursalaire'] || 0),
-            ipm: parseFloat(rowData['ipm'] || 0),
-            categorie: (rowData['categorie'] || '').toString().trim(),
-            nbreofParts: parseInt(rowData['nbreparts'] || rowData['nbreparts'] || 1, 10),
-            indemniteTransport: parseFloat(rowData['indemnitetransport'] || 0),
-            primePanier: parseFloat(rowData['primepanier'] || 0),
-            indemniteResponsabilite: parseFloat(rowData['indemniteresponsabilite'] || 0),
-            indemniteDeplacement: parseFloat(rowData['indemnitedeplacement'] || 0),
-            dateEmbauche: dateEmbauche,
-            joursConges: parseInt(rowData['joursconges'] || 0, 10),
-            joursAbsence: parseInt(rowData['joursabsence'] || 0, 10),
-            avanceSalaire: parseFloat(rowData['avancesalaire'] || 0),
-            joursCongesUtilises: parseInt(rowData['jourscongesutilises'] || 0, 10),
-          };
-
-          // Validation du salaire de base
-          if (isNaN(employee.salaireBase) || employee.salaireBase < 0) {
-            employee.salaireBase = 0;
-          }
-
-          console.log("Employé à importer:", employee);
-          employeesToImport.push(employee);
-
-        } catch (error) {
-          errors.push(`Ligne ${i + 1}: ${error.message}`);
-          errorCount++;
-        }
-      }
-
-      if (employeesToImport.length === 0) {
-        console.log("Erreurs détaillées:", errors);
-        setImportProgress("Aucun employé valide trouvé dans le fichier");
-        return;
-      }
-
-      setImportProgress(`Importation de ${employeesToImport.length} employés...`);
-
-      // Importer les employés
-      let importedCount = 0;
-      let importErrors = [];
-
-      for (let i = 0; i < employeesToImport.length; i++) {
-        const employee = employeesToImport[i];
-        try {
-          const result = await employeeService.addEmployee(companyId, employee);
-
-          if (result.success) {
-            importedCount++;
-            if (i === employeesToImport.length - 1) {
-              loadNextMatricule();
-            }
-          } else {
-            importErrors.push(`Ligne ${i + 2}: ${result.message}`);
-          }
-        } catch (error) {
-          importErrors.push(`Ligne ${i + 2}: ${error.message}`);
-        }
-
-        if (i % 5 === 0 || i === employeesToImport.length - 1) {
-          setImportProgress(`Importation... ${importedCount}/${employeesToImport.length}`);
-        }
-      }
-
-      // Résultats
-      let resultMessage = `${importedCount}/${employeesToImport.length} employés importés avec succès ✓`;
-
-      if (errorCount > 0) {
-        resultMessage += `\n${errorCount} ligne(s) rejetée(s)`;
-      }
-
-      if (importErrors.length > 0) {
-        resultMessage += `\n${importErrors.length} erreur(s) d'import`;
-        console.warn("Erreurs d'import:", importErrors);
-      }
-
-      setImportProgress(resultMessage);
-
-    } catch (error) {
-      console.error("Erreur lors de l'import:", error);
-      setImportProgress(`Erreur: ${error.message}`);
-    } finally {
-      if (e.target) {
-        e.target.value = "";
-      }
-    }
-  };
-
-
-  const { canToggleModules } = useAuth();
+  const { currentUser, logout, canToggleModules } = useAuth();
+  const { activeTab, setActiveTab } = useUi();
   const { activeModule, setModuleBasedOnRole } = useAppContext();
-  // Initialisation au chargement
+
+  // ── Contexts ──────────────────────────────────────────────────────────────
+  const {
+    clients,
+    client, editingClient, selectedClient, societeInput, setSocieteInput,
+    importProgress: clientImportProgress,
+    clientFactures, clientDevis, clientAvoirs,
+    fetchClients,
+    handleChange, handleEditChange, handleSocieteBlur,
+    handleSubmit, handleUpdate, handleDeleteClient, handleEdit, cancelEdit,
+    loadClientInvoices, handleImportClient,
+  } = useClientContext();
+
+  const {
+    allFactures, allDevis, allAvoirs,
+    stats: invoiceStats,
+    activeTab_0, setActiveTab_0,
+    handleDeleteFacture,
+  } = useInvoiceContext();
+
+  const {
+    employees, payrolls, employee, editingEmployee, selectedEmployee,
+    nextMatricule, importProgress: employeeImportProgress,
+    loadEmployeePayrolls,
+    handleChangeemployee, handleEditChangeemployee,
+    handleSubmitemployee, handleEditEmployee, handleDeleteEmployee,
+    handleUpdateEmployee, handleUpdateEmployeeSuivi, cancelEditEmployee,
+    handleImportEmployee,
+  } = useEmployeeContext();
+
+  const {
+    equipes, isEditingEquipe, editingEquipe, equipe,
+    checkPermission, createSubUser,
+    handleEquipeChange, handleEquipeEditChange,
+    handleEquipeSubmit, handleEquipeUpdate, handleEquipeDelete,
+    handleEquipeEdit, cancelEquipeEdit,
+  } = useTeamContext();
+
+
+  const {
+    sendingEmails,
+    sendEmail,
+    EmailModal
+  } = useEmailSender(companyId, async (entityType, entityId, email) => {
+
+    // Forcer le rechargement des données si nécessaire
+    if (entityType === "client") {
+      await fetchClients(true); // Force le rechargement
+    } else {
+      // Pour les employés, le listener onSnapshot devrait déjà mettre à jour
+      // Mais on peut forcer si besoin
+    }
+  });
+  // Modifier les fonctions d'envoi pour utiliser sendEmail
+  const handleSendInvoiceEmail = useCallback((document) => {
+    sendEmail(document, document.type || "facture");
+  }, [sendEmail]);
+
+  const handleSendPayrollEmail = useCallback((payroll) => {
+    sendEmail(payroll, "payroll");
+  }, [sendEmail]);
+  // ── Stats consolidées ─────────────────────────────────────────────────────
+  const stats = useMemo(() => ({
+    ...invoiceStats,
+    totalClients: clients.length,
+    totalEmployees: employees.length,
+    totalPayrolls: payrolls.length,
+    totalEquipes: equipes.length,
+  }), [invoiceStats, clients.length, employees.length, payrolls.length, equipes.length]);
+
+  // ── Recherche globale ─────────────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const lowerSearch = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
+
+  const filteredClients = useMemo(
+    () => (clients || []).filter(
+      (c) =>
+        c.nom?.toLowerCase().includes(lowerSearch) ||
+        c.societe?.toLowerCase().includes(lowerSearch) ||
+        c.email?.toLowerCase().includes(lowerSearch)
+    ),
+    [clients, lowerSearch]
+  );
+
+  const filteredEmployees = useMemo(
+    () => (employees || []).filter(
+      (e) =>
+        e.nom?.toLowerCase().includes(lowerSearch) ||
+        e.prenom?.toLowerCase().includes(lowerSearch) ||
+        e.poste?.toLowerCase().includes(lowerSearch) ||
+        e.matricule?.toLowerCase().includes(lowerSearch) ||
+        e.email?.toLowerCase().includes(lowerSearch)
+    ),
+    [employees, lowerSearch]
+  );
+
+  const filteredEquipes = useMemo(
+    () => equipes.filter(
+      (eq) =>
+        eq.nom.toLowerCase().includes(lowerSearch) ||
+        eq.responsable?.toLowerCase().includes(lowerSearch)
+    ),
+    [equipes, lowerSearch]
+  );
+
+  // ── Chargement initial ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (companyId) fetchClients();
+  }, [companyId, fetchClients]);
+
+  // ── Gestion module ────────────────────────────────────────────────────────
+  const { shouldDefaultToPayroll } = useAuth();
   useEffect(() => {
     const savedModule = localStorage.getItem("activeModule");
     const defaultModule = shouldDefaultToPayroll() ? "payroll" : "mentafact";
-
-    if (canToggleModules() && savedModule) {
-      setModuleBasedOnRole(savedModule, currentUser.role);
-    } else {
-      setModuleBasedOnRole(defaultModule, currentUser.role);
-    }
-  }, [currentUser?.role]); // Déclenché au changement de rôle
+    if (canToggleModules() && savedModule) setModuleBasedOnRole(savedModule, currentUser.role);
+    else setModuleBasedOnRole(defaultModule, currentUser.role);
+  }, [currentUser?.role, setModuleBasedOnRole, canToggleModules, shouldDefaultToPayroll]);
 
   useEffect(() => {
-    // Puis on gère la synchronisation des tabs
     if (activeModule === "payroll") {
       if (activeTab === "clients") setActiveTab("employees");
       if (activeTab === "factures") setActiveTab("payrolls");
@@ -1180,30 +204,72 @@ const Mentafact = () => {
       if (activeTab === "employees") setActiveTab("clients");
       if (activeTab === "payrolls") setActiveTab("factures");
     }
-  }, [activeModule, activeTab]);
+  }, [activeModule, activeTab, setActiveTab]);
 
-  function smoothScrollToTop() {
+  // ── Helpers navigation ────────────────────────────────────────────────────
+  const handleCreateInvoice = useCallback(() => {
+    if (!selectedClient) { alert("Veuillez sélectionner un client d'abord"); return; }
+    navigate("/invoice", { state: { client: selectedClient, type: "facture" } });
+  }, [selectedClient, navigate]);
+
+  const handleCreatePayroll = useCallback(() => {
+    if (!selectedEmployee) { alert("Veuillez sélectionner un employé d'abord"); return; }
+    navigate("/payroll", { state: { employee: selectedEmployee, isEditing: false } });
+  }, [selectedEmployee, navigate]);
+
+  const handleLoadClientInvoices = useCallback((clientId) => {
+    loadClientInvoices(clientId, allFactures, allDevis, allAvoirs);
+  }, [loadClientInvoices, allFactures, allDevis, allAvoirs]);
+
+  // ── Données factures à afficher ───────────────────────────────────────────
+  const facturesToDisplay = useMemo(
+    () => (activeTab === "clients" && selectedClient ? clientFactures : allFactures),
+    [activeTab, selectedClient, clientFactures, allFactures]
+  );
+  const devisToDisplay = useMemo(
+    () => (activeTab === "clients" && selectedClient ? clientDevis : allDevis),
+    [activeTab, selectedClient, clientDevis, allDevis]
+  );
+  const avoirsToDisplay = useMemo(
+    () => (activeTab === "clients" && selectedClient ? clientAvoirs : allAvoirs),
+    [activeTab, selectedClient, clientAvoirs, allAvoirs]
+  );
+
+  // ── Callbacks stables ─────────────────────────────────────────────────────
+  const stableSetModuleBasedOnRole = useCallback(
+    (module, role) => setModuleBasedOnRole(module, role),
+    [setModuleBasedOnRole]
+  );
+
+  const stableCanToggleModules = useCallback(
+    () => canToggleModules(),
+    [canToggleModules]
+  );
+
+  const stableLogout = useCallback(
+    () => logout(),
+    [logout]
+  );
+
+  // ── Scroll vers le haut ───────────────────────────────────────────────────
+  const smoothScrollToTop = useCallback(() => {
     const start = window.pageYOffset;
     const duration = 600;
     const startTime = performance.now();
-
     function animateScroll(currentTime) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-
-      const ease = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
+      const ease =
+        progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
       window.scrollTo(0, start * (1 - ease));
-
       if (progress < 1) requestAnimationFrame(animateScroll);
     }
-
     requestAnimationFrame(animateScroll);
-  }
+  }, []);
 
-
+  // ── Rendu de l'onglet actif ───────────────────────────────────────────────
   const renderActiveTab = () => {
     switch (activeTab) {
       case "dashboard":
@@ -1215,7 +281,7 @@ const Mentafact = () => {
             allAvoirs={allAvoirs}
             navigate={navigate}
             clients={clients}
-            currentUser={currentUser} // 👈 Ajoute ça
+            currentUser={currentUser}
             employees={employees}
             payrolls={payrolls}
           />
@@ -1228,7 +294,7 @@ const Mentafact = () => {
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             selectedClient={selectedClient}
-            loadClientInvoices={loadClientInvoices}
+            loadClientInvoices={handleLoadClientInvoices}
             handleEdit={handleEdit}
             handleDelete={handleDeleteClient}
             client={client}
@@ -1243,8 +309,8 @@ const Mentafact = () => {
             handleSocieteBlur={handleSocieteBlur}
             clientFactures={clientFactures}
             handleCreateInvoice={handleCreateInvoice}
-            handleImportClient={handleImportClient} // <-- Ajoutez cette ligne
-            importProgress={importProgress}
+            handleImportClient={handleImportClient}
+            importProgress={clientImportProgress}
           />
         );
       case "employees":
@@ -1267,7 +333,7 @@ const Mentafact = () => {
             handleUpdateSuivi={handleUpdateEmployeeSuivi}
             cancelEdit={cancelEditEmployee}
             handleImportEmployees={handleImportEmployee}
-            importProgress={importProgress}
+            importProgress={employeeImportProgress}
             nextMatricule={nextMatricule}
             handleCreatePayroll={handleCreatePayroll}
             payrolls={payrolls}
@@ -1278,15 +344,19 @@ const Mentafact = () => {
           <InvoicesPage
             activeTab_0={activeTab_0}
             setActiveTab_0={setActiveTab_0}
-            getFacturesToDisplay={getFacturesToDisplay}
-            getDevisToDisplay={getDevisToDisplay}
-            getAvoirsToDisplay={getAvoirsToDisplay}
+            getFacturesToDisplay={facturesToDisplay}
+            getDevisToDisplay={devisToDisplay}
+            getAvoirsToDisplay={avoirsToDisplay}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             navigate={navigate}
             handleDeleteFacture={handleDeleteFacture}
             selectedClient={selectedClient}
             companyId={companyId}
+            clients={clients}
+            allFactures={allFactures}
+            sendingEmails={sendingEmails}
+            onSendEmail={handleSendInvoiceEmail}
           />
         );
       case "payrolls":
@@ -1297,6 +367,8 @@ const Mentafact = () => {
             selectedEmployee={selectedEmployee}
             companyId={companyId}
             navigate={navigate}
+            sendingEmails={sendingEmails}
+            onSendEmail={handleSendPayrollEmail}
           />
         );
       case "stats":
@@ -1331,91 +403,111 @@ const Mentafact = () => {
             createSubUser={createSubUser}
           />
         );
+      case "audit":
+        return <AuditPage />;
       default:
         return <div>Sélectionnez une section</div>;
     }
   };
-  // Ajoutez cette vérification au début du return
-  if (isLoading || !initialLoadComplete) {
-    return (
-      <div
-        style={{
-          padding: "40px",
-          textAlign: "center",
-          color: "#2c3e50",
-          fontSize: "18px",
-          fontWeight: "500",
-          fontFamily: "Inter, sans-serif",
-          backgroundColor: "#ecf0f1",
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          margin: "40px auto",
-          marginTop: "20%",
-          maxWidth: "400px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "30px",
-            marginBottom: "10px",
-            animation: "spin 1.5s linear infinite",
-            display: "inline-block",
-          }}
-        >
-          ⏳
-        </div>
-        <div>Chargement...</div>
 
-        <style>
-          {`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}
-        </style>
-      </div>
-    );
-  }
   return (
     <div className="dashboard-layout">
-      {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         logo={logo}
+        currentUser={currentUser}
       />
 
-      {/* Main Content */}
-      <div className="main-content">
-        {/* Navbar Premium */}
+      <NotificationProvider
+        allFactures={allFactures}
+        employees={employees}
+        payrolls={payrolls}
+        clients={clients}
+      >
+        <div className="main-content">
+          <NavbarPremium
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            currentUser={currentUser}
+            companyId={companyId}
+            activeModule={activeModule}
+            setModuleBasedOnRole={stableSetModuleBasedOnRole}
+            canToggleModules={stableCanToggleModules}
+            logout={stableLogout}
+          />
+          <div className="dashboard-container">
+            <Suspense fallback={<SectionSkeleton />}>
+              {renderActiveTab()}
+            </Suspense>
+          </div>
+        </div>
+      </NotificationProvider>
+      <EmailModal />
 
-        <NavbarPremium
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          currentUser={currentUser}
-          companyId={companyId}
-          activeModule={activeModule}
-          setModuleBasedOnRole={setModuleBasedOnRole}
-          canToggleModules={canToggleModules}
-          logout={logout}
-          employees={employees}
-          allFactures={allFactures}
-          clients={clients}
-        />
-
-        <div className="dashboard-container">{renderActiveTab()}</div>
-      </div>
       <button className="floating-up-button" onClick={smoothScrollToTop}>
         <FaArrowUp className="button-icon" />
         <span className="button-text">Up</span>
       </button>
-
-
     </div>
+  );
+};
 
+// ─── Composant racine — ORDRE CORRECT DES PROVIDERS ───────────────────────────
+const Mentafact = () => {
+  const { currentUser } = useAuth();
+  const { activeTab } = useUi();
+  const [companyId, setCompanyId] = useState(null);
+  const [companyLoading, setCompanyLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchCompanyId = async () => {
+      try {
+        const cacheKey = `companyId_${currentUser.uid}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          setCompanyId(cached);
+          setCompanyLoading(false);
+          return;
+        }
+
+        let id = currentUser.companyId;
+        if (!id) {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) id = userDoc.data().companyId;
+        }
+        if (id) {
+          localStorage.setItem(cacheKey, id);
+          setCompanyId(id);
+        }
+      } catch (err) {
+        console.error("Error fetching companyId:", err);
+      } finally {
+        setCompanyLoading(false);
+      }
+    };
+
+    fetchCompanyId();
+  }, [currentUser]);
+
+  if (companyLoading) return <CompanyLoader />;
+
+  return (
+    <AuditProvider>
+      <ClientProvider companyId={companyId}>
+        <InvoiceProvider companyId={companyId}>
+          <EmployeeProvider companyId={companyId} activeTab={activeTab}>
+            <TeamProvider companyId={companyId} activeTab={activeTab}>
+              <MentafactInner companyId={companyId} />
+            </TeamProvider>
+          </EmployeeProvider>
+        </InvoiceProvider>
+      </ClientProvider>
+    </AuditProvider>
   );
 };
 

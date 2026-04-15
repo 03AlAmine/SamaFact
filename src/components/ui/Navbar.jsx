@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
-  FaBell,
   FaUserCircle,
   FaChevronDown,
   FaChevronRight,
@@ -17,14 +16,14 @@ import {
   FaPalette,
   FaCheck,
   FaExclamationTriangle,
-  FaUserPlus,
   FaClock,
-  FaTimes
+  FaUserPlus
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import SearchBox from "./SearchBox";
 import CompanyNameDisplay from "../other/CompanyNameDisplay";
-import { useTheme } from '../../hooks/useTheme'; // Import du hook
+import NotificationBell from "../../pages/NotificationBell";
+import { useTheme } from '../../hooks/useTheme';
 import "../../css/Navbar.css";
 import "../../css/themes.css";
 import { formatNumber } from "../../utils/formatters";
@@ -38,8 +37,8 @@ const Navbar = ({
   setModuleBasedOnRole,
   canToggleModules,
   logout,
-  allFactures,
   employees,
+  allFactures,
   clients
 }) => {
   // Utilisation du hook useTheme
@@ -49,8 +48,7 @@ const Navbar = ({
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-
+const [notifications, setNotifications] = useState([]);
   const themeMenuRef = useRef(null);
   const themeButtonRef = useRef(null);
 
@@ -351,69 +349,10 @@ const Navbar = ({
             </div>
 
             {/* Notifications */}
-            <div className="mf-notification-wrapper">
-              <button
-                className={`mf-notification-btn ${notifications.length > 0 ? 'mf-has-notif' : ''}`}
-                onClick={() => setShowNotifications(!showNotifications)}
-                aria-label="Notifications"
-                aria-expanded={showNotifications}
-              >
-                <FaBell />
-                {notifications.length > 0 && (
-                  <span className="mf-notification-badge">{notifications.length}</span>
-                )}
-              </button>
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    className="mf-notification-dropdown"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="mf-notification-header">
-                      <h3>Notifications</h3>
-                      {notifications.length > 0 && (
-                        <button onClick={markAllAsRead}>Tout marquer comme lu</button>
-                      )}
-                    </div>
-                    <div className="mf-notification-list">
-                      {notifications.length > 0 ? (
-                        notifications.map(notif => (
-                          <div key={notif.id} className={`mf-notification-item mf-notification-${notif.type}`}>
-                            <div className="mf-notif-icon">{notif.icon}</div>
-                            <div className="mf-notif-content">
-                              <h4>{notif.title}</h4>
-                              <p>{notif.message}</p>
-                              {notif.amount && (
-                                <span className="mf-notif-amount">
-                                  {formatNumber(notif.amount)} FCFA
-                                </span>
-                              )}
-                              <span className="mf-notif-time">{notif.time}</span>
-                            </div>
-                            <button
-                              className="mf-notif-close"
-                              onClick={() => markAsRead(notif.id)}
-                              aria-label="Fermer la notification"
-                            >
-                              <FaTimes />
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="mf-notification-empty">
-                          <FaBell />
-                          <p>Aucune notification</p>
-                          <span>Tout est calme pour le moment</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <NotificationBell
+              open={showNotifications}
+              onToggle={setShowNotifications}
+            />
 
             <div className="user-profile-dropdown">
               <div className="user-profile-trigger" role="button" tabIndex={0} aria-label="Menu utilisateur">
@@ -507,4 +446,4 @@ const Navbar = ({
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

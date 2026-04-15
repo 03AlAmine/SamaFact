@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { message } from 'antd';
-import emailjs from "emailjs-com";
+import { emailService } from "../services/emailService";
 
 import PayrollCard from './docpayroll/PayrollCard';
 import PayrollTableRow from './docpayroll/PayrollTableRow';
@@ -9,7 +9,6 @@ import LoadingState from './common/LoadingState';
 import EmptyState from './common/EmptyState';
 import PayrollDetailsModal from './docpayroll/PayrollDetailsModal';
 
-import '../css/DocumentSection.css';
 
 const PayrollSection = ({
   title,
@@ -37,15 +36,16 @@ const PayrollSection = ({
   downloadAllDisabled,
   // NOUVELLES PROPS
   selectedDepartment,
-  onClearDepartment
+  onClearDepartment,
+  onSendEmail,
 }) => {
   const [sortBy, setSortBy] = useState('numero');
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('card');
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
-  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [backgroundLoaded] = useState(false);
+  const [loading] = useState(false);
   const [sendingEmails, setSendingEmails] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
@@ -120,22 +120,6 @@ const PayrollSection = ({
     }).length;
   }, [items, searchTerm]);
 
-  // Précharger l'image de fond
-  useEffect(() => {
-    const img = new Image();
-    img.src = "/bg-fact.jpg";
-    img.onload = img.onerror = () => {
-      setBackgroundLoaded(true);
-    };
-  }, []);
-
-  // Gérer le chargement global
-  useEffect(() => {
-    if (backgroundLoaded) {
-      const timer = setTimeout(() => setLoading(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [backgroundLoaded]);
 
   // Détection responsive
   useEffect(() => {
@@ -366,62 +350,51 @@ const PayrollSection = ({
   }, [visibleItems, searchTerm, sortBy, sortOrder]);
 
   // Fonction d'envoi d'email
-  const sendEmail = useCallback(async (doc) => {
+  const sendEmail = useCallback(async (payroll) => {
+    // Validation des champs obligatoires
     const missingFields = [];
-    if (!doc.employeeName) missingFields.push("nom de l'employé");
-    if (!doc.employeeEmail) missingFields.push("email de l'employé");
-    if (!doc.numero) missingFields.push("numéro du bulletin");
-    if (!doc.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
-    if (!doc.periode?.du || !doc.periode?.au) missingFields.push("période de paie");
+
+    if (!payroll.employeeName) missingFields.push("nom de l'employé");
+    if (!payroll.employeeEmail) missingFields.push("email de l'employé");
+    if (!payroll.numero) missingFields.push("numéro du bulletin");
+    if (!payroll.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
+    if (!payroll.periode?.du || !payroll.periode?.au) missingFields.push("période de paie");
 
     if (missingFields.length > 0) {
-      message.error(`Données manquantes: ${missingFields.join(', ')} ❌`);
+      message.error(`Données manquantes: ${missingFields.join(', ')} ❌`, 5);
       return;
     }
 
+    // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(doc.employeeEmail)) {
+    if (!emailRegex.test(payroll.employeeEmail)) {
       message.error("L'adresse email de l'employé n'est pas valide ❌");
       return;
     }
 
-    setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
+    setSendingEmails(prev => ({ ...prev, [payroll.id]: true }));
 
-    const formatDateRange = (periode) => {
-      if (!periode?.du || !periode?.au) return '';
-      const format = (date) => {
-        const d = date instanceof Date ? date : new Date(date);
-        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-      };
-      return `${format(periode.du)} - ${format(periode.au)}`;
-    };
-
-    const templateParams = {
-      to_name: doc.employeeName,
-      to_email: doc.employeeEmail,
-      document_numero: doc.numero,
-      montant: doc.calculations.salaireNetAPayer.toLocaleString('fr-FR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }),
-      periode: formatDateRange(doc.periode),
-    };
+    const hideLoading = message.loading("Préparation du PDF et envoi en cours...", 0);
 
     try {
-      await emailjs.send(
-        "service_samafact",
-        "template_samasalaire",
-        templateParams,
-        "ioK4mXd5cOkG_z4EY"
-      );
-      message.success(`Email envoyé à ${doc.employeeEmail} ✅`);
+      await emailService.sendPayrollWithPdfAttachment(payroll);
+
+      hideLoading();
+      message.success(`Bulletin envoyé avec succès à ${payroll.employeeEmail} ✅`, 5);
+
     } catch (error) {
-      console.error('Erreur emailjs:', error);
-      message.error("Erreur lors de l'envoi de l'email ❌");
+      hideLoading();
+      console.error("Erreur détaillée envoi bulletin:", error);
+
+      if (error.message.includes("PDF")) {
+        message.error("Erreur lors de la génération du PDF du bulletin. Vérifiez les données. ❌", 5);
+      } else {
+        message.error(error.message || "Erreur lors de l'envoi de l'email ❌", 5);
+      }
     } finally {
       setSendingEmails(prev => {
         const newState = { ...prev };
-        delete newState[doc.id];
+        delete newState[payroll.id];
         return newState;
       });
     }

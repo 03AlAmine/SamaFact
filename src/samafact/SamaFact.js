@@ -309,7 +309,6 @@ const SamaFact = () => {
   const handleUpdatePassword = async () => {
     try {
       // Implémentez ici la logique de mise à jour du mot de passe
-      console.log("Mot de passe mis à jour pour:", ui.selectedItem);
       message.success('Mot de passe mis à jour avec succès');
       setUi(prev => ({ ...prev, showPasswordModal: false }));
     } catch (error) {

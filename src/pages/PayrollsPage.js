@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { exportToExcel, exportToPDF } from "../utils/exportUtils";
 import { FaBuilding, FaPlus } from "react-icons/fa";
-import ModernDateRangePicker from "../components/docpayroll/ModernDateRangePicker";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import ModernDateRangePicker from "../components/common/ModernDateRangePicker";
+// ✅ Firestore imports réduits au strict nécessaire (uniquement pour le listener companies admin)
+import { collection, query, getDocs, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../auth/AuthContext";
 import { previewPayrollPdf, downloadPayrollPdf, generateMultiplePayrollsPdf } from '../services/pdf_payrollService';
@@ -17,11 +18,15 @@ const PayrollsPage = ({
     navigate,
     selectedEmployee,
     companyId,
-    employees
+    employees,
+    payrolls: payrollsFromProps = [],  // ✅ reçu de Mentafact.js — plus de listener dupliqué
+    sendingEmails = {},
+    onSendEmail
 }) => {
     const { currentUser } = useAuth();
-    const [payrolls, setPayrolls] = useState([]);
-    const [allPayrolls, setAllPayrolls] = useState([]);
+    // ✅ payrolls et allPayrolls initialisés depuis les props
+    const [payrolls, setPayrolls] = useState(payrollsFromProps);
+    const [allPayrolls, setAllPayrolls] = useState(payrollsFromProps);
     const [modalVisible, setModalVisible] = useState(false);
     const [currentPayroll, setCurrentPayroll] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
@@ -85,18 +90,17 @@ const PayrollsPage = ({
             if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
                 setCompaniesLoading(true);
                 try {
+                    // ✅ getDocs (lecture unique) — les entreprises ne changent pas en temps réel
+                    // Remplace onSnapshot qui maintenait un listener permanent inutile
                     const companiesRef = collection(db, 'companies');
                     const q = query(companiesRef, orderBy('name'));
-                    const unsubscribe = onSnapshot(q, (snapshot) => {
-                        const companiesData = snapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data()
-                        }));
-                        setCompanies(companiesData);
-                        setCompaniesLoading(false);
-                    });
-
-                    return () => unsubscribe();
+                    const snapshot = await getDocs(q);
+                    const companiesData = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setCompanies(companiesData);
+                    setCompaniesLoading(false);
                 } catch (error) {
                     console.error("Erreur chargement entreprises:", error);
                     setCompaniesLoading(false);
@@ -156,41 +160,17 @@ const PayrollsPage = ({
 
         return filtered;
     }, [dateRange, selectedDepartment, employees]);
-    // Chargement des bulletins
+    // ✅ Plus de listener Firestore ici — on utilise les payrolls reçus en props
+    // Quand selectedEmployee change, on filtre localement les payrolls des props
     useEffect(() => {
-        if (!currentUser) return;
-
-        const targetCompanyId = selectedCompany || companyId;
-        if (!targetCompanyId) return;
-
-        const payrollsRef = collection(db, `companies/${targetCompanyId}/payrolls`);
-        let conditions = [];
-
+        // Si selectedEmployee, on filtre — sinon on garde tous les bulletins
         if (selectedEmployee) {
-            conditions.push(where("employeeId", "==", selectedEmployee.id));
+            const filtered = payrollsFromProps.filter(p => p.employeeId === selectedEmployee.id);
+            setAllPayrolls(filtered);
+        } else {
+            setAllPayrolls(payrollsFromProps);
         }
-
-        const q = query(payrollsRef, ...conditions, orderBy("periode.au", "desc"));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const payrollsData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                companyId: targetCompanyId,
-                periode: {
-                    du: typeof doc.data().periode?.du?.toDate === 'function'
-                        ? doc.data().periode.du.toDate()
-                        : doc.data().periode.du || null,
-                    au: typeof doc.data().periode?.au?.toDate === 'function'
-                        ? doc.data().periode.au.toDate()
-                        : doc.data().periode.au || null
-                }
-            }));
-            setAllPayrolls(payrollsData);
-        });
-
-        return () => unsubscribe();
-    }, [currentUser, selectedCompany, companyId, selectedEmployee]);
+    }, [payrollsFromProps, selectedEmployee]);
 
     // Filtrer les bulletins selon l'onglet actif
     useEffect(() => {
@@ -906,10 +886,6 @@ const PayrollsPage = ({
         // Dernier jour du mois précédent
         const lastDay = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
 
-        // Exemple de débogage pour vérifier
-        console.log("Date actuelle:", now.toLocaleDateString('fr-FR'));
-        console.log("Période de paie (mois précédent):",
-            `${firstDay.toLocaleDateString('fr-FR')} - ${lastDay.toLocaleDateString('fr-FR')}`);
 
         const formatLocalDate = (date) => {
             const year = date.getFullYear();
@@ -1291,6 +1267,8 @@ const PayrollsPage = ({
                 downloadAllDisabled={totalFilteredCount === 0}
                 selectedDepartment={selectedDepartment}
                 onClearDepartment={() => setSelectedDepartment(null)}
+                sendingEmails={sendingEmails}
+                onSendEmail={onSendEmail}
             />
 
             <ModalPaiementPayroll

@@ -1,5 +1,23 @@
 /* ===== NAVBAR PREMIUM ===== */
 /* Utilise les variables globales du thème centralisé */
+/* ===== WRAPPER FIXE ===== */
+.navbar-sticky-wrapper {
+  position: fixed;
+  top: 0;
+  left: var(--sd-width); /* ← commence après la sidebar */
+  right: 0;
+  z-index: var(--header-z-index, 1000);
+  padding: 15px 15px 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* suit l'animation sidebar */
+}
+
+/* Sidebar fermée */
+.sd-sidebar.sd-desktop.sd-closed ~ * .navbar-sticky-wrapper,
+.sd-closed-state .navbar-sticky-wrapper {
+  left: var(--sd-width-closed);
+}
 
 .navbar-premium {
   display: flex;
@@ -8,20 +26,23 @@
   padding: 1rem 2rem;
   background: var(--navbar-bg);
   backdrop-filter: blur(12px) saturate(180%);
-  box-shadow: 0 8px 32px var(--shadow-color), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: var(--header-z-index, 1000);
-  margin: 15px 15px 0;
+  box-shadow:
+    0 8px 32px var(--shadow-color),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative; /* ← plus sticky ni fixed */
+  top: unset;
+  z-index: 1;
+  margin: 0; /* ← géré par le wrapper */
   border-radius: 16px;
   min-height: var(--navbar-height, 80px);
   transition: var(--transition-alt);
-  width: calc(100% - 30px);
+  width: 100%; /* ← le wrapper s'occupe des marges */
   box-sizing: border-box;
   flex-wrap: wrap;
   gap: 1rem;
   border: 1px solid transparent;
   color: var(--navbar-text);
+  pointer-events: all; /* la navbar, elle, intercepte bien les clics */
 }
 
 /* Effet de bordure animée */
@@ -42,9 +63,13 @@
   );
   background-size: 300% 300%;
   animation: borderFlow 6s ease-in-out infinite;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
   pointer-events: none;
   opacity: 0.9;
@@ -72,7 +97,9 @@
 }
 
 .navbar-premium:hover {
-  box-shadow: 0 12px 40px var(--shadow-color), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 12px 40px var(--shadow-color),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
 
@@ -133,14 +160,22 @@
   right: 0;
   width: 1px;
   height: 100%;
-  background: linear-gradient(to bottom, var(--primary-color), var(--warning-color));
+  background: linear-gradient(
+    to bottom,
+    var(--primary-color),
+    var(--warning-color)
+  );
   opacity: 0.5;
 }
 
 .company-icon {
   font-size: 1.5rem;
   color: var(--primary-color);
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -282,7 +317,11 @@
   align-items: center;
   gap: 0.75rem;
   border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(67, 97, 238, 0.03), rgba(79, 70, 229, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.03),
+    rgba(79, 70, 229, 0.05)
+  );
   color: var(--text-dark);
   font-weight: 600;
   font-size: 0.95rem;
@@ -310,13 +349,21 @@
 }
 
 .theme-option:hover {
-  background: linear-gradient(135deg, rgba(67, 97, 238, 0.08), rgba(79, 70, 229, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.08),
+    rgba(79, 70, 229, 0.05)
+  );
   color: var(--primary-color);
   padding-left: 1.7rem;
 }
 
 .theme-option.active {
-  background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(79, 70, 229, 0.08));
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.1),
+    rgba(79, 70, 229, 0.08)
+  );
   color: var(--primary-color);
   font-weight: 600;
 }
@@ -370,13 +417,18 @@
 }
 
 .toggle-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -385,14 +437,24 @@
 }
 
 .toggle-btn.mentafact {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light), var(--primary-color));
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light),
+    var(--primary-color)
+  );
   background-size: 200% 200%;
   animation: gradientShift 5s ease infinite;
   color: white;
 }
 
 .toggle-btn.payroll {
-  background: linear-gradient(135deg, var(--success-color), var(--success-light), var(--success-color));
+  background: linear-gradient(
+    135deg,
+    var(--success-color),
+    var(--success-light),
+    var(--success-color)
+  );
   background-size: 200% 200%;
   animation: gradientShift 5s ease infinite;
   color: white;
@@ -421,7 +483,8 @@
 }
 
 @keyframes gradientShift {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -435,7 +498,8 @@
 }
 
 @keyframes pulse-scale {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -472,7 +536,11 @@
   position: absolute;
   top: -5px;
   right: -5px;
-  background: linear-gradient(135deg, var(--danger-color), var(--warning-color));
+  background: linear-gradient(
+    135deg,
+    var(--danger-color),
+    var(--warning-color)
+  );
   color: white;
   border-radius: 50%;
   width: 22px;
@@ -554,7 +622,11 @@
   right: 2px;
   width: 12px;
   height: 12px;
-  background: linear-gradient(135deg, var(--success-color), var(--success-light));
+  background: linear-gradient(
+    135deg,
+    var(--success-color),
+    var(--success-light)
+  );
   border-radius: 50%;
   border: 2px solid var(--bg-primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -562,7 +634,8 @@
 }
 
 @keyframes statusPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -614,7 +687,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 12px);
-  background: var(--card-bg);
+  background: #fffffff0;
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
   border-radius: 20px;
@@ -641,7 +714,11 @@
   align-items: center;
   gap: 1rem;
   border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(67, 97, 238, 0.05), rgba(79, 70, 229, 0.02));
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.05),
+    rgba(79, 70, 229, 0.02)
+  );
 }
 
 .user-avatar-wrapper.large {
@@ -692,7 +769,11 @@
 }
 
 .dropdown-item:hover {
-  background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(79, 70, 229, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.1),
+    rgba(79, 70, 229, 0.05)
+  );
   color: var(--primary-color);
   padding-left: 1.7rem;
 }
@@ -723,10 +804,21 @@
 
 .dropdown-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border-color),
+    transparent
+  );
   margin: 0.5rem 1.5rem;
 }
 
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  justify-content: center;
+}
 .logout-btn:hover {
   color: var(--danger-color) !important;
 }
@@ -854,15 +946,15 @@
   .toggle-text {
     max-width: 60px;
   }
-  
+
   .theme-label {
     display: none;
   }
-  
+
   .theme-toggle-btn {
     padding: 8px;
   }
-  
+
   .theme-toggle-btn svg {
     font-size: 1.2rem;
   }
@@ -952,26 +1044,26 @@
     overflow-y: auto;
     z-index: 1003; /* Plus haut que l'overlay */
   }
-  
+
   .user-profile-dropdown:hover .dropdown-menu {
     transform: translate(-50%, -50%);
   }
-  
+
   .theme-selector {
     margin-right: 0;
   }
-  
+
   .theme-toggle-btn {
     width: 100%;
     justify-content: center;
     padding: 10px;
     background: rgba(255, 255, 255, 0.15);
   }
-  
+
   .theme-label {
     display: inline-block;
   }
-  
+
   .theme-dropdown-menu {
     position: fixed;
     left: 50%;
@@ -1061,7 +1153,7 @@
     padding: 0.4rem 0.6rem 0.4rem 0.4rem;
     max-width: 160px;
   }
-  
+
   .theme-toggle-btn {
     padding: 6px;
   }
@@ -1107,11 +1199,11 @@
     animation: none;
     transition: none;
   }
-  
+
   .clignote {
     animation: none;
   }
-  
+
   .notification-badge {
     animation: none;
   }

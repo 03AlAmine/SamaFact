@@ -303,7 +303,7 @@
 
 .sd-label {
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.8rem;
   transition: var(--sd-transition);
   overflow: hidden;
   position: relative;

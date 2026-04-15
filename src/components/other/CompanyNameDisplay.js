@@ -113,4 +113,4 @@ const CompanyNameDisplay = ({ companyId }) => {
     );
 };
 
-export default CompanyNameDisplay;
+export default React.memo(CompanyNameDisplay);

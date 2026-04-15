@@ -6,12 +6,12 @@ import {
     FaChevronLeft, FaChevronRight, FaDownload
 } from "react-icons/fa";
 import empty_employee from '../assets/empty_employe.png';
-import '../css/EmployeePage.css';
-import '../css/EmployeeModal.css';  
-import '../css/TrackingModal.css';   
+
 import { EmployeeDetailsModal } from '../components/dialogs/EmployeeModal';
 import { Modal, Button } from "antd";
-import LoadingState from '../components/common/LoadingState';
+import '../css/EmployeePage.css';
+import '../css/EmployeeModal.css';
+import "../css/TrackingModal.css";
 
 // Composant d'état vide
 const EmptyState = ({ onAddEmployee }) => (
@@ -419,7 +419,7 @@ const EmployeesHeader = ({
     itemsPerPage,
     onItemsPerPageChange
 }) => (
-    <div className="employees-header">
+    <div className="page-header">
         <div className="header-left">
             <h2 className="section-title">
                 <FaUsers className="section-icon" /> Employés
@@ -532,31 +532,33 @@ const EmployeeCard = ({ employee, isSelected, onSelect, onEdit, onDelete, onView
             </div>
 
             <div className="employee-card-header">
-                <div className="employee-avatar">
-                    {employee.prenom?.charAt(0).toUpperCase()}{employee.nom?.charAt(0).toUpperCase()}
-                </div>
-                <div className="employee-info">
-                    <h3 className="employee-name">{employee.prenom} {employee.nom}</h3>
-                    <div className="employee-position">{employee.poste}</div>
+                <div className="employee-card-sous-header">
+                    <div className="employee-avatar">
+                        {employee.prenom?.charAt(0).toUpperCase()}{employee.nom?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="employee-info">
+                        <h3 className="employee-name">{employee.prenom} {employee.nom}</h3>
+                        <div className="employee-position">{employee.poste}</div>
+                    </div>
                 </div>
                 <div className="employee-card-actions">
                     <ActionButton
                         icon={<FaEye />}
                         title="Voir détails"
                         onClick={handleViewAction}
-                        className="view-btn"
+                        className="view"
                     />
                     <ActionButton
                         icon={<FaEdit />}
                         title="Modifier"
                         onClick={handleEditAction}
-                        className="edit-btn"
+                        className="edit"
                     />
                     <ActionButton
                         icon={<FaTrash />}
                         title="Supprimer"
                         onClick={handleDeleteAction}
-                        className="delete-btn"
+                        className="delete"
                     />
                     <ActionButton
                         icon={<FaCalendarAlt />}
@@ -632,19 +634,19 @@ const EmployeeTableRow = ({ employee, isSelected, onSelect, onView, onEdit, onDe
                         icon={<FaEye />}
                         title="Voir détails"
                         onClick={handleViewAction}
-                        className="view-btn"
+                        className="view"
                     />
                     <ActionButton
                         icon={<FaEdit />}
                         title="Modifier"
                         onClick={handleEditAction}
-                        className="edit-btn"
+                        className="edit"
                     />
                     <ActionButton
                         icon={<FaTrash />}
                         title="Supprimer"
                         onClick={handleDeleteAction}
-                        className="delete-btn"
+                        className="delete"
                     />
                     <ActionButton
                         icon={<FaCalendarAlt />}
@@ -783,7 +785,7 @@ const TrackingModal = React.memo(({ visible, onCancel, onSubmit, employee, track
             width={800}
             className="employee-form-modal"
         >
-            <div className="employee-form">
+            <div className="form-panel">
                 <div className="form-section-title">
                     <FaCalendarAlt /> Suivi des congés et absences
                 </div>
@@ -969,8 +971,8 @@ const EmployeesPage = ({
     const [sortOrder, setSortOrder] = useState('asc');
     const payrollsSectionRef = useRef(null);
     const [showAddForm, setShowAddForm] = useState(false);
-    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [backgroundLoaded] = useState(false);
+
     const [isMobile, setIsMobile] = useState(false);
 
     // États pour la pagination
@@ -987,20 +989,6 @@ const EmployeesPage = ({
         joursAbsence: 0,
         avanceSalaire: 0
     });
-
-    // Préchargement background
-    useEffect(() => {
-        const img = new Image();
-        img.src = "/bg-client.jpg";
-        img.onload = img.onerror = () => setBackgroundLoaded(true);
-    }, []);
-
-    useEffect(() => {
-        if (backgroundLoaded) {
-            const timer = setTimeout(() => setLoading(false), 500);
-            return () => clearTimeout(timer);
-        }
-    }, [backgroundLoaded]);
 
     useEffect(() => {
         const checkIsMobile = () => setIsMobile(window.innerWidth <= 992);
@@ -1043,12 +1031,14 @@ const EmployeesPage = ({
     const handlePageChange = useCallback((page) => {
         if (page < 1 || page > totalPages) return;
         setCurrentPage(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll le conteneur de la liste, pas la window
+        document.querySelector('.clients-grid, .employees-list')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, [totalPages]);
 
     const handleItemsPerPageChange = useCallback((e) => {
         setItemsPerPage(parseInt(e.target.value, 10));
-        setCurrentPage(1);
+        setCurrentPage(1); // ← remet toujours sur la page 1
     }, []);
 
     const handleEmployeeSelect = useCallback((employeeId) => {
@@ -1086,8 +1076,6 @@ const EmployeesPage = ({
 
     const displayMode = isMobile ? 'card' : viewMode;
 
-    if (loading) return <LoadingState />;
-
     return (
         <>
             {/* Formulaires */}
@@ -1113,7 +1101,7 @@ const EmployeesPage = ({
             )}
 
             {/* Section principale */}
-            <div className={`employees-page ${backgroundLoaded ? 'background-loaded' : ''}`}>
+            <div className={`page-container ${backgroundLoaded ? 'background-loaded' : ''}`}>
                 <EmployeesHeader
                     employeesCount={totalItems}
                     viewMode={viewMode}

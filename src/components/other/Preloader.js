@@ -69,4 +69,4 @@ const Preloader = ({ message = "Chargement en cours...", onComplete }) => {
     );
 };
 
-export default Preloader;
+export default React.memo(Preloader);

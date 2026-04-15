@@ -1,91 +1,56 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
     FaFileSignature, FaUser, FaCalendarAlt, FaIdCard, FaBuilding,
     FaMoneyBillWave, FaCheckCircle, FaFileAlt, FaPercentage, FaChartLine
 } from "react-icons/fa";
 import { Modal, Button } from "antd";
 
-export const EmployeeDetailsModal = ({
+const EmployeeDetailsModalBase = ({
     isVisible,
     onCancel,
     employee
 }) => {
     // Calcul des congés accumulés depuis l'embauche (total)
-    const calculateCongesAccumules = () => {
+    const congesAccumules = useMemo(() => {
         if (!employee?.dateEmbauche) return employee?.joursConges || 0;
-
         const dateEmbauche = new Date(employee.dateEmbauche);
         const aujourdHui = new Date();
-        
-        // Nombre total de mois depuis l'embauche
         const moisTotaux = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12
             + (aujourdHui.getMonth() - dateEmbauche.getMonth());
-        
-        // 2 jours par mois depuis l'embauche
-        const congesTheoriques = Math.max(0, moisTotaux * 2);
-        
-        // Soustraire les congés déjà utilisés
-        return Math.max(0, congesTheoriques - (employee.joursCongesUtilises || 0));
-    };
+        return Math.max(0, moisTotaux * 2 - (employee.joursCongesUtilises || 0));
+    }, [employee?.dateEmbauche, employee?.joursConges, employee?.joursCongesUtilises]);
 
-    // Calcul des congés pour l'année en cours (janvier à aujourd'hui)
-    const calculateCongesEnCours = () => {
+    // Calcul des congés pour l'année en cours
+    const congesEnCours = useMemo(() => {
         if (!employee?.dateEmbauche) return 0;
-
         const dateEmbauche = new Date(employee.dateEmbauche);
         const aujourdHui = new Date();
-        const anneeCourante = aujourdHui.getFullYear();
-
-        // Date de début pour l'année en cours (1er janvier)
-        const debutAnnee = new Date(anneeCourante, 0, 1);
-        
-        // Si l'employé a été embauché après le début de l'année
+        const debutAnnee = new Date(aujourdHui.getFullYear(), 0, 1);
         const dateDebutPeriode = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
-        
-        // Mois écoulés dans l'année en cours
-        let moisEcoules = 0;
-        if (dateDebutPeriode <= aujourdHui) {
-            moisEcoules = (aujourdHui.getFullYear() - dateDebutPeriode.getFullYear()) * 12
-                + (aujourdHui.getMonth() - dateDebutPeriode.getMonth());
-        }
-        
-        // 2 jours par mois pour l'année en cours
+        if (dateDebutPeriode > aujourdHui) return 0;
+        const moisEcoules = (aujourdHui.getFullYear() - dateDebutPeriode.getFullYear()) * 12
+            + (aujourdHui.getMonth() - dateDebutPeriode.getMonth());
         return Math.max(0, moisEcoules * 2);
-    };
+    }, [employee?.dateEmbauche]);
 
-    // Calcul des congés utilisés dans l'année en cours
-    const calculateCongesUtilisesAnnee = () => {
-        // Logique pour extraire les congés utilisés dans l'année
-        // Pour l'instant, on retourne la valeur totale
-        // À améliorer si vous avez un historique par année
-        return employee.joursCongesUtilisesAnnee || 0;
-    };
-
-    // Calcul du solde de congés pour l'année en cours
-    const calculateSoldeConges = () => {
-        const congesEnCours = calculateCongesEnCours();
-        const congesUtilisesAnnee = calculateCongesUtilisesAnnee();
-        return Math.max(0, congesEnCours - congesUtilisesAnnee);
-    };
+    const congesUtilisesAnnee = employee?.joursCongesUtilisesAnnee || 0;
+    const soldeConges = useMemo(() => Math.max(0, congesEnCours - congesUtilisesAnnee),
+        [congesEnCours, congesUtilisesAnnee]);
 
     // Calcul du salaire net estimé
-    const calculateSalaireNet = () => {
-        const salaireBase = parseFloat(employee.salaireBase || 0);
-        const sursalaire = parseFloat(employee.sursalaire || 0);
-        const ipm = parseFloat(employee.ipm || 0);
-        const transport = parseFloat(employee.indemniteTransport || 0);
-        const panier = parseFloat(employee.primePanier || 0);
-        const responsabilite = parseFloat(employee.indemniteResponsabilite || 0);
-        const deplacement = parseFloat(employee.indemniteDeplacement || 0);
-
-        const totalBrut = salaireBase + sursalaire;
-        const totalIndemnites = transport + panier + responsabilite + deplacement;
-
-        // Salaire net estimé (brut - IPM + indemnités)
-        const netEstime = totalBrut - ipm + totalIndemnites;
-
-        return netEstime > 0 ? netEstime : 0;
-    };
+    const salaireNet = useMemo(() => {
+        const salaireBase = parseFloat(employee?.salaireBase || 0);
+        const sursalaire = parseFloat(employee?.sursalaire || 0);
+        const ipm = parseFloat(employee?.ipm || 0);
+        const transport = parseFloat(employee?.indemniteTransport || 0);
+        const panier = parseFloat(employee?.primePanier || 0);
+        const responsabilite = parseFloat(employee?.indemniteResponsabilite || 0);
+        const deplacement = parseFloat(employee?.indemniteDeplacement || 0);
+        const net = (salaireBase + sursalaire) - ipm + transport + panier + responsabilite + deplacement;
+        return net > 0 ? net : 0;
+    }, [employee?.salaireBase, employee?.sursalaire, employee?.ipm,
+        employee?.indemniteTransport, employee?.primePanier,
+        employee?.indemniteResponsabilite, employee?.indemniteDeplacement]);
 
     return (
         <Modal
@@ -221,7 +186,7 @@ export const EmployeeDetailsModal = ({
                                         Salaire net estimé
                                     </span>
                                     <span className="employee-detail__value employee-detail__value--amount employee-detail__value--highlight">
-                                        {calculateSalaireNet().toLocaleString('fr-FR')} FCFA
+                                        {salaireNet.toLocaleString('fr-FR')} FCFA
                                     </span>
                                 </div>
                             </div>
@@ -308,7 +273,7 @@ export const EmployeeDetailsModal = ({
                                 <div className="employee-detail highlight">
                                     <span className="employee-detail__label">Congés accumulés (total)</span>
                                     <span className="employee-detail__value employee-detail__value--highlight">
-                                        {calculateCongesAccumules()} jours
+                                        {congesAccumules} jours
                                     </span>
                                     <small className="employee-detail__hint">
                                         Depuis l'embauche
@@ -318,7 +283,7 @@ export const EmployeeDetailsModal = ({
                                 <div className="employee-detail highlight">
                                     <span className="employee-detail__label">Congés en cours</span>
                                     <span className="employee-detail__value employee-detail__value--highlight">
-                                        {calculateCongesEnCours()} jours
+                                        {congesEnCours} jours
                                     </span>
                                     <small className="employee-detail__hint">
                                         Année {new Date().getFullYear()}
@@ -335,7 +300,7 @@ export const EmployeeDetailsModal = ({
                                 <div className="employee-detail highlight">
                                     <span className="employee-detail__label">Solde congés</span>
                                     <span className="employee-detail__value employee-detail__value--highlight">
-                                        {calculateSoldeConges()} jours
+                                        {soldeConges} jours
                                     </span>
                                 </div>
 
@@ -390,3 +355,10 @@ export const EmployeeDetailsModal = ({
         </Modal>
     );
 };
+
+export const EmployeeDetailsModal = React.memo(
+  EmployeeDetailsModalBase,
+  (prev, next) =>
+    prev.isVisible === next.isVisible &&
+    prev.employee?.id === next.employee?.id
+);

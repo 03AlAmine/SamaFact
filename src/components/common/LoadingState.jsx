@@ -1,5 +1,13 @@
 import React from "react";
 
+// Inject keyframe once at module level
+if (typeof document !== 'undefined' && !document.getElementById('loading-state-spin')) {
+  const style = document.createElement('style');
+  style.id = 'loading-state-spin';
+  style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+  document.head.appendChild(style);
+}
+
 const LoadingState = ({ 
   message = "Chargement...",
   size = "medium",

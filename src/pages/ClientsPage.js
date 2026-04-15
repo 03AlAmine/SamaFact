@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
     FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone,
-    FaMapMarkerAlt,  FaPlus, FaSearch,
+    FaMapMarkerAlt, FaPlus, FaSearch,
     FaFileInvoiceDollar, FaFileExcel, FaList, FaTh,
     FaSortAlphaDown, FaChevronLeft, FaChevronRight,
     FaEye, FaTimes, FaInfoCircle, FaCalendarAlt,
-    FaHistory, FaAddressBook, FaCity, 
-     FaUserTie, FaHandshake, FaTruck,
+    FaHistory, FaAddressBook, FaCity,
+    FaUserTie, FaHandshake, FaTruck,
     FaMapMarkedAlt
 } from "react-icons/fa";
 import empty_client from '../assets/empty_client.png';
-import '../css/ClientPage.css';
-import '../css/ClientModal.css'; 
-import LoadingState from '../components/common/LoadingState';
-
+import "../css/ClientPage.css";
+import "../css/ClientModal.css";
 // Composant d'état vide
 const EmptyState = ({ onAddClient }) => (
     <div className="empty-state">
@@ -63,7 +61,7 @@ const ClientForm = ({
     onChange,
     onSocieteBlur
 }) => (
-    <form onSubmit={onSubmit} className="client-form">
+    <form onSubmit={onSubmit} className="form-panel">
         <div className="form-header">
             <h2 className="form-title">
                 {isEditing ? <FaEdit /> : <FaPlus />}
@@ -284,7 +282,7 @@ const ClientsHeader = ({
     itemsPerPage,
     onItemsPerPageChange
 }) => (
-    <div className="clients-header">
+    <div className="page-header">
         <div className="header-left">
             <h2 className="section-title">
                 <FaUsers className="section-icon" /> Clients
@@ -386,31 +384,33 @@ const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete, onView }) 
             </div>
 
             <div className="client-card-header">
-                <div className="client-avatar">
-                    {client.nom?.charAt(0).toUpperCase() || 'C'}
-                </div>
-                <div className="client-info">
-                    <h3 className="client-name">{client.nom}</h3>
-                    {client.societe && <div className="client-company">{client.societe}</div>}
+                <div className="client-card-sous-header">
+                    <div className="client-avatar">
+                        {client.nom?.charAt(0).toUpperCase() || 'C'}
+                    </div>
+                    <div className="client-info">
+                        <h3 className="client-name">{client.nom}</h3>
+                        {client.societe && <div className="client-company">{client.societe}</div>}
+                    </div>
                 </div>
                 <div className="client-card-actions">
                     <ActionButton
                         icon={<FaEye />}
                         title="Voir détails"
                         onClick={(e) => handleAction(e, onView)}
-                        className="view-btn"
+                        className="view"
                     />
                     <ActionButton
                         icon={<FaEdit />}
                         title="Modifier"
                         onClick={(e) => handleAction(e, onEdit)}
-                        className="edit-btn"
+                        className="edit"
                     />
                     <ActionButton
                         icon={<FaTrash />}
                         title="Supprimer"
                         onClick={(e) => handleAction(e, onDelete)}
-                        className="delete-btn"
+                        className="delete"
                     />
                 </div>
             </div>
@@ -483,19 +483,19 @@ const ClientTableRow = ({ client, isSelected, onSelect, onView, onEdit, onDelete
                         icon={<FaEye />}
                         title="Voir détails"
                         onClick={(e) => handleAction(e, onView)}
-                        className="view-btn"
+                        className="view"
                     />
                     <ActionButton
                         icon={<FaEdit />}
                         title="Modifier"
                         onClick={(e) => handleAction(e, onEdit)}
-                        className="edit-btn"
+                        className="edit"
                     />
                     <ActionButton
                         icon={<FaTrash />}
                         title="Supprimer"
                         onClick={(e) => handleAction(e, onDelete)}
-                        className="delete-btn"
+                        className="delete"
                     />
                 </div>
             </td>
@@ -848,7 +848,7 @@ const ClientsPage = ({
     const invoicesSectionRef = useRef(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
-    const [loading, setLoading] = useState(true);
+
     const [isMobile, setIsMobile] = useState(false);
 
     // États pour la pagination
@@ -857,20 +857,12 @@ const ClientsPage = ({
 
     const [viewModalClient, setViewModalClient] = useState(null);
 
-    // Préchargement de l'image de fond
     useEffect(() => {
         const img = new Image();
         img.src = "/bg-client.jpg";
         img.onload = img.onerror = () => setBackgroundLoaded(true);
     }, []);
 
-    // Gestion du chargement
-    useEffect(() => {
-        if (backgroundLoaded) {
-            const timer = setTimeout(() => setLoading(false), 500);
-            return () => clearTimeout(timer);
-        }
-    }, [backgroundLoaded]);
 
     // Détection responsive
     useEffect(() => {
@@ -924,13 +916,15 @@ const ClientsPage = ({
     const handlePageChange = useCallback((page) => {
         if (page < 1 || page > totalPages) return;
         setCurrentPage(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll le conteneur de la liste, pas la window
+        document.querySelector('.clients-grid, .employees-list')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, [totalPages]);
 
     // Gestion du changement d'éléments par page
     const handleItemsPerPageChange = useCallback((e) => {
         setItemsPerPage(parseInt(e.target.value, 10));
-        setCurrentPage(1);
+        setCurrentPage(1); // ← remet toujours sur la page 1
     }, []);
 
     // Sélection du client avec défilement
@@ -953,8 +947,6 @@ const ClientsPage = ({
 
     // Détermination du mode d'affichage
     const displayMode = isMobile ? 'card' : viewMode;
-
-    if (loading) return <LoadingState />;
 
     return (
         <>
@@ -992,7 +984,7 @@ const ClientsPage = ({
             />
 
             {/* Section principale */}
-            <div className={`clients-page ${backgroundLoaded ? 'background-loaded' : ''}`}>
+            <div className={`page-container ${backgroundLoaded ? 'background-loaded' : ''}`}>
                 <ClientsHeader
                     clientsCount={totalItems}
                     viewMode={viewMode}
@@ -1173,18 +1165,18 @@ const ClientsPage = ({
                                                     <ActionButton
                                                         icon={<FaEdit />}
                                                         title="Modifier"
-                                                        className="edit-btn"
+                                                        className="edit"
                                                     />
                                                     <ActionButton
                                                         icon={<FaTrash />}
                                                         title="Supprimer"
                                                         onClick={() => handleDeleteFacture(facture.id)}
-                                                        className="delete-btn"
+                                                        className="delete"
                                                     />
                                                     <ActionButton
                                                         icon={<FaEye />}
                                                         title="Voir"
-                                                        className="view-btn"
+                                                        className="view"
                                                     />
                                                 </div>
                                             </td>

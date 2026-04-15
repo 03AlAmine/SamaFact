@@ -161,33 +161,12 @@ const PayrollActions = React.memo(({
     className: "custom-swiper"
   };
 
-  // Vue Card
-  if (viewMode === "card") {
-    return (
-      <div className={`card-actions ${showActions ? 'visible' : ''}`}>
-        <Swiper {...swiperConfig}>
-          {actionsContent}
+  const wrapperClass = viewMode === "card"
+    ? `card-actions ${showActions ? 'visible' : ''}`
+    : "table-actions";
 
-          <div
-            className={`swiper-nav-btn swiper-prev swiper-prev-${payroll.id}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <FaChevronLeft />
-          </div>
-          <div
-            className={`swiper-nav-btn swiper-next swiper-next-${payroll.id}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <FaChevronRight />
-          </div>
-        </Swiper>
-      </div>
-    );
-  }
-
-  // Vue Table avec Swiper
   return (
-    <div className="table-actions" onClick={(e) => e.stopPropagation()}>
+    <div className={wrapperClass} onClick={viewMode !== "card" ? (e) => e.stopPropagation() : undefined}>
       <Swiper {...swiperConfig}>
         {actionsContent}
 

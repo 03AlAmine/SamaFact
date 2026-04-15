@@ -12,19 +12,22 @@ import {
   FaChevronRight,
   FaUserCog,
   FaCalendarAlt,
-  FaCreditCard
+  FaCreditCard,
+  FaShieldAlt
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 import { GiTeamIdea } from 'react-icons/gi';
 import '../css/Sidebar.css'; // Note: fichier renommé Sidebar.css
+import { useAuth } from "../auth/AuthContext";
 
 // Import de l'image de background (ajustez le chemin selon votre structure)
-import bgSide from '../assets/bg/bg-side.jpg';
+import bgSide from '../assets/bg/bg-side.webp';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo }) => {
   const { activeModule } = useAppContext();
   const [isMobile, setIsMobile] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
+  const { currentUser } = useAuth();
 
   // Détection responsive
   useEffect(() => {
@@ -126,7 +129,15 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
       tab: "admin",
       badge: null,
       description: "Paramètres avancés"
-    }
+    },
+    {
+      icon: <FaShieldAlt className="sd-icon" />,
+      label: "Audit",
+      tab: "audit",
+      badge: null,
+      description: "Journal des actions",
+      roles: ['superadmin', 'supadmin'] // Visible seulement pour ces rôles
+    },
   ];
 
   const handleItemClick = (tab) => {
@@ -199,33 +210,39 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, logo })
         {/* Navigation */}
         <nav className="sd-nav">
           <ul>
-            {menuItems.map((item) => (
-              <li
-                key={item.tab}
-                className={`sd-nav-item ${activeTab === item.tab ? 'sd-active' : ''}`}
-                onClick={() => handleItemClick(item.tab)}
-                onMouseEnter={() => setHoveredItem(item.tab)}
-                onMouseLeave={() => setHoveredItem(null)}
-                data-label={item.label}
-                title={!sidebarOpen && isMobile ? item.label : undefined}
-              >
-                {item.icon}
-                <span className="sd-label">
-                  <span>{item.label}</span>
-                </span>
-                {item.badge && (
-                  <span className="sd-badge">{item.badge}</span>
-                )}
+            {menuItems.map((item) => {
+              // Vérifier si l'item a une restriction de rôle
+              if (item.roles && !item.roles.includes(currentUser?.role)) {
+                return null;
+              }
+              return (
+                <li
+                  key={item.tab}
+                  className={`sd-nav-item ${activeTab === item.tab ? 'sd-active' : ''}`}
+                  onClick={() => handleItemClick(item.tab)}
+                  onMouseEnter={() => setHoveredItem(item.tab)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  data-label={item.label}
+                  title={!sidebarOpen && isMobile ? item.label : undefined}
+                >
+                  {item.icon}
+                  <span className="sd-label">
+                    <span>{item.label}</span>
+                  </span>
+                  {item.badge && (
+                    <span className="sd-badge">{item.badge}</span>
+                  )}
 
-                {/* Tooltip enrichi pour la version compacte */}
-                {!sidebarOpen && !isMobile && hoveredItem === item.tab && (
-                  <div className="sd-tooltip">
-                    <strong>{item.label}</strong>
-                    <small>{item.description}</small>
-                  </div>
-                )}
-              </li>
-            ))}
+                  {/* Tooltip enrichi pour la version compacte */}
+                  {!sidebarOpen && !isMobile && hoveredItem === item.tab && (
+                    <div className="sd-tooltip">
+                      <strong>{item.label}</strong>
+                      <small>{item.description}</small>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

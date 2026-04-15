@@ -1,0 +1,1118 @@
+/* ============================================================
+   COMPONENTS.CSS — Classes partagées entre toutes les pages
+   Extraites de : ClientPage, EmployeePage, TeamPage,
+                  DocumentSection, Mentafact, ClientModal,
+                  EmployeeModal, TrackingModal
+   
+   IMPORT ORDER (dans index.css ou App.js) :
+     1. themes.css
+     2. components.css
+     3. [fichiers spécifiques aux pages]
+   ============================================================ */
+
+/* ============================================================
+   ANIMATIONS COMMUNES
+   ============================================================ */
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.05); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ============================================================
+   CONTENEUR DE PAGE — Effet verre commun à toutes les pages
+   Utilisation : <div class="page-container">
+   ============================================================ */
+.page-container {
+  position: relative;
+  min-height: 100vh;
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  background: linear-gradient(
+    145deg,
+    rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7),
+    rgba(var(--bg-secondary-rgb, 248, 250, 252), 0.9)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 20px 40px -15px var(--shadow-color),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.page-container.background-loaded > * {
+  animation: fadeInScale 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ============================================================
+   EN-TÊTE DE PAGE — Commun à clients/employés/équipes
+   ============================================================ */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 0.5rem 0;
+  flex-wrap: wrap;
+  gap: 1rem;
+  position: relative;
+}
+
+.page-header::after {
+  content: "";
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), transparent);
+  border-radius: 2px;
+  opacity: 0.3;
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   ICÔNE ET TITRE DE SECTION
+   ============================================================ */
+.section-icon {
+  margin-right: 0.75rem;
+  font-size: 2rem;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+  color: var(--primary-color);
+}
+
+.section-title:hover .section-icon {
+  transform: rotate(5deg) scale(1.1);
+}
+
+/* ============================================================
+   BADGE DE COMPTAGE
+   ============================================================ */
+.count-badge {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================================
+   BARRE DE RECHERCHE
+   ============================================================ */
+.search-box {
+  position: relative;
+  min-width: 280px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 0.9rem;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.95rem;
+  background: var(--bg-primary);
+  color: var(--text-dark);
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+  transform: translateY(-1px);
+}
+
+.search-input:hover {
+  border-color: var(--primary-light);
+}
+
+/* ============================================================
+   BOUTON D'ACTION (icône dans les tableaux)
+   Usage : <button class="action-btn view-btn">
+           <button class="action-btn edit-btn">
+           <button class="action-btn delete-btn">
+   ============================================================ */
+.action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-light);
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.action-btn:hover::before {
+  width: 50px;
+  height: 50px;
+}
+
+.action-btn:hover {
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.action-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Variantes couleur au hover */
+.action-btn.view-btn:hover,
+.action-btn.view-btn-user:hover {
+  background: var(--info-color);
+  color: white;
+  border-color: var(--info-color);
+}
+
+.action-btn.edit-btn:hover {
+  background: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.action-btn.delete-btn:hover {
+  background: var(--danger-color);
+  color: white;
+  border-color: var(--danger-color);
+}
+
+.action-btn.tracking-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Groupe de boutons d'action */
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ============================================================
+   BOUTON ICÔNE GÉNÉRIQUE (header, toolbar)
+   ============================================================ */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ============================================================
+   FORMULAIRE COMMUN
+   ============================================================ */
+.form-panel {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+  animation: slideDown 0.4s ease-out;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.form-title {
+  color: var(--text-dark);
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.form-title svg {
+  color: var(--primary-color);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--text-medium);
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+}
+
+.required {
+  color: var(--danger-color);
+}
+
+.form-input {
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.95rem;
+  transition: var(--transition);
+  background: var(--bg-primary);
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-input:hover {
+  border-color: var(--primary-light);
+}
+
+.form-input[type="number"] {
+  appearance: textfield;
+}
+
+.form-input[type="number"]::-webkit-outer-spin-button,
+.form-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 1.5rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.form-section-title svg {
+  color: var(--primary-color);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   BOUTONS DE FORMULAIRE
+   ============================================================ */
+.cancel-btn {
+  padding: 0.875rem 2rem;
+  border: 2px solid var(--border-color);
+  background: transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.cancel-btn:hover {
+  border-color: var(--text-light);
+  background: var(--hover-bg);
+  transform: translateY(-2px);
+}
+
+.submit-btn,
+.update-btn {
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.submit-btn:hover,
+.update-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  opacity: 0.92;
+}
+
+/* ============================================================
+   ÉTAT VIDE (liste sans données)
+   ============================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--bg-primary);
+  border-radius: 30px;
+  box-shadow: var(--shadow-lg);
+  margin-top: 2rem;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(5px);
+  animation: fadeInUp 0.6s ease;
+}
+
+.empty-image {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 2rem;
+  opacity: 0.7;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+}
+
+.empty-state:hover .empty-image {
+  transform: scale(1.05) rotate(2deg);
+}
+
+.empty-state h3 {
+  font-size: 1.8rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.empty-state p {
+  color: var(--text-light);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+/* ============================================================
+   OVERLAY MODAL
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================================
+   BOUTON FERMER (modaux)
+   ============================================================ */
+.close-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.close-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   OPTIONS DE TRI
+   ============================================================ */
+.sort-options {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sort-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-xs);
+  background: var(--bg-primary);
+  color: var(--text-medium);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}.sort-label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-weight: 500;
+  padding: 0 0.5rem;
+}
+
+.sort-btn:hover,
+.sort-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* ============================================================
+   CONTRÔLES DE VUE (grille / liste)
+   ============================================================ */
+/* Contrôles de vue */
+.view-controls {
+  display: flex;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid var(--border-color-alt);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-btn {
+  background: transparent;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: var(--text-light);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.view-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.3s,
+    height 0.3s;
+}
+
+.view-btn:hover::before {
+  width: 100px;
+  height: 100px;
+}
+
+.view-btn.active {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-hover)
+  );
+  color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+
+.view-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.view-btn .spinner {
+  animation: spin 1s linear infinite;
+}
+
+
+/* Utilisation - chaque bouton a SA propre couleur */
+.action-btn.view:hover {
+  background: var(--action-view);
+  color: white;
+  border-color: var(--action-view);
+}
+
+.action-btn.download:hover {
+  background: var(--action-download);
+  color: white;
+  border-color: var(--action-download);
+}
+
+.action-btn.edit:hover {
+  background: var(--action-edit);
+  color: white;
+  border-color: var(--action-edit);
+}
+
+.action-btn.delete:hover {
+  background: var(--action-delete);
+  color: white;
+  border-color: var(--action-delete);
+}
+
+.action-btn.duplicate:hover {
+  background: var(--action-duplicate);
+  color: white;
+  border-color: var(--action-duplicate);
+}
+
+.action-btn.paid:hover {
+  background: var(--action-paid);
+  color: white;
+  border-color: var(--action-paid);
+}
+
+.action-btn.unpaid:hover {
+  background: var(--action-unpaid);
+  color: white;
+  border-color: var(--action-unpaid);
+}
+
+.action-btn.send:hover {
+  background: var(--action-send);
+  color: white;
+  border-color: var(--action-send);
+}
+
+.action-btn.info_view:hover {
+  background: var(--action-info);
+  color: white;
+  border-color: var(--action-info);
+}
+
+.action-btn.generate:hover {
+  background: var(--action-generate);
+  color: white;
+  border-color: var(--action-generate);
+}
+
+.action-btn.validate:hover {
+  background: var(--action-validate);
+  color: white;
+  border-color: var(--action-validate);
+}
+
+.action-btn.cancel:hover {
+  background: var(--action-cancel);
+  color: white;
+  border-color: var(--action-cancel);
+}
+
+.action-btn.pay:hover {
+  background: var(--action-pay);
+  color: white;
+  border-color: var(--action-pay);
+}
+/* ============================================================
+   BADGE DE STATUT
+   Usage : <span class="status-badge status-active">Actif</span>
+   ============================================================ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.status-badge.status-active,
+.status-badge.status-paid {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.status-badge.status-inactive,
+.status-badge.status-pending {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.status-badge.status-partial,
+.status-badge.status-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.status-badge.status-info {
+  background: rgba(96, 165, 250, 0.15);
+  color: #2563eb;
+}
+
+.theme-dark .status-badge.status-active,
+.theme-dark .status-badge.status-paid {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.theme-dark .status-badge.status-inactive,
+.theme-dark .status-badge.status-pending {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.theme-dark .status-badge.status-partial,
+.theme-dark .status-badge.status-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+/* ============================================================
+   CHARGEMENT (spinner)
+   ============================================================ */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 3rem;
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+/* ============================================================
+   GRILLE DE CARTES (clients, employés, équipes)
+   ============================================================ */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+/* ============================================================
+   CARTE GÉNÉRIQUE
+   ============================================================ */
+.data-card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  overflow: hidden;
+  backdrop-filter: blur(5px);
+}
+
+.data-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+.data-card.active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.15), var(--shadow-md);
+}
+
+/* ============================================================
+   TABLEAU COMMUN
+   ============================================================ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-medium);
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-dark);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: var(--hover-bg);
+}
+
+/* ============================================================
+   PAGINATION
+   ============================================================ */
+
+/* ── Pagination ── */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-left: auto;
+}
+
+.items-per-page-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.items-per-page-select:hover,
+.items-per-page-select:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.pagination-navigation { display: flex; align-items: center; gap: 8px; }
+
+.page-info {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-weight: 500;
+  min-width: 100px;
+  text-align: center;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+
+/* ── Pagination footer ── */
+.pagination-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.pagination-info  { font-size: 0.9rem; color: var(--text-light); font-weight: 500; }
+.pagination-buttons { display: flex; align-items: center; gap: 5px; }
+.pagination-ellipsis { padding: 0 8px; color: var(--text-light); font-size: 0.9rem; }
+
+.page-jump-input {
+  width: 70px;
+  padding: 0.5rem;
+  margin-left: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-dark);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.page-jump-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67,97,238,0.2);
+}
+
+
+/* ============================================================
+   AVATAR / INITIALES
+   ============================================================ */
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 0.8rem;
+}
+
+.avatar-lg {
+  width: 60px;
+  height: 60px;
+  font-size: 1.4rem;
+}
+
+/* ============================================================
+   RESPONSIVE COMMUN
+   ============================================================ */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-left,
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel-btn,
+  .submit-btn,
+  .update-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.4rem;
+  }
+
+  .pagination-footer {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .count-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
+
+/* ============================================================
+   ANIMATIONS UTILITAIRES COMPLÉMENTAIRES
+   (shimmer et bounce — non présents dans le bloc principal)
+   ============================================================ */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-3px); }
+}
+
+/* ============================================================
+   IMPORT PROGRESS
+   (ClientPage, EmployeePage, Mentafact)
+   ============================================================ */
+.import-progress {
+  padding: 1rem;
+  margin: 1rem 0;
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--success-color);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideInRight 0.3s ease;
+}
+
+.import-progress.error { border-left-color: var(--danger-color); }
+
+/* ============================================================
+   DÉTAILS DE CARTE — icône et valeur
+   (ClientPage, EmployeePage)
+   ============================================================ */
+.detail-icon {
+  color: var(--primary-color);
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.detail-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  font-weight: 500;
+}
+
+/* ============================================================
+   HELPERS TABLEAU
+   ============================================================ */
+.th-content   { display: flex; align-items: center; gap: 0.5rem; }
+.cell-content { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+
+.sort-indicator {
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
+  animation: bounce 0.3s ease;
+}

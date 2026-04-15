@@ -194,14 +194,3 @@
     font-size: 1rem;
   }
 }
-
-/* Support des variables CSS */
-.search-box-container {
-  --primary-color: #4f46e5;
-  --secondary-bg: #f8fafc;
-  --white: #ffffff;
-  --text-dark: #1e293b;
-  --gray-medium: #94a3b8;
-  --gray-dark: #475569;
-  --border-color: #e2e8f0;
-}

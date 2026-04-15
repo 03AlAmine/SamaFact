@@ -175,7 +175,7 @@
   gap: 2rem;
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 2px solid var(--border-color-alt, #e2e8f0);
+  border-bottom: 2px solid var(--border-color, #e2e8f0);
   position: relative;
 }
 
@@ -217,10 +217,7 @@
   animation: shimmer 3s infinite linear;
 }
 
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
+
 
 .clients-modal-client-info {
   flex: 1;
@@ -325,7 +322,7 @@
   background: var(--bg-primary, white);
   border-radius: 16px;
   padding: 1.5rem;
-  border: 1px solid var(--border-color-alt, #e2e8f0);
+  border: 1px solid var(--border-color, #e2e8f0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   transition: all 0.3s ease;
   position: relative;
@@ -363,7 +360,7 @@
   align-items: center;
   gap: 0.75rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color-alt, #e2e8f0);
+  border-bottom: 2px solid var(--border-color, #e2e8f0);
 }
 
 .clients-modal-section-title svg {
@@ -484,7 +481,7 @@
   background: var(--bg-primary, white);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
-  border: 1px solid var(--border-color-alt, #e2e8f0);
+  border: 1px solid var(--border-color, #e2e8f0);
 }
 
 /* Barre d'actions */
@@ -493,7 +490,7 @@
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 2px solid var(--border-color-alt, #e2e8f0);
+  border-top: 2px solid var(--border-color, #e2e8f0);
   flex-wrap: wrap;
 }
 

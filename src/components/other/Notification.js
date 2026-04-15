@@ -38,4 +38,4 @@ const Notification = ({ message, type = 'info', onClose, duration = 3000 }) => {
   );
 };
 
-export default Notification;
+export default React.memo(Notification);

@@ -165,11 +165,4 @@
   }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: rotate(30deg) translate(-10%, -10%);
-  }
-  100% {
-    transform: rotate(30deg) translate(10%, 10%);
-  }
-}
+

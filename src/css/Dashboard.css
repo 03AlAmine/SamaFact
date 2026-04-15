@@ -1,6 +1,4 @@
 /* ===== MENTAFACT DASHBOARD STYLES ===== */
-/* Classes préfixées avec mf- pour éviter les conflits */
-/* Utilise les variables globales du thème centralisé */
 
 /* Container principal */
 .mf-dashboard-container,
@@ -24,7 +22,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--info), var(--warning-color), var(--success-color));
+  background: linear-gradient(90deg, var(--primary-color), var(--info-color), var(--warning-color), var(--success-color));
   z-index: 10;
 }
 
@@ -34,11 +32,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
   background: var(--card-bg);
-  padding: 1.5rem 2rem;
+  padding: 1rem 1rem;
   border-radius: 24px;
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
@@ -82,7 +80,7 @@
 .mf-title-icon {
   color: var(--primary-color);
   font-size: 2rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -92,7 +90,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.35rem 1rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   color: white;
   border-radius: 30px;
   letter-spacing: 0.5px;
@@ -267,7 +265,7 @@
 }
 
 .mf-notification-item.mf-notification-info .mf-notif-icon {
-  color: var(--info);
+  color: var(--info-color);
   background: rgba(139, 92, 246, 0.1);
 }
 
@@ -413,7 +411,7 @@
   gap: 0.5rem;
   padding: 0 1.5rem;
   height: 48px;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   color: white;
   border: none;
   border-radius: 16px;
@@ -500,7 +498,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--info));
+  background: linear-gradient(90deg, var(--primary-color), var(--info-color));
   opacity: 0;
   transition: var(--transition);
 }
@@ -510,7 +508,7 @@
 }
 
 .mf-kpi-card.mf-kpi-primary .mf-kpi-icon-wrapper {
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
 }
 
 .mf-kpi-card.mf-kpi-success .mf-kpi-icon-wrapper {
@@ -522,7 +520,7 @@
 }
 
 .mf-kpi-card.mf-kpi-info .mf-kpi-icon-wrapper {
-  background: linear-gradient(135deg, var(--info), var(--info-light));
+  background: linear-gradient(135deg, var(--info-color), var(--info-light));
 }
 
 .mf-kpi-icon-wrapper {
@@ -614,7 +612,7 @@
 .mf-stat-card {
   background: var(--card-bg);
   border-radius: 24px;
-  padding: 1.75rem;
+  padding: 1rem;
   display: flex;
   align-items: center;
   gap: 1.25rem;
@@ -633,7 +631,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--info));
+  background: linear-gradient(90deg, var(--primary-color), var(--info-color));
   opacity: 0;
   transition: var(--transition);
 }
@@ -651,7 +649,7 @@
   width: 70px;
   height: 70px;
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -673,10 +671,10 @@
 .mf-stat-icon.masse_salariale { background: linear-gradient(135deg, #fa709a, #fee140); }
 .mf-stat-icon.revenue { background: linear-gradient(135deg, #a8edea, #fed6e3); }
 .mf-stat-icon.pending { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
-.mf-stat-icon.cashflow { background: linear-gradient(135deg, var(--primary-color), var(--info)); }
+.mf-stat-icon.cashflow { background: linear-gradient(135deg, var(--primary-color), var(--info-color)); }
 .mf-stat-icon.collection { background: linear-gradient(135deg, var(--success-color), var(--success-light)); }
 .mf-stat-icon.average { background: linear-gradient(135deg, var(--warning-color), var(--warning-light)); }
-.mf-stat-icon.contracts { background: linear-gradient(135deg, var(--info), var(--info-light)); }
+.mf-stat-icon.contracts { background: linear-gradient(135deg, var(--info-color), var(--info-light)); }
 .mf-stat-icon.leaves { background: linear-gradient(135deg, var(--danger-color), var(--danger-light)); }
 .mf-stat-icon.department { background: linear-gradient(135deg, #64748b, #94a3b8); }
 
@@ -686,7 +684,6 @@
 }
 
 .mf-stat-info h3 {
-  font-size: 2rem;
   font-weight: 800;
   color: var(--text-dark);
   margin-bottom: 0.25rem;
@@ -774,7 +771,7 @@
 .mf-quick-actions-section {
   background: var(--card-bg);
   border-radius: 24px;
-  padding: 2rem;
+  padding: 1rem;
   margin-bottom: 2rem;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
@@ -998,7 +995,7 @@
   width: 40px;
   height: 40px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1099,7 +1096,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   color: white;
   border: none;
   border-radius: 30px;
@@ -1427,10 +1424,7 @@
 
 .mf-stats-icon {
   font-size: 2rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+    color: var(--primary-color);
 }
 
 .mf-stats-filters {
@@ -1469,7 +1463,7 @@
 }
 
 .mf-filter-btn.mf-active {
-  background: linear-gradient(135deg, var(--primary-color), var(--info));
+  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
   color: white;
   border-color: transparent;
 }
@@ -1534,10 +1528,10 @@
   flex-shrink: 0;
 }
 
-.mf-summary-total { background: linear-gradient(135deg, var(--primary-color), var(--info)); }
+.mf-summary-total { background: linear-gradient(135deg, var(--primary-color), var(--info-color)); }
 .mf-summary-count { background: linear-gradient(135deg, var(--success-color), var(--success-light)); }
 .mf-summary-rate { background: linear-gradient(135deg, var(--warning-color), var(--warning-light)); }
-.mf-summary-docs { background: linear-gradient(135deg, var(--info), var(--info-light)); }
+.mf-summary-docs { background: linear-gradient(135deg, var(--info-color), var(--info-light)); }
 
 .mf-summary-content {
   flex: 1;
@@ -1691,7 +1685,7 @@
 
 .mf-indicator-success { background: linear-gradient(135deg, var(--success-color), #34d399); }
 .mf-indicator-warning { background: linear-gradient(135deg, var(--warning-color), #fbbf24); }
-.mf-indicator-info { background: linear-gradient(135deg, var(--info), #a78bfa); }
+.mf-indicator-info { background: linear-gradient(135deg, var(--info-color), #a78bfa); }
 .mf-indicator-danger { background: linear-gradient(135deg, var(--danger-color), #f87171); }
 
 .mf-indicator-content {
@@ -1796,21 +1790,7 @@
   overflow-y: auto;
 }
 
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--text-light);
-  font-size: 1.1rem;
-  background: var(--card-bg);
-  border-radius: 24px;
-  border: 2px dashed var(--border-color);
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+
 
 .empty-state svg {
   font-size: 4rem;
@@ -1819,12 +1799,7 @@
   animation: mf-float 3s ease-in-out infinite;
 }
 
-.empty-state p {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: var(--text-medium);
-}
+
 
 .empty-state span {
   font-size: 0.95rem;
@@ -2272,3 +2247,6 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+

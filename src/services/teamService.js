@@ -193,6 +193,22 @@ export const teamService = {
     }
   },
 
+  // ✅ Lecture unique des utilisateurs (pour cache — pas de listener permanent)
+  getUsersOnce: async (companyId) => {
+    try {
+      const q = query(
+        collection(db, 'users'),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error("Erreur chargement users (once):", error);
+      return [];
+    }
+  },
+
   // 🔥 GESTION TEMPS RÉEL DES UTILISATEURS
   getUsersRealtime: (companyId, callback) => {
     try {

@@ -4,7 +4,7 @@
   border-radius: 24px !important;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-  border: 1px solid var(--border-color-alt, #e2e8f0) !important;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
   background: var(--card-bg, #ffffff) !important;
   backdrop-filter: blur(10px);
 }
@@ -42,7 +42,7 @@
 
 .employee-form-modal .ant-modal-footer {
   padding: 1.25rem 2rem !important;
-  border-top: 1px solid var(--border-color-alt, #e2e8f0) !important;
+  border-top: 1px solid var(--border-color, #e2e8f0) !important;
   background: var(--bg-secondary, #f8fafc) !important;
 }
 
@@ -56,7 +56,7 @@
 
 .employee-form-modal .ant-btn-default {
   background: var(--bg-primary, white) !important;
-  border: 1px solid var(--border-color-alt, #e2e8f0) !important;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
   color: var(--text-medium, #2b2d42) !important;
 }
 
@@ -86,42 +86,6 @@
   gap: 1.5rem;
 }
 
-.form-section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-dark, #1a1a2e);
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color-alt, #e2e8f0);
-}
-
-.form-section-title svg {
-  color: var(--primary-color, #4361ee);
-  font-size: 1.2rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-weight: 600;
-  color: var(--text-medium, #2b2d42);
-  font-size: 0.9rem;
-  letter-spacing: 0.3px;
-}
 
 .required {
   color: var(--danger-color, #dc3545);
@@ -129,7 +93,7 @@
 
 .form-input {
   padding: 0.75rem 1rem;
-  border: 2px solid var(--border-color-alt, #e2e8f0);
+  border: 2px solid var(--border-color, #e2e8f0);
   border-radius: 10px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
@@ -166,10 +130,6 @@
     padding: 1.5rem !important;
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
 
   .form-section-title {
     font-size: 1rem;

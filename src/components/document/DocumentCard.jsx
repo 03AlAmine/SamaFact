@@ -45,7 +45,9 @@ const DocumentCard = ({
   selectedClient,
   sendingEmails,
   onSendEmail,
-  onShowInfo
+  onShowInfo,
+  onSendWhatsApp,    // ← AJOUTER
+  sendingWhatsApp    // ← AJOUTER
 }) => {
   const status = getStatus(document);
   const statusClass = getStatusClass(status);
@@ -122,6 +124,8 @@ const DocumentCard = ({
         onShowInfo={onShowInfo}
         showActions={showActions} // ← Ajoutez cette prop
         viewMode="card"
+        onSendWhatsApp={onSendWhatsApp}
+        sendingWhatsApp={sendingWhatsApp}
       />
     </div>
   );

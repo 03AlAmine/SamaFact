@@ -1,4 +1,4 @@
-import React, {  } from "react";
+import React from "react";
 import {
   FaFileInvoiceDollar,
   FaSearch,
@@ -6,7 +6,11 @@ import {
   FaTh,
   FaSortAlphaDown,
   FaSortNumericDown,
-  FaSpinner, FaFileExcel, FaFilePdf
+  FaSpinner, 
+  FaFileExcel, 
+  FaFilePdf,
+  FaUser,
+  FaTimes
 } from "react-icons/fa";
 
 const HeaderSection = ({
@@ -24,20 +28,38 @@ const HeaderSection = ({
   onExport,
   isChangingTab,
   isChangingView,
-setViewMode
+  setViewMode,
+  // NOUVELLES PROPS
+  selectedFilterClient,
+  onClearClientFilter
 }) => {
-
-
   return (
     <div className="section-header">
       <div className="header-left">
-        <h2 className="section-title">
-          <FaFileInvoiceDollar
-            className="section-icon"
-            style={{ color: getTypeColor() }}
-          />
-          {title} <span className="count-badge">{filteredItemsCount}</span>
-        </h2>
+        <div className="title-with-badge">
+          <h2 className="section-title">
+            <FaFileInvoiceDollar
+              className="section-icon"
+              style={{ color: getTypeColor() }}
+            />
+            {title} <span className="count-badge">{filteredItemsCount}</span>
+          </h2>
+
+          {/* Badge client - juste après le titre */}
+          {selectedFilterClient && (
+            <div className="client-filter-badge">
+              <FaUser size={12} />
+              <span>{selectedFilterClient.nom || selectedFilterClient.societe || selectedFilterClient.name}</span>
+              <button
+                onClick={onClearClientFilter}
+                className="client-filter-clear"
+                title="Effacer le filtre client"
+              >
+                <FaTimes size={10} />
+              </button>
+            </div>
+          )}
+        </div>
 
         {!isMobile && (
           <div className="view-controls">
@@ -80,7 +102,6 @@ setViewMode
             className="search-input"
           />
         </div>
-
       </div>
 
       <div className="header-right">
@@ -113,8 +134,6 @@ setViewMode
             )}
           </button>
         </div>
-
-
 
         <div className="export-buttons">
           <button

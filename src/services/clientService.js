@@ -37,7 +37,6 @@ export const clientService = {
         throw new Error('Company ID is required');
       }
 
-      console.log('🔍 Chargement clients (once) pour company:', companyId);
 
       const clientsRef = collection(db, `companies/${companyId}/clients`);
       const q = query(clientsRef);
@@ -49,7 +48,6 @@ export const clientService = {
         createdAt: doc.data().createdAt?.toDate?.() || null
       }));
 
-      console.log('✅ Clients chargés (once):', clients);
       return clients;
     } catch (error) {
       console.error('❌ Erreur chargement clients (once):', error);

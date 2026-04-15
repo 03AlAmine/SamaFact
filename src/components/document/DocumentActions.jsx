@@ -12,7 +12,8 @@ import {
   FaPlus,
   FaSpinner,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaWhatsapp
 } from "react-icons/fa";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
@@ -35,7 +36,9 @@ const DocumentActions = ({
   onSendEmail,
   onShowInfo,
   viewMode,
-  showActions = true
+  showActions = true,
+  onSendWhatsApp,  // ← AJOUTER CETTE PROP
+  sendingWhatsApp
 }) => {
   const status = getStatus(document);
   const isPaid = status === "Payé";
@@ -154,16 +157,28 @@ const DocumentActions = ({
           title="Envoyer par email"
           onClick={(e) => {
             e.stopPropagation();
-            onSendEmail(document);
+            onSendEmail(document); // Cette fonction doit utiliser le hook useEmailSender
           }}
           disabled={sendingEmails[document.id]}
         />
+        {/* NOUVEAU BOUTON WHATSAPP */}
         <ActionButton
+          className="whatsapp"
+          icon={sendingWhatsApp?.[document.id] ? <FaSpinner className="spinnerr" /> : <FaWhatsapp />}
+          title="Envoyer par WhatsApp"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSendWhatsApp?.(document);
+          }}
+          disabled={sendingWhatsApp?.[document.id]}
+          style={{ backgroundColor: '#25D366', color: 'white' }}
+        />
+      {/*  <ActionButton
           className="add"
           icon={<FaPlus />}
           title="Ajouter"
           onClick={(e) => e.stopPropagation()}
-        />
+        />*/}
       </SwiperSlide>
     </>
   );
@@ -174,7 +189,7 @@ const DocumentActions = ({
     spaceBetween: 10,
     slidesPerView: 1,
     grabCursor: true,
-    speed: 800, 
+    speed: 800,
     modules: [Autoplay, Navigation],
     autoplay: {
       delay: 3000,

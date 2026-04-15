@@ -18,86 +18,9 @@ import {
   serverTimestamp,
   updateDoc
 } from 'firebase/firestore';
+import { ROLES, PERMISSIONS } from './permissions';
 
 const AuthContext = createContext();
-
-const ROLES = {
-  SUPERADMIN: 'superadmin',
-  SUPADMIN: 'supadmin',
-  ADMIN: 'admin',
-  RH_DAF: 'rh_daf',
-  COMPTABLE: 'comptable',
-  CHARGE_COMPTE: 'charge_compte',
-  EMPLOYE: 'employe',
-  LECTEUR: 'lecteur'
-};
-
-const PERMISSIONS = {
-  [ROLES.SUPERADMIN]: {
-    manageCompany: true,
-    manageUsers: true,
-    managePayroll: true,
-    manageDocuments: true,
-    viewAll: true,
-    isSuperAdmin: true,
-    isSupAdmin: true
-  },
-  [ROLES.SUPADMIN]: {
-    manageCompany: true,
-    manageUsers: true,
-    managePayroll: true,
-    manageDocuments: true,
-    viewAll: true,
-    isSuperAdmin: false,
-    isSupAdmin: true
-  },
-  [ROLES.ADMIN]: {
-    manageCompany: true,
-    manageUsers: true,
-    manageDocuments: true,
-    managePayroll: true,
-    viewAll: true,
-    isSuperAdmin: false,
-    isSupAdmin: false
-  },
-  [ROLES.RH_DAF]: {
-    managePayroll: true,
-    viewAllPayroll: true,
-    manageEmployees: true,
-    isSuperAdmin: false,
-    isSupAdmin: false
-  },
-  [ROLES.COMPTABLE]: {
-    manageCompany: false,
-    manageUsers: false,
-    manageDocuments: true,
-    viewAll: true,
-    isSuperAdmin: false,
-    isSupAdmin: false
-  },
-  [ROLES.CHARGE_COMPTE]: {
-    manageCompany: false,
-    manageUsers: false,
-    manageDocuments: true,
-    viewAll: false,
-    isSuperAdmin: false,
-    isSupAdmin: false
-  },
-  [ROLES.EMPLOYE]: {
-    viewOwnPayroll: true,
-    editOwnInfo: true,
-    isSuperAdmin: false,
-    isSupAdmin: false
-  },
-  [ROLES.LECTEUR]: {
-    manageCompany: false,
-    manageUsers: false,
-    manageDocuments: false,
-    viewAll: true,
-    isSuperAdmin: false,
-    isSupAdmin: false
-  }
-};
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -142,12 +65,21 @@ export function AuthProvider({ children }) {
 
   const checkInactivity = async (user) => {
     try {
+      // Vérification rapide locale avant d'appeler Firestore
+      const lastActivityLocal = Number(localStorage.getItem('lastUpdate') || 0);
+      const now = Date.now();
+
+      // Timeout minimal (8h pour comptable, le plus restrictif)
+      const minTimeout = 8 * 60 * 60 * 1000;
+      if (lastActivityLocal > 0 && (now - lastActivityLocal) < minTimeout) {
+        return true; // Actif récemment, pas besoin de vérifier Firestore
+      }
+
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) return true;
 
       const userData = userDoc.data();
       const lastActivity = userData.lastActivity?.toDate?.();
-      const now = new Date();
 
       // Timeout selon rôle
       let inactivityTimeout = 48 * 60 * 60 * 1000; // 48h par défaut
@@ -235,16 +167,17 @@ export function AuthProvider({ children }) {
   // refresh activity when tab visible again
   useEffect(() => {
     if (!currentUser?.uid) return;
+    const uid = currentUser.uid;
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && currentUser?.uid) {
-        updateLastActivity(currentUser.uid).catch(() => {});
+      if (document.visibilityState === 'visible') {
+        updateLastActivity(uid).catch(() => {});
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     return () => {

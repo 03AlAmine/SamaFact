@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { message, Spin } from "antd";
-import emailjs from "emailjs-com";
-
+import { Spin } from "antd";
 import DocumentCard from "./document/DocumentCard";
 import DocumentTableRow from "./document/DocumentTableRow";
 import DocumentDetailsModal from "./document/DocumentDetailsModal";
 import LoadingState from "./common/LoadingState";
 import HeaderSection from "./document/HeaderSection";
 import EmptyState from "./common/EmptyState";
+import { useWhatsAppSender } from "../hooks/useWhatsAppSender"; // ← AJOUTER
 
-import "../css/DocumentSection.css";
 
 const DocumentSection = ({
   title,
@@ -27,16 +25,20 @@ const DocumentSection = ({
   onMarkAsPending,
   getStatus,
   onExport,
-  getTypeColor
+  getTypeColor,
+  selectedFilterClient,
+  onClearClientFilter,
+  onSendEmail,
+  companyId
 }) => {
   const [sortBy, setSortBy] = useState("numero");
   const [sortOrder, setSortOrder] = useState("desc");
   const [viewMode, setViewMode] = useState("card");
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
-  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [sendingEmails, setSendingEmails] = useState({});
+  const [backgroundLoaded] = useState(false);
+  const [loading] = useState(false); // ← false directement
+  const [sendingEmails] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
   // États pour le scroll infini
@@ -104,22 +106,12 @@ const DocumentSection = ({
     return count;
   }, [items, searchTerm]);
 
-  // Préchargement de l'image de fond
-  useEffect(() => {
-    const img = new Image();
-    img.src = "/bg-fact.jpg";
-    img.onload = img.onerror = () => {
-      setBackgroundLoaded(true);
-    };
-  }, []);
 
-  // Gestion du chargement initial
-  useEffect(() => {
-    if (backgroundLoaded) {
-      const timer = setTimeout(() => setLoading(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [backgroundLoaded]);
+  const {
+    sendingWhatsApp,
+    sendByWhatsApp,
+    WhatsAppModal
+  } = useWhatsAppSender(companyId);
 
   // Détection responsive
   useEffect(() => {
@@ -346,80 +338,16 @@ const DocumentSection = ({
 
   // Fonction d'envoi d'email
   const sendEmail = useCallback(async (doc) => {
-    const missingFields = [];
+    // Utiliser le hook useEmailSender à la place
+    // Mais comme DocumentSection n'a pas accès au hook, 
+    // on va recevoir onSendEmail en prop
+    onSendEmail(doc);
+  }, [onSendEmail]);
 
-    if (!doc.clientNom || doc.clientNom.trim() === "") {
-      missingFields.push("nom du client");
-    }
-
-    if (!doc.clientEmail || doc.clientEmail.trim() === "") {
-      missingFields.push("email du client");
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(doc.clientEmail)) {
-        message.error("L'adresse email du client n'est pas valide ❌");
-        return;
-      }
-    }
-
-    if (!doc.numero || doc.numero.trim() === "") {
-      missingFields.push("numéro du document");
-    }
-
-    if (!doc.totalTTC) {
-      missingFields.push("montant total");
-    }
-
-    if (!doc.date) {
-      missingFields.push("date du document");
-    }
-
-    if (missingFields.length > 0) {
-      message.error(
-        <div>
-          <div>Impossible d'envoyer l'email ❌</div>
-          <div style={{ fontSize: "12px", marginTop: "5px" }}>
-            Données manquantes: {missingFields.join(", ")}
-          </div>
-        </div>,
-        5
-      );
-      return;
-    }
-
-    setSendingEmails(prev => ({ ...prev, [doc.id]: true }));
-
-    const templateParams = {
-      to_name: doc.clientNom,
-      to_email: doc.clientEmail,
-      document_numero: doc.numero,
-      montant: typeof doc.totalTTC === "string"
-        ? doc.totalTTC
-        : doc.totalTTC.toLocaleString("fr-FR", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }),
-      date: doc.date,
-    };
-
-    try {
-      await emailjs.send(
-        "service_samafact",
-        "template_samafact",
-        templateParams,
-        "ioK4mXd5cOkG_z4EY"
-      );
-      message.success(`Email envoyé à ${doc.clientEmail} ✅`);
-    } catch (error) {
-      message.error("Erreur lors de l'envoi de l'email ❌");
-    } finally {
-      setSendingEmails(prev => {
-        const newState = { ...prev };
-        delete newState[doc.id];
-        return newState;
-      });
-    }
-  }, []);
+  // Fonction d'envoi WhatsApp
+  const sendWhatsApp = useCallback((document) => {
+    sendByWhatsApp(document, type);
+  }, [sendByWhatsApp, type]);
 
   if (loading) {
     return <LoadingState />;
@@ -446,6 +374,8 @@ const DocumentSection = ({
         navigate={navigate}
         isMobile={isMobile}
         onExport={onExport}
+        selectedFilterClient={selectedFilterClient}
+        onClearClientFilter={onClearClientFilter}
 
       />
 
@@ -478,6 +408,8 @@ const DocumentSection = ({
                   sendingEmails={sendingEmails}
                   onSendEmail={sendEmail}
                   onShowInfo={showInfoModal}
+                  onSendWhatsApp={sendWhatsApp}        // ← AJOUTER
+                  sendingWhatsApp={sendingWhatsApp}
                 />
               ))}
 
@@ -566,6 +498,8 @@ const DocumentSection = ({
                       sendingEmails={sendingEmails}
                       onSendEmail={sendEmail}
                       onShowInfo={showInfoModal}
+                      onSendWhatsApp={sendWhatsApp}        // ← À AJOUTER
+                      sendingWhatsApp={sendingWhatsApp}
                     />
                   ))}
 
@@ -610,6 +544,7 @@ const DocumentSection = ({
           )}
         </div>
       )}
+      <WhatsAppModal />
 
       <DocumentDetailsModal
         isVisible={isInfoModalVisible}

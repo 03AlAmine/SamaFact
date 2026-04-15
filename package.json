@@ -51,6 +51,7 @@
     "react-virtualized": "^9.22.6",
     "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^2.2.3",
+    "resend": "^6.11.0",
     "swiper": "^11.2.10",
     "terser-webpack-plugin": "^5.3.16",
     "web-vitals": "^2.1.4",

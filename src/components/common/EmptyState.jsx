@@ -2,21 +2,11 @@ import React from "react";
 import { FaPlus } from "react-icons/fa";
 import empty from "../../assets/empty.png";
 
+const COLOR_MAP = { facture: "#4f46e5", devis: "#10b981", avoir: "#f59e0b" };
+
 const EmptyState = ({ title, type, getTypeColor, navigate }) => {
-  // Fonction de secours si getTypeColor n'est pas fournie
-  const getDefaultColor = () => {
-    switch (type) {
-      case "facture": return "#4f46e5";
-      case "devis": return "#10b981";
-      case "avoir": return "#f59e0b";
-      default: return "#4f46e5";
-    }
-  };
+  const typeColor = getTypeColor ? getTypeColor() : (COLOR_MAP[type] ?? "#4f46e5");
 
-  // Utiliser getTypeColor si elle existe, sinon utiliser la fonction par défaut
-  const typeColor = getTypeColor ? getTypeColor() : getDefaultColor();
-
-  // Texte du bouton selon le type
   const getButtonText = () => {
     switch (type) {
       case "facture": return "une Facture";

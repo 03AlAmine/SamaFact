@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo } from "react";
 import DocumentSection from "../components/DocumentSection";
 import { exportToExcel, exportToPDF } from "../utils/exportUtils";
-import { FaSpinner, FaPlus } from "react-icons/fa";
-import ModernDateRangePicker from "../components/docpayroll/ModernDateRangePicker";
+import { FaSpinner, FaPlus, FaUser } from "react-icons/fa";
+import ModernDateRangePicker from "../components/common/ModernDateRangePicker";
 import { downloadPdf, previewPdf } from '../services/pdfService';
 import { invoiceService } from '../services/invoiceService';
 import ModalPaiement from "../components/dialogs/ModalPaiement";
-import { message, Modal } from "antd";
+import { message, Modal, Select } from "antd";
 
 const InvoicesPage = ({
     navigate,
@@ -18,7 +18,9 @@ const InvoicesPage = ({
     viewMode,
     setViewMode,
     type,
-
+    clients = [], // Nouvelle prop pour la liste des clients
+    sendingEmails = {},
+    onSendEmail
 }) => {
 
     const [modalVisible, setModalVisible] = useState(false);
@@ -28,6 +30,7 @@ const InvoicesPage = ({
     const [activeTab, setActiveTab] = useState("factures");
     const [isChangingTab, setIsChangingTab] = useState(false);
     const [localSearchTerm, setLocalSearchTerm] = useState("");
+    const [selectedFilterClient, setSelectedFilterClient] = useState(null); // NOUVEAU : Filtre client
     const searchTerm = localSearchTerm;
     const setSearchTerm = setLocalSearchTerm;
     const currentTab = activeTab || "factures";
@@ -45,9 +48,10 @@ const InvoicesPage = ({
         setIsChangingTab(true);
 
         try {
-            // Délai réduit pour un meilleur UX
             await new Promise(resolve => setTimeout(resolve, 200));
             setActiveTab(tab);
+            // Réinitialiser le filtre client quand on change d'onglet (optionnel)
+            // setSelectedFilterClient(null);
         } catch (error) {
             console.error("Erreur lors du changement d'onglet:", error);
         } finally {
@@ -60,9 +64,9 @@ const InvoicesPage = ({
     // 🔥 OPTIMISATION : Mémoïsation des données filtrées par onglet
     const tabData = useMemo(() => {
         return {
-            factures: getFacturesToDisplay() || [],
-            devis: getDevisToDisplay() || [],
-            avoirs: getAvoirsToDisplay() || [],
+            factures: getFacturesToDisplay || [],     // ← pas de ()
+            devis: getDevisToDisplay || [],
+            avoirs: getAvoirsToDisplay || [],
         };
     }, [getFacturesToDisplay, getDevisToDisplay, getAvoirsToDisplay]);
 
@@ -82,16 +86,34 @@ const InvoicesPage = ({
         });
     }, [dateRange]);
 
-    // 🔥 OPTIMISATION : Mémoïsation des données filtrées par date
+    // Fonction pour filtrer par client (NOUVELLE)
+    const filterByClient = useCallback((items) => {
+        if (!selectedFilterClient) return items || [];
+
+        return (items || []).filter(item =>
+            item.clientId === selectedFilterClient.id ||
+            item.clientNom === selectedFilterClient.nom
+        );
+    }, [selectedFilterClient]);
+
+    // 🔥 OPTIMISATION : Données filtrées par date ET par client
     const filteredTabData = useMemo(() => {
-        return {
+        const filteredByDate = {
             factures: filterByDate(tabData.factures),
             devis: filterByDate(tabData.devis),
             avoirs: filterByDate(tabData.avoirs),
         };
-    }, [tabData, filterByDate]);
 
-    // 🔥 OPTIMISATION : Mémoïsation des compteurs filtrés
+        const filteredByClient = {
+            factures: filterByClient(filteredByDate.factures),
+            devis: filterByClient(filteredByDate.devis),
+            avoirs: filterByClient(filteredByDate.avoirs),
+        };
+
+        return filteredByClient;
+    }, [tabData, filterByDate, filterByClient]);
+
+    // 🔥 OPTIMISATION : Compteurs filtrés
     const filteredTabCounts = useMemo(() => {
         return {
             factures: filteredTabData.factures.length,
@@ -101,21 +123,18 @@ const InvoicesPage = ({
     }, [filteredTabData]);
 
     // Fonction pour obtenir les documents de l'onglet actif
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const getDocuments = useCallback(() => {
         return filteredTabData[activeTab] || [];
-    });
+    }, [filteredTabData, activeTab]);
 
     // Fonction pour obtenir le statut d'un document (optimisée)
     const getStatus = useCallback((document) => {
         if (!document) return "Attente";
 
-        // Si déjà un statut calculé, on le retourne
         if (document.calculatedStatus) {
             return document.calculatedStatus;
         }
 
-        // Convertir les montants en nombres pour comparaison
         const totalTTC = typeof document.totalTTC === 'string'
             ? parseFloat(document.totalTTC.replace(/\s/g, '').replace(',', '.'))
             : document.totalTTC || 0;
@@ -124,22 +143,15 @@ const InvoicesPage = ({
             ? parseFloat(document.montantPaye.replace(/\s/g, '').replace(',', '.'))
             : document.montantPaye || 0;
 
-        // Définition d'une marge d'erreur pour les comparaisons (0.01 pour les centimes)
         const EPSILON = 0.01;
 
-        // 1. Si pas de paiement ou montant payé = 0 → "En attente"
         if (montantPaye < EPSILON) {
             return "Attente";
-        }
-        // 2. Si montant payé est (presque) égal au total → "Payé"
-        else if (Math.abs(montantPaye - totalTTC) < EPSILON) {
+        } else if (Math.abs(montantPaye - totalTTC) < EPSILON) {
             return "Payé";
-        }
-        // 3. Si montant payé > 0 mais < total → "Accompte"
-        else if (montantPaye < totalTTC) {
+        } else if (montantPaye < totalTTC) {
             return "Accompte";
         }
-        // Cas par défaut
         return document.statut ?
             document.statut.charAt(0).toUpperCase() + document.statut.slice(1)
             : "En attente";
@@ -174,7 +186,6 @@ const InvoicesPage = ({
         const currentDocuments = getDocuments();
         const filteredData = currentDocuments
             .filter(item => {
-                // Filtre par recherche
                 if (searchTerm) {
                     const searchLower = searchTerm.toLowerCase();
                     return (
@@ -182,13 +193,6 @@ const InvoicesPage = ({
                         (item.clientNom && item.clientNom.toLowerCase().includes(searchLower)) ||
                         (item.objet && item.objet.toLowerCase().includes(searchLower))
                     );
-                }
-                return true;
-            })
-            .filter(item => {
-                // Filtre par client sélectionné
-                if (selectedClient) {
-                    return item.clientNom === selectedClient.nom;
                 }
                 return true;
             });
@@ -199,12 +203,14 @@ const InvoicesPage = ({
             avoirs: 'Avoirs'
         }[activeTab];
 
+        const clientSuffix = selectedFilterClient ? `_${selectedFilterClient.nom}` : '';
+
         if (format === 'excel') {
-            exportToExcel(filteredData, fileName);
+            exportToExcel(filteredData, `${fileName}${clientSuffix}`);
         } else {
-            exportToPDF(filteredData, fileName);
+            exportToPDF(filteredData, `${fileName}${clientSuffix}`);
         }
-    }, [activeTab, searchTerm, selectedClient, getDocuments]);
+    }, [activeTab, searchTerm, getDocuments, selectedFilterClient]);
 
     // Gestion du paiement (optimisée)
     const handlePayment = useCallback(async (id, action) => {
@@ -292,9 +298,8 @@ const InvoicesPage = ({
                 ? parseFloat(paymentDetails.montant.replace(/\s/g, '').replace(',', '.'))
                 : paymentDetails.montant || 0;
 
-            const EPSILON = 0.01; // Marge d'erreur
+            const EPSILON = 0.01;
 
-            // Déterminer le statut automatiquement
             let newStatus;
             if (montantPaye < EPSILON) {
                 newStatus = "en attente";
@@ -330,15 +335,15 @@ const InvoicesPage = ({
         }
     }, [currentDocument, companyId]);
 
-    // Remplacer le getTypeColor actuel par :
     const getTypeColor = useCallback(() => {
         switch (activeTab) {
-            case "factures": return "#4f46e5"; // Indigo pour les factures
-            case "devis": return "#10b981";    // Vert pour les devis
-            case "avoirs": return "#f59e0b";   // Orange pour les avoirs
+            case "factures": return "#4f46e5";
+            case "devis": return "#10b981";
+            case "avoirs": return "#f59e0b";
             default: return "#4f46e5";
         }
-    }, [activeTab]); // Dépendance sur activeTab
+    }, [activeTab]);
+
     const getSingularType = useCallback(() => {
         switch (activeTab) {
             case "factures": return "facture";
@@ -347,6 +352,12 @@ const InvoicesPage = ({
             default: return "facture";
         }
     }, [activeTab]);
+
+    // Nettoyer le filtre client
+    const handleClearClientFilter = useCallback(() => {
+        setSelectedFilterClient(null);
+    }, []);
+
     return (
         <div className="invoices-page-container">
             <div className="navbar-tabs">
@@ -369,22 +380,58 @@ const InvoicesPage = ({
             </div>
 
             <div className="filters-container">
-                <ModernDateRangePicker
-                    dateRange={dateRange}
-                    setDateRange={setDateRange}
-                    disabled={isChangingTab}
-                />
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '20px',
+                    flexWrap: 'wrap'
+                }}>
+                    {/* NOUVEAU : Filtre Client */}
+                    {clients.length > 0 && (
+                        <div style={{ minWidth: '250px' }}>
+                            <Select
+                                placeholder="Tous les clients"
+                                style={{ width: '100%' }}
+                                allowClear
+                                value={selectedFilterClient?.id}
+                                onChange={(value) => {
+                                    const client = clients.find(c => c.id === value);
+                                    setSelectedFilterClient(client || null);
+                                }}
+                                options={clients.map(client => ({
+                                    label: client.nom || client.societe || client.name,
+                                    value: client.id
+                                }))}
+                                suffixIcon={<FaUser />}
+                            />
+                        </div>
+                    )}
 
-                <div className="date-range-summary">
-                    {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-                    {dateRange.from || dateRange.to ? (
-                        <>
-                            {" du "}
-                            {dateRange.from?.toLocaleDateString('fr-FR') || '...'}
-                            {" au "}
-                            {dateRange.to?.toLocaleDateString('fr-FR') || '...'}
-                        </>
-                    ) : " (Toutes dates)"}
+                    {/* Filtre de date existant */}
+                    <div style={{ minWidth: '300px' }}>
+                        <ModernDateRangePicker
+                            dateRange={dateRange}
+                            setDateRange={setDateRange}
+                            disabled={isChangingTab}
+                        />
+                    </div>
+
+                    {/* Résumé des filtres mis à jour */}
+                    <div className="date-range-summary">
+                        {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                        {selectedFilterClient && (
+                            <> - Client : {selectedFilterClient.nom || selectedFilterClient.societe}</>
+                        )}
+                        {dateRange.from || dateRange.to ? (
+                            <>
+                                {" du "}
+                                {dateRange.from?.toLocaleDateString('fr-FR') || '...'}
+                                {" au "}
+                                {dateRange.to?.toLocaleDateString('fr-FR') || '...'}
+                            </>
+                        ) : " (Toutes dates)"}
+                    </div>
+
                 </div>
 
                 <div style={{ marginLeft: 'auto' }}>
@@ -402,10 +449,8 @@ const InvoicesPage = ({
                                 ? "un Devis"
                                 : "un Avoir"}
                     </button>
-
                 </div>
             </div>
-
             <DocumentSection
                 title={currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}
                 items={getDocuments()}
@@ -423,6 +468,11 @@ const InvoicesPage = ({
                 getStatus={getStatus}
                 onExport={handleExport}
                 getTypeColor={getTypeColor}
+                selectedFilterClient={selectedFilterClient}
+                onClearClientFilter={handleClearClientFilter}
+                sendingEmails={sendingEmails}
+                onSendEmail={onSendEmail}
+
             />
 
             <ModalPaiement
