@@ -13,15 +13,15 @@ const PORT = process.env.PORT || 3001;
 
 // ========== CONFIGURATION ==========
 const DOCUMENTS_DIR = process.env.DOCUMENTS_DIR || path.join(__dirname, 'documents');
+const normalizedPath = path.resolve(DOCUMENTS_DIR);
 const LINK_EXPIRY_DAYS = parseInt(process.env.LINK_EXPIRY_DAYS) || 7;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
-// Créer le répertoire des documents s'il n'existe pas
-if (!fs.existsSync(DOCUMENTS_DIR)) {
-  fs.mkdirSync(DOCUMENTS_DIR, { recursive: true });
-  console.log(`📁 Répertoire des documents créé: ${DOCUMENTS_DIR}`);
+// Créer le dossier s'il n'existe pas
+if (!fs.existsSync(normalizedPath)) {
+  fs.mkdirSync(normalizedPath, { recursive: true });
+  console.log(`📁 Répertoire des documents créé: ${normalizedPath}`);
 }
-
 // ========== MIDDLEWARE ==========
 app.use(cors());
 app.use(express.json());
