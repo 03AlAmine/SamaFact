@@ -8,8 +8,21 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// Configuration CORS (UNE SEULE FOIS)
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://samafact.onrender.com',
+    'https://Samafact.leaderinterime.com',
+    'https://www.Samafact.leaderinterime.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Autres middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,7 +47,6 @@ app.post('/api/send-email', async (req, res) => {
   try {
     const { to, subject, html, from } = req.body;
 
-    // Validation
     if (!to || !subject || !html) {
       return res.status(400).json({ 
         success: false, 
@@ -89,7 +101,6 @@ app.post('/api/send-email-with-pdf', upload.single('pdf'), async (req, res) => {
     console.log(`📧 Envoi d'email avec PDF à: ${to}`);
     console.log(`📎 Fichier: ${pdfFile.originalname} (${pdfFile.size} bytes)`);
 
-    // Convertir le buffer en base64 pour Resend
     const pdfBase64 = pdfFile.buffer.toString('base64');
 
     const { data, error } = await resend.emails.send({
@@ -158,7 +169,7 @@ app.post('/api/send-email-with-attachments', upload.array('attachments', 5), asy
 });
 
 // Démarrer le serveur
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {  // ← Ajouter '0.0.0.0' pour Render
+  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`📧 Service d'email prêt avec Resend`);
 });
