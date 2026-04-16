@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import {  Spin } from "antd";
+import { Spin } from "antd";
 import DocumentCard from "./document/DocumentCard";
 import DocumentTableRow from "./document/DocumentTableRow";
 import DocumentDetailsModal from "./document/DocumentDetailsModal";
@@ -28,6 +28,7 @@ const DocumentSection = ({
   selectedFilterClient,
   onClearClientFilter,
   onSendEmail,
+  sendingEmails,
 }) => {
   const [sortBy, setSortBy] = useState("numero");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -36,7 +37,6 @@ const DocumentSection = ({
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [backgroundLoaded] = useState(false);
   const [loading] = useState(false); // ← false directement
-  const [sendingEmails] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
   // États pour le scroll infini

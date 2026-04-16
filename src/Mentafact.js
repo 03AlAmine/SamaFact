@@ -115,7 +115,7 @@ const MentafactInner = ({ companyId }) => {
 
 
   const {
-    sendingEmails,
+    sendingEmails,  // ← Vient du hook useEmailSender
     sendEmail,
     EmailModal
   } = useEmailSender(companyId, async (entityType, entityId, email) => {
@@ -357,6 +357,7 @@ const MentafactInner = ({ companyId }) => {
             allFactures={allFactures}
             sendingEmails={sendingEmails}
             onSendEmail={handleSendInvoiceEmail}
+            
           />
         );
       case "payrolls":

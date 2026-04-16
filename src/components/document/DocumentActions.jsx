@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   FaEye,
   FaDownload,
@@ -31,7 +31,7 @@ const DocumentActions = ({
   onMarkAsPending,
   navigate,
   selectedClient,
-  sendingEmails,
+  sendingEmails = {},
   onSendEmail,
   onShowInfo,
   viewMode,
@@ -39,15 +39,45 @@ const DocumentActions = ({
 }) => {
   const status = getStatus(document);
   const isPaid = status === "Payé";
+  const isSending = sendingEmails[document?.id] === true;
 
-  const ActionButton = ({ className, icon, title, onClick, disabled = false }) => (
+  // État local pour l'effet de chargement (fallback)
+  const [localSending, setLocalSending] = useState(false);
+  
+  // Utiliser l'état global ou local
+  const showSending = isSending || localSending;
+
+  const handleSendEmail = useCallback(async (e) => {
+    e.stopPropagation();
+    
+    if (showSending) return; // Éviter les envois multiples
+    
+    // Si pas d'état global, utiliser l'état local
+    if (!sendingEmails[document?.id]) {
+      setLocalSending(true);
+    }
+    
+    try {
+      await onSendEmail(document);
+    } catch (error) {
+      console.error("Erreur lors de l'envoi:", error);
+    } finally {
+      setLocalSending(false);
+    }
+  }, [document, onSendEmail, sendingEmails, showSending]);
+
+  const ActionButton = ({ className, icon, title, onClick, disabled = false, loading = false }) => (
     <button
-      className={`action-btn ${className}`}
+      className={`action-btn ${className} ${loading ? 'loading' : ''}`}
       onClick={onClick}
       title={title}
-      disabled={disabled}
+      disabled={disabled || loading}
     >
-      {icon}
+      {loading ? (
+        <FaSpinner className="spinner-animate" />
+      ) : (
+        icon
+      )}
     </button>
   );
 
@@ -150,13 +180,11 @@ const DocumentActions = ({
         />
         <ActionButton
           className="send"
-          icon={sendingEmails[document.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
-          title="Envoyer par email"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSendEmail(document); // Cette fonction doit utiliser le hook useEmailSender
-          }}
-          disabled={sendingEmails[document.id]}
+          icon={<FaPaperPlane />}
+          title={showSending ? "Envoi en cours..." : "Envoyer par email"}
+          onClick={handleSendEmail}
+          disabled={showSending}
+          loading={showSending}
         />
         <ActionButton
           className="add"

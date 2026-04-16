@@ -1,4 +1,5 @@
-import React from "react";
+// PayrollActions.jsx - Version corrigée avec spinner
+import React, { useState, useCallback } from "react";
 import {
   FaEye,
   FaDownload,
@@ -32,7 +33,7 @@ const PayrollActions = React.memo(({
   onGenerate,
   onMarkAsPaid,
   onCancel,
-  sendingEmails,
+  sendingEmails = {},
   onSendEmail,
   onShowInfo,
   viewMode,
@@ -40,15 +41,47 @@ const PayrollActions = React.memo(({
 }) => {
   const status = getStatus(payroll);
   const isPaid = status === "Payé";
+  
+  // Vérifier si l'envoi est en cours (depuis le hook)
+  const isSending = sendingEmails[payroll?.id] === true;
+  
+  // État local pour l'effet de chargement (fallback)
+  const [localSending, setLocalSending] = useState(false);
+  
+  // Utiliser l'état global ou local
+  const showSending = isSending || localSending;
 
-  const ActionButton = ({ className, icon, title, onClick, disabled = false }) => (
+  const handleSendEmail = useCallback(async (e) => {
+    e.stopPropagation();
+    
+    if (showSending) return; // Éviter les envois multiples
+    
+    // Si pas d'état global, utiliser l'état local
+    if (!sendingEmails[payroll?.id]) {
+      setLocalSending(true);
+    }
+    
+    try {
+      await onSendEmail(payroll);
+    } catch (error) {
+      console.error("Erreur lors de l'envoi:", error);
+    } finally {
+      setLocalSending(false);
+    }
+  }, [payroll, onSendEmail, sendingEmails, showSending]);
+
+  const ActionButton = ({ className, icon, title, onClick, disabled = false, loading = false }) => (
     <button
-      className={`action-btn ${className}`}
+      className={`action-btn ${className} ${loading ? 'loading' : ''}`}
       onClick={onClick}
       title={title}
-      disabled={disabled}
+      disabled={disabled || loading}
     >
-      {icon}
+      {loading ? (
+        <FaSpinner className="spinner-animate" />
+      ) : (
+        icon
+      )}
     </button>
   );
 
@@ -125,10 +158,11 @@ const PayrollActions = React.memo(({
         />
         <ActionButton
           className="send"
-          icon={sendingEmails[payroll.id] ? <FaSpinner className="spinnerr" /> : <FaPaperPlane />}
-          title="Envoyer par email"
-          onClick={(e) => { e.stopPropagation(); onSendEmail(payroll); }}
-          disabled={sendingEmails[payroll.id]}
+          icon={<FaPaperPlane />}
+          title={showSending ? "Envoi en cours..." : "Envoyer par email"}
+          onClick={handleSendEmail}
+          disabled={showSending}
+          loading={showSending}
         />
         <ActionButton
           className="info_view"
@@ -186,9 +220,10 @@ const PayrollActions = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Comparaison personnalisée
+  // Comparaison personnalisée - inclure l'état d'envoi
   return (
     prevProps.payroll.id === nextProps.payroll.id &&
+    prevProps.getStatus(prevProps.payroll) === nextProps.getStatus(nextProps.payroll) &&
     prevProps.sendingEmails[prevProps.payroll.id] === nextProps.sendingEmails[nextProps.payroll.id]
   );
 });

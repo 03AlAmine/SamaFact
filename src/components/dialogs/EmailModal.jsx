@@ -1,7 +1,7 @@
-// components/modals/EmailModal.jsx
+// components/dialogs/EmailModal.jsx
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Input, Form, message } from "antd";
-import { FaEnvelope, FaSave, FaPaperPlane, FaTimes } from "react-icons/fa";
+import { Modal, Button, Input, Form, message, Spin } from "antd";
+import { FaEnvelope, FaSave, FaPaperPlane, FaTimes, FaSpinner } from "react-icons/fa";
 
 const EmailModal = ({
   visible,
@@ -11,21 +11,34 @@ const EmailModal = ({
   type,
   currentEmail,
   onSaveEmail,
-  entityType, // 'client' ou 'employee'
+  entityType,
   entityId,
-  entityName
+  entityName,
+  loading = false
 }) => {
   const [email, setEmail] = useState(currentEmail || "");
-  const [loading, setLoading] = useState(false);
   const [savePermanently, setSavePermanently] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
-    if (visible && currentEmail) {
-      setEmail(currentEmail);
-    } else if (visible && !currentEmail) {
-      setEmail("");
+    if (visible) {
+      if (currentEmail) {
+        setEmail(currentEmail);
+      } else {
+        setEmail("");
+      }
+      setSavePermanently(false);
     }
   }, [visible, currentEmail]);
+
+  // Nettoyer l'état quand le modal se ferme
+  useEffect(() => {
+    if (!visible) {
+      setIsSaving(false);
+      setIsSending(false);
+    }
+  }, [visible]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,15 +56,16 @@ const EmailModal = ({
       return;
     }
 
-    setLoading(true);
+    setIsSending(true);
     try {
       await onConfirm(email);
-      message.success(`Email envoyé avec succès à ${email}`);
+      // Le message de succès est déjà géré dans useEmailSender
       onClose();
     } catch (error) {
-      message.error(error.message || "Erreur lors de l'envoi");
+      // L'erreur est déjà gérée dans useEmailSender
+      console.error("Erreur:", error);
     } finally {
-      setLoading(false);
+      setIsSending(false);
     }
   };
 
@@ -66,7 +80,7 @@ const EmailModal = ({
       return;
     }
 
-    setLoading(true);
+    setIsSaving(true);
     try {
       // D'abord sauvegarder l'email
       if (onSaveEmail) {
@@ -74,17 +88,18 @@ const EmailModal = ({
         if (!saved.success) {
           throw new Error(saved.message || "Erreur lors de la sauvegarde");
         }
-        message.success(`Email enregistré pour ${entityName}`);
       }
 
       // Ensuite envoyer l'email
+      setIsSending(true);
       await onConfirm(email);
-      message.success(`Email envoyé avec succès à ${email}`);
       onClose();
     } catch (error) {
-      message.error(error.message || "Erreur lors de l'opération");
+      // L'erreur est déjà gérée
+      console.error("Erreur:", error);
     } finally {
-      setLoading(false);
+      setIsSaving(false);
+      setIsSending(false);
     }
   };
 
@@ -97,6 +112,8 @@ const EmailModal = ({
     return entityType === "client" ? "client" : "employé";
   };
 
+  const isLoading = loading || isSending || isSaving;
+
   return (
     <Modal
       title={
@@ -106,10 +123,12 @@ const EmailModal = ({
         </div>
       }
       open={visible}
-      onCancel={onClose}
+      onCancel={!isLoading ? onClose : undefined}
       footer={null}
       width={500}
       className="email-modal"
+      closable={!isLoading}
+      maskClosable={!isLoading}
     >
       <div style={{ padding: "8px 0" }}>
         <p style={{ marginBottom: "16px", color: "#64748b" }}>
@@ -132,17 +151,19 @@ const EmailModal = ({
               size="large"
               autoFocus
               onPressEnter={handleSendOnly}
+              disabled={isLoading}
             />
           </Form.Item>
 
           {!currentEmail && onSaveEmail && (
             <Form.Item style={{ marginBottom: "16px" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: isLoading ? "not-allowed" : "pointer" }}>
                 <input
                   type="checkbox"
                   checked={savePermanently}
                   onChange={(e) => setSavePermanently(e.target.checked)}
-                  style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                  style={{ width: "16px", height: "16px", cursor: isLoading ? "not-allowed" : "pointer" }}
+                  disabled={isLoading}
                 />
                 <span style={{ color: "#475569", fontSize: "14px" }}>
                   Enregistrer cet email pour {entityName} (utilisable pour les prochains envois)
@@ -152,6 +173,25 @@ const EmailModal = ({
           )}
         </Form>
 
+        {/* Indicateur de progression */}
+        {isLoading && (
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center",
+            gap: "12px",
+            padding: "12px",
+            background: "#f0fdf4",
+            borderRadius: "8px",
+            marginBottom: "16px"
+          }}>
+            <Spin size="small" />
+            <span style={{ color: "#166534", fontSize: "14px" }}>
+              {isSaving ? "Enregistrement de l'email..." : "Envoi du document en cours..."}
+            </span>
+          </div>
+        )}
+
         <div style={{ 
           display: "flex", 
           gap: "12px", 
@@ -160,7 +200,7 @@ const EmailModal = ({
           borderTop: "1px solid #e2e8f0",
           paddingTop: "16px"
         }}>
-          <Button onClick={onClose} disabled={loading}>
+          <Button onClick={onClose} disabled={isLoading}>
             <FaTimes /> Annuler
           </Button>
           
@@ -168,19 +208,23 @@ const EmailModal = ({
             <Button
               type="primary"
               onClick={handleSaveAndSend}
-              loading={loading}
+              loading={isLoading}
               style={{ background: "#10b981", borderColor: "#10b981" }}
+              disabled={isLoading}
             >
-              <FaSave /> Enregistrer & Envoyer
+              {isLoading ? <FaSpinner className="spin" /> : <FaSave />}
+              {isLoading ? " En cours..." : " Enregistrer & Envoyer"}
             </Button>
           ) : (
             <Button
               type="primary"
               onClick={handleSendOnly}
-              loading={loading}
+              loading={isLoading}
               style={{ background: "#3b82f6", borderColor: "#3b82f6" }}
+              disabled={isLoading}
             >
-              <FaPaperPlane /> Envoyer
+              {isLoading ? <FaSpinner className="spin" /> : <FaPaperPlane />}
+              {isLoading ? " Envoi en cours..." : " Envoyer"}
             </Button>
           )}
         </div>
@@ -199,6 +243,16 @@ const EmailModal = ({
           </p>
         )}
       </div>
+
+      <style jsx>{`
+        .spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Modal>
   );
 };
