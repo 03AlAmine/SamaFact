@@ -153,10 +153,11 @@ const DocumentTableRow = React.memo(({
     </tr>
   );
 }, (prevProps, nextProps) => {
-  // Comparaison personnalisée
+  // Comparaison personnalisée — inclut statut et montantPaye pour détecter les mises à jour de paiement
   return (
     prevProps.document.id === nextProps.document.id &&
-    prevProps.getStatus(prevProps.document) === nextProps.getStatus(nextProps.document) &&
+    prevProps.document.statut === nextProps.document.statut &&
+    prevProps.document.montantPaye === nextProps.document.montantPaye &&
     prevProps.sendingEmails[prevProps.document.id] === nextProps.sendingEmails[nextProps.document.id]
   );
 });

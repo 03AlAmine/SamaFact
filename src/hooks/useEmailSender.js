@@ -1,4 +1,4 @@
-// hooks/useEmailSender.js - Version optimisée
+// hooks/useEmailSender.js - Version finale (simple et efficace)
 
 import React, { useState, useCallback, useRef } from "react";
 import { message } from "antd";
@@ -17,14 +17,14 @@ export const useEmailSender = (companyId, onEmailSaved) => {
     entityType: null
   });
   
-  const isSendingRef = useRef({}); // Pour suivre les envois par document
+  const isSendingRef = useRef({});
   const modalTimeoutRef = useRef(null);
 
   const sendEmail = useCallback(async (document, type, onSuccess) => {
     const documentId = document.id;
     
-    // Éviter les envois multiples pour le même document
     if (isSendingRef.current[documentId]) {
+      message.warning("Envoi déjà en cours...");
       return;
     }
 
@@ -39,22 +39,20 @@ export const useEmailSender = (companyId, onEmailSaved) => {
       ? document.employeeName 
       : document.clientNom;
 
-    // Marquer comme en cours d'envoi
     isSendingRef.current[documentId] = true;
     setSendingEmails(prev => ({ ...prev, [documentId]: true }));
 
-    try {
-      // Fonction pour mettre à jour le progrès (optionnel)
-      const updateProgress = (progress) => {
-        // Vous pouvez utiliser ceci pour un spinner plus avancé
-      };
+    // ✅ Simple message de chargement
+    const hideLoading = message.loading("Préparation et envoi en cours...", 0);
 
+    try {
       if (currentEmail && currentEmail.trim()) {
-        await emailService.sendWithEmailCheck(document, type, currentEmail, updateProgress);
+        await emailService.sendWithEmailCheck(document, type, currentEmail);
+        hideLoading();
         message.success(`Document envoyé avec succès à ${currentEmail}`);
         if (onSuccess) onSuccess();
       } else {
-        // Ouvrir le modal pour saisir l'email
+        hideLoading();
         setEmailModalState({
           visible: true,
           document,
@@ -66,7 +64,9 @@ export const useEmailSender = (companyId, onEmailSaved) => {
         });
       }
     } catch (error) {
+      hideLoading();
       console.error("Erreur envoi:", error);
+      
       if (error.message === 'EMAIL_MISSING') {
         setEmailModalState({
           visible: true,
@@ -83,7 +83,6 @@ export const useEmailSender = (companyId, onEmailSaved) => {
         message.error(error.message || "Erreur lors de l'envoi");
       }
     } finally {
-      // Nettoyer l'état d'envoi
       delete isSendingRef.current[documentId];
       setSendingEmails(prev => {
         const newState = { ...prev };
@@ -97,7 +96,6 @@ export const useEmailSender = (companyId, onEmailSaved) => {
     const { document, type } = emailModalState;
     const documentId = document.id;
     
-    // Éviter les doubles appels
     if (isSendingRef.current[documentId]) {
       return { success: false, error: "Envoi déjà en cours" };
     }
@@ -105,12 +103,16 @@ export const useEmailSender = (companyId, onEmailSaved) => {
     isSendingRef.current[documentId] = true;
     setSendingEmails(prev => ({ ...prev, [documentId]: true }));
     
+    const hideLoading = message.loading("Préparation et envoi en cours...", 0);
+    
     try {
       await emailService.sendWithEmailCheck(document, type, email);
+      hideLoading();
       message.success(`Document envoyé avec succès à ${email}`);
       setEmailModalState(prev => ({ ...prev, visible: false }));
       return { success: true };
     } catch (error) {
+      hideLoading();
       console.error("Erreur envoi:", error);
       if (error.message === 'EMAIL_INVALID') {
         message.error("L'adresse email n'est pas valide");
@@ -129,7 +131,7 @@ export const useEmailSender = (companyId, onEmailSaved) => {
   }, [emailModalState]);
 
   const handleSaveEmail = useCallback(async (entityId, email) => {
-    const { type, entityType, document } = emailModalState;
+    const {entityType, document } = emailModalState;
     
     try {
       let result;

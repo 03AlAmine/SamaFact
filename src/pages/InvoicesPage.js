@@ -294,9 +294,9 @@ const InvoicesPage = ({
                 ? parseFloat(currentDocument.totalTTC.replace(/\s/g, '').replace(',', '.'))
                 : currentDocument.totalTTC || 0;
 
-            const montantPaye = typeof paymentDetails.montant === 'string'
-                ? parseFloat(paymentDetails.montant.replace(/\s/g, '').replace(',', '.'))
-                : paymentDetails.montant || 0;
+            const montantPaye = typeof paymentDetails.montantPaye === 'string'
+                ? parseFloat(paymentDetails.montantPaye.replace(/\s/g, '').replace(',', '.'))
+                : paymentDetails.montantPaye || 0;
 
             const EPSILON = 0.01;
 
@@ -322,7 +322,8 @@ const InvoicesPage = ({
             );
 
             if (result.success) {
-                message.success(`Document marqué comme ${newStatus}`);
+                const statusLabel = newStatus === "payé" ? "payé ✓" : newStatus === "accompte" ? "acompte enregistré ✓" : newStatus;
+                message.success(`Document marqué comme ${statusLabel}`);
                 setModalVisible(false);
             } else {
                 message.error(result.message);

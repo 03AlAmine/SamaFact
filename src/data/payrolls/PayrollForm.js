@@ -571,13 +571,27 @@ const PayrollForm = () => {
         const { name, value } = e.target;
         const [section, field] = name.split('.');
 
-        setFormData(prev => ({
-            ...prev,
-            [section]: {
-                ...prev[section],
-                [field]: value
+        setFormData(prev => {
+            const updated = {
+                ...prev,
+                [section]: {
+                    ...prev[section],
+                    [field]: value
+                }
+            };
+
+            // Auto-remplir "Au" avec le dernier jour du mois quand "Du" change
+            if (section === 'periode' && field === 'du' && value) {
+                const date = new Date(value);
+                const dernierJour = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+                const yyyy = dernierJour.getFullYear();
+                const mm = String(dernierJour.getMonth() + 1).padStart(2, '0');
+                const dd = String(dernierJour.getDate()).padStart(2, '0');
+                updated.periode.au = `${yyyy}-${mm}-${dd}`;
             }
-        }));
+
+            return updated;
+        });
     };
 
     const handleInputFocus = (e) => {

@@ -409,7 +409,7 @@ const ClientCard = ({ client, isSelected, onSelect, onEdit, onDelete, onView }) 
                     <ActionButton
                         icon={<FaTrash />}
                         title="Supprimer"
-                        onClick={(e) => handleAction(e, onDelete)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(client.id); }}
                         className="delete"
                     />
                 </div>
@@ -494,7 +494,7 @@ const ClientTableRow = ({ client, isSelected, onSelect, onView, onEdit, onDelete
                     <ActionButton
                         icon={<FaTrash />}
                         title="Supprimer"
-                        onClick={(e) => handleAction(e, onDelete)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(client.id); }}
                         className="delete"
                     />
                 </div>
@@ -1170,7 +1170,7 @@ const ClientsPage = ({
                                                     <ActionButton
                                                         icon={<FaTrash />}
                                                         title="Supprimer"
-                                                        onClick={() => handleDeleteFacture(facture.id)}
+                                                        onClick={() => handleDeleteFacture(facture.id, facture.type || 'facture')}
                                                         className="delete"
                                                     />
                                                     <ActionButton

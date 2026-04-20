@@ -276,7 +276,7 @@ export const invoiceService = {
         referencePaiement: paymentDetails.reference || "",
         notePaiement: paymentDetails.note || "",
         montantPaye: roundedTotalPaid,
-        statut: isFullPayment ? "payé" : "accompte",
+        statut: paymentDetails.statut || (isFullPayment ? "payé" : "accompte"),
         typePaiement: isFullPayment ? "complet" : "acompte"
       };
 

@@ -1,14 +1,13 @@
+// DocumentSectionPayroll.js - Version corrigée avec useEmailSender
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { message } from 'antd';
-import { emailService } from "../services/emailService";
-
 import PayrollCard from './docpayroll/PayrollCard';
 import PayrollTableRow from './docpayroll/PayrollTableRow';
 import PayrollHeader from './docpayroll/PayrollHeader';
 import LoadingState from './common/LoadingState';
 import EmptyState from './common/EmptyState';
 import PayrollDetailsModal from './docpayroll/PayrollDetailsModal';
-
 
 const PayrollSection = ({
   title,
@@ -34,10 +33,11 @@ const PayrollSection = ({
   totalFilteredCount,
   generateAllDisabled,
   downloadAllDisabled,
-  // NOUVELLES PROPS
   selectedDepartment,
   onClearDepartment,
-  onSendEmail,
+  // ✅ RECEVOIR les props du hook
+  onSendEmail,        // ← Fonction sendEmail du hook
+  sendingEmails,      // ← État des envois en cours
 }) => {
   const [sortBy, setSortBy] = useState('numero');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -46,10 +46,12 @@ const PayrollSection = ({
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [backgroundLoaded] = useState(false);
   const [loading] = useState(false);
-  const [sendingEmails, setSendingEmails] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
-  // États pour le scroll infini
+  // ❌ SUPPRIMER l'état local sendingEmails
+  // const [sendingEmails, setSendingEmails] = useState({});
+
+  // États pour le scroll infini (inchangés)
   const [visibleItems, setVisibleItems] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -64,18 +66,50 @@ const PayrollSection = ({
   const prevSearchTermRef = useRef(searchTerm);
   const prevViewModeRef = useRef(viewMode);
 
-  // Fonction pour charger plus d'éléments
-  const loadMoreItems = useCallback(() => {
-    if (loadingMore || !hasMore || items.length === 0) {
+  // ✅ Utiliser la fonction sendEmail du hook
+  const sendEmail = useCallback(async (payroll) => {
+    // Validation des champs obligatoires (optionnel, le hook le fait aussi)
+    const missingFields = [];
+
+    if (!payroll.employeeName) missingFields.push("nom de l'employé");
+    if (!payroll.numero) missingFields.push("numéro du bulletin");
+    if (!payroll.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
+
+    if (missingFields.length > 0) {
+      message.error(`Données manquantes: ${missingFields.join(', ')} ❌`, 5);
       return;
     }
 
-    setLoadingMore(true);
+    // Appeler la fonction du hook
+    await onSendEmail(payroll, "payroll");
+  }, [onSendEmail]);
 
+  // Détection responsive
+  useEffect(() => {
+    const checkResponsive = () => {
+      const width = window.innerWidth;
+      if (width <= 992) {
+        setIsMobile(true);
+        setViewMode("card");
+      } else {
+        setIsMobile(false);
+      }
+    };
+    checkResponsive();
+    window.addEventListener("resize", checkResponsive);
+    window.addEventListener("orientationchange", checkResponsive);
+    return () => {
+      window.removeEventListener("resize", checkResponsive);
+      window.removeEventListener("orientationchange", checkResponsive);
+    };
+  }, []);
+
+  // Fonction pour charger plus d'éléments
+  const loadMoreItems = useCallback(() => {
+    if (loadingMore || !hasMore || items.length === 0) return;
+    setLoadingMore(true);
     setTimeout(() => {
       const nextPage = page + 1;
-
-      // Trier les items par ordre descendant (numéro ou date)
       const sortedItems = [...items].sort((a, b) => {
         if (sortBy === 'numero') {
           const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
@@ -88,23 +122,17 @@ const PayrollSection = ({
         }
         return 0;
       });
-
-      // Calculer les indices
       const startIndex = nextPage * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const nextItems = sortedItems.slice(startIndex, endIndex);
-
       if (nextItems.length > 0) {
         setVisibleItems(prev => [...prev, ...nextItems]);
         setPage(nextPage);
-
-        // Vérifier s'il reste des éléments à charger
         const nextHasMore = sortedItems.length > (nextPage + 1) * itemsPerPage;
         setHasMore(nextHasMore);
       } else {
         setHasMore(false);
       }
-
       setLoadingMore(false);
     }, 300);
   }, [page, loadingMore, hasMore, items, itemsPerPage, sortBy]);
@@ -120,40 +148,12 @@ const PayrollSection = ({
     }).length;
   }, [items, searchTerm]);
 
-
-  // Détection responsive
-  useEffect(() => {
-    const checkResponsive = () => {
-      const width = window.innerWidth;
-
-      if (width <= 992) {
-        setIsMobile(true);
-        // Forcer le mode carte sur mobile
-        setViewMode("card");
-      } else {
-        setIsMobile(false);
-      }
-    };
-
-    checkResponsive();
-    window.addEventListener("resize", checkResponsive);
-    window.addEventListener("orientationchange", checkResponsive);
-
-    return () => {
-      window.removeEventListener("resize", checkResponsive);
-      window.removeEventListener("orientationchange", checkResponsive);
-    };
-  }, []);
-
   // Fonction pour initialiser le scroll infini
   const initializeInfiniteScroll = useCallback(() => {
-    // Réinitialiser les états
     setPage(0);
     setVisibleItems([]);
     setLoadingMore(false);
-
     if (items.length > 0) {
-      // Trier par ordre descendant
       const sortedItems = [...items].sort((a, b) => {
         if (sortBy === 'numero') {
           const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
@@ -166,29 +166,21 @@ const PayrollSection = ({
         }
         return 0;
       });
-
-      // Prendre les premiers items
       const initialItems = sortedItems.slice(0, itemsPerPage);
       setVisibleItems(initialItems);
-
-      // Vérifier s'il y a plus à charger
       const shouldHaveMore = sortedItems.length > itemsPerPage;
       setHasMore(shouldHaveMore);
-
       prevItemsLengthRef.current = items.length;
       prevSearchTermRef.current = searchTerm;
     } else {
       setVisibleItems([]);
       setHasMore(false);
     }
-
-    // Réinitialiser le scroll
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
   }, [items, itemsPerPage, sortBy, searchTerm]);
 
-  // Gérer le changement de viewMode
   const handleViewModeChange = useCallback((newViewMode) => {
     setViewMode(newViewMode);
     prevViewModeRef.current = newViewMode;
@@ -198,8 +190,6 @@ const PayrollSection = ({
   useEffect(() => {
     const itemsLengthChanged = prevItemsLengthRef.current !== items.length;
     const searchTermChanged = prevSearchTermRef.current !== searchTerm;
-
-    // Initialiser seulement si les items ou le terme de recherche changent
     if (itemsLengthChanged || searchTermChanged) {
       initializeInfiniteScroll();
     }
@@ -207,15 +197,8 @@ const PayrollSection = ({
 
   // Configuration de l'Observer
   useEffect(() => {
-    if (!hasMore || loadingMore) {
-      return;
-    }
-
-    // Nettoyer l'ancien observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
+    if (!hasMore || loadingMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -223,16 +206,9 @@ const PayrollSection = ({
           loadMoreItems();
         }
       },
-      {
-        root: null,
-        rootMargin: "100px",
-        threshold: 0.1
-      }
+      { root: null, rootMargin: "100px", threshold: 0.1 }
     );
-
     observerRef.current = observer;
-
-    // Attacher l'observer avec un délai
     const attachObserver = () => {
       if (loaderRef.current) {
         observer.observe(loaderRef.current);
@@ -240,13 +216,9 @@ const PayrollSection = ({
         setTimeout(attachObserver, 100);
       }
     };
-
     attachObserver();
-
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      if (observerRef.current) observerRef.current.disconnect();
     };
   }, [hasMore, loadingMore, loadMoreItems, viewMode]);
 
@@ -272,11 +244,8 @@ const PayrollSection = ({
         }
         return 0;
       });
-
       const currentHasMore = sortedItems.length > visibleItems.length;
-      if (currentHasMore !== hasMore) {
-        setHasMore(currentHasMore);
-      }
+      if (currentHasMore !== hasMore) setHasMore(currentHasMore);
     }
   }, [items.length, visibleItems.length, hasMore, sortBy, items]);
 
@@ -318,16 +287,13 @@ const PayrollSection = ({
   // Filtrage et tri des items visibles
   const filteredItems = useMemo(() => {
     if (visibleItems.length === 0) return [];
-
     const safeSearch = (searchTerm || '').toLowerCase();
-
     const filtered = visibleItems.filter(item => {
       if (!item) return false;
       const numero = (item.numero || '').toLowerCase();
       const name = (item.employeeName || '').toLowerCase();
       return numero.includes(safeSearch) || name.includes(safeSearch);
     });
-
     return filtered.sort((a, b) => {
       let compareValue = 0;
       if (sortBy === 'numero') {
@@ -348,57 +314,6 @@ const PayrollSection = ({
       return sortOrder === 'asc' ? compareValue : -compareValue;
     });
   }, [visibleItems, searchTerm, sortBy, sortOrder]);
-
-  // Fonction d'envoi d'email
-  const sendEmail = useCallback(async (payroll) => {
-    // Validation des champs obligatoires
-    const missingFields = [];
-
-    if (!payroll.employeeName) missingFields.push("nom de l'employé");
-    if (!payroll.employeeEmail) missingFields.push("email de l'employé");
-    if (!payroll.numero) missingFields.push("numéro du bulletin");
-    if (!payroll.calculations?.salaireNetAPayer) missingFields.push("salaire net à payer");
-    if (!payroll.periode?.du || !payroll.periode?.au) missingFields.push("période de paie");
-
-    if (missingFields.length > 0) {
-      message.error(`Données manquantes: ${missingFields.join(', ')} ❌`, 5);
-      return;
-    }
-
-    // Validation email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(payroll.employeeEmail)) {
-      message.error("L'adresse email de l'employé n'est pas valide ❌");
-      return;
-    }
-
-    setSendingEmails(prev => ({ ...prev, [payroll.id]: true }));
-
-    const hideLoading = message.loading("Préparation du PDF et envoi en cours...", 0);
-
-    try {
-      await emailService.sendPayrollWithPdfAttachment(payroll);
-
-      hideLoading();
-      message.success(`Bulletin envoyé avec succès à ${payroll.employeeEmail} ✅`, 5);
-
-    } catch (error) {
-      hideLoading();
-      console.error("Erreur détaillée envoi bulletin:", error);
-
-      if (error.message.includes("PDF")) {
-        message.error("Erreur lors de la génération du PDF du bulletin. Vérifiez les données. ❌", 5);
-      } else {
-        message.error(error.message || "Erreur lors de l'envoi de l'email ❌", 5);
-      }
-    } finally {
-      setSendingEmails(prev => {
-        const newState = { ...prev };
-        delete newState[payroll.id];
-        return newState;
-      });
-    }
-  }, []);
 
   if (loading) {
     return <LoadingState />;
@@ -428,7 +343,6 @@ const PayrollSection = ({
         totalFilteredCount={totalFilteredCount}
         generateAllDisabled={generateAllDisabled}
         downloadAllDisabled={downloadAllDisabled}
-        // NOUVELLES PROPS
         selectedDepartment={selectedDepartment}
         onClearDepartment={onClearDepartment}
       />
@@ -460,13 +374,11 @@ const PayrollSection = ({
                   onGenerate={onGenerate}
                   onMarkAsPaid={onMarkAsPaid}
                   onCancel={onCancel}
-                  sendingEmails={sendingEmails}
-                  onSendEmail={sendEmail}
+                  sendingEmails={sendingEmails}  // ✅ Utiliser la prop du hook
+                  onSendEmail={sendEmail}        // ✅ Utiliser la nouvelle fonction
                   onShowInfo={showInfoModal}
                 />
               ))}
-
-              {/* Élément loader */}
               <div
                 ref={loaderRef}
                 key={`loader-payroll-${page}-${viewMode}`}
@@ -482,9 +394,7 @@ const PayrollSection = ({
                         <i className="ant-spin-dot-item"></i>
                       </span>
                     </div>
-                    <div className="loading-text">
-                      Chargement des bulletins...
-                    </div>
+                    <div className="loading-text">Chargement des bulletins...</div>
                   </div>
                 ) : hasMore ? (
                   <div className="has-more-indicator">
@@ -512,57 +422,37 @@ const PayrollSection = ({
               <table className="documents-table">
                 <thead>
                   <tr>
-                    <th
-                      onClick={() => toggleSort('numero')}
-                      className={sortBy === 'numero' ? 'active' : ''}
-                    >
+                    <th onClick={() => toggleSort('numero')} className={sortBy === 'numero' ? 'active' : ''}>
                       <div className="th-content">
                         Numéro
                         {sortBy === 'numero' && (
-                          <span className="sort-indicator">
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                          </span>
+                          <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                     </th>
                     {showEmployeeColumn && (
-                      <th
-                        onClick={() => toggleSort('employeeName')}
-                        className={sortBy === 'employeeName' ? 'active' : ''}
-                      >
+                      <th onClick={() => toggleSort('employeeName')} className={sortBy === 'employeeName' ? 'active' : ''}>
                         <div className="th-content">
                           Employé
                           {sortBy === 'employeeName' && (
-                            <span className="sort-indicator">
-                              {sortOrder === 'asc' ? '↑' : '↓'}
-                            </span>
+                            <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                           )}
                         </div>
                       </th>
                     )}
-                    <th
-                      onClick={() => toggleSort('periode')}
-                      className={sortBy === 'periode' ? 'active' : ''}
-                    >
+                    <th onClick={() => toggleSort('periode')} className={sortBy === 'periode' ? 'active' : ''}>
                       <div className="th-content">
                         Période
                         {sortBy === 'periode' && (
-                          <span className="sort-indicator">
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                          </span>
+                          <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                     </th>
-                    <th
-                      onClick={() => toggleSort('salaireNetAPayer')}
-                      className={sortBy === 'salaireNetAPayer' ? 'active' : ''}
-                    >
+                    <th onClick={() => toggleSort('salaireNetAPayer')} className={sortBy === 'salaireNetAPayer' ? 'active' : ''}>
                       <div className="th-content">
                         Net à payer
                         {sortBy === 'salaireNetAPayer' && (
-                          <span className="sort-indicator">
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                          </span>
+                          <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                     </th>
@@ -586,18 +476,12 @@ const PayrollSection = ({
                       onGenerate={onGenerate}
                       onMarkAsPaid={onMarkAsPaid}
                       onCancel={onCancel}
-                      sendingEmails={sendingEmails}
-                      onSendEmail={sendEmail}
+                      sendingEmails={sendingEmails}  // ✅ Utiliser la prop du hook
+                      onSendEmail={sendEmail}        // ✅ Utiliser la nouvelle fonction
                       onShowInfo={showInfoModal}
                     />
                   ))}
-
-                  {/* Ligne loader */}
-                  <tr
-                    ref={loaderRef}
-                    key={`loader-row-payroll-${page}-${viewMode}`}
-                    className="loading-row"
-                  >
+                  <tr ref={loaderRef} key={`loader-row-payroll-${page}-${viewMode}`} className="loading-row">
                     <td colSpan={showEmployeeColumn ? 6 : 5} className="loading-cell">
                       {loadingMore ? (
                         <div className="loading-spinner">
@@ -609,9 +493,7 @@ const PayrollSection = ({
                               <i className="ant-spin-dot-item"></i>
                             </span>
                           </div>
-                          <div className="loading-text">
-                            Chargement des bulletins...
-                          </div>
+                          <div className="loading-text">Chargement des bulletins...</div>
                         </div>
                       ) : hasMore ? (
                         <div className="has-more-indicator">

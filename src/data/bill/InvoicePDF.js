@@ -3,7 +3,7 @@ import { Page, Text, View, Document, Image } from '@react-pdf/renderer';
 import n2words from 'n2words';
 import { createPdfStyles } from './styles/pdfStyles';
 import defaultLogo from '../../assets/logos/Mf.png'; // Logo par défaut
-import defaultSignature from '../../assets/signatures/signature_mf.webp'; // Signature par défaut
+import defaultSignature from '../../assets/signatures/signature_mf.png'; // Signature par défaut
 
 const InvoicePDF = ({
   data,

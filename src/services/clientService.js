@@ -26,6 +26,8 @@ export const clientService = {
         createdAt: doc.data().createdAt?.toDate?.() || null
       }));
       callback(clientsData);
+    }, (error) => {
+      console.error("❌ onSnapshot clients erreur:", error.code, error.message);
     });
 
     return unsubscribe;

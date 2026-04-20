@@ -26,11 +26,13 @@ export const InvoiceProvider = ({ children, companyId }) => {
   const [activeTab_0, setActiveTab_0] = useState("factures");
 
   const unsubsRef = useRef([]);
-  const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (!companyId || loadedRef.current) return;
-    loadedRef.current = true;
+    if (!companyId) return;
+
+    // Désabonner les anciens listeners avant d'en créer de nouveaux
+    unsubsRef.current.forEach((u) => u());
+    unsubsRef.current = [];
 
     const isChargeCompte = currentUser?.role === "charge_compte";
 
@@ -71,7 +73,6 @@ export const InvoiceProvider = ({ children, companyId }) => {
     return () => {
       unsubsRef.current.forEach((u) => u());
       unsubsRef.current = [];
-      loadedRef.current = false;
     };
   }, [companyId, currentUser?.role, currentUser?.uid]);
 
@@ -86,8 +87,8 @@ export const InvoiceProvider = ({ children, companyId }) => {
         // Note: Il faudrait récupérer le doc, mais on peut aussi passer les données depuis l'appel
       }
       
-      await deleteDoc(doc(db, `companies/${currentUser.companyId}/factures`, docId));
-      await deleteDoc(doc(db, `companies/${currentUser.companyId}/factures_resume`, docId));
+      await deleteDoc(doc(db, `companies/${companyId}/factures`, docId));
+      await deleteDoc(doc(db, `companies/${companyId}/factures_resume`, docId));
       
       // ✅ AUDIT: Suppression selon le type
       let action;
@@ -120,7 +121,7 @@ export const InvoiceProvider = ({ children, companyId }) => {
       alert("Échec de la suppression");
       return false;
     }
-  }, [currentUser?.companyId, logAction]);
+  }, [companyId, logAction]);
 
   // ✅ Fonctions pour les paiements et modifications (à appeler depuis les pages)
   const logInvoicePayment = useCallback(async (invoice, paymentData) => {

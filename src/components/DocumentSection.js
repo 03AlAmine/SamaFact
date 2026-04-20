@@ -185,6 +185,19 @@ const DocumentSection = ({
     // Le changement de viewMode ne doit pas affecter le scroll infini
   }, [type, items.length, initializeInfiniteScroll]);
 
+  // 🔥 SYNC : Mettre à jour visibleItems quand les données changent (ex: statut payé)
+  // sans réinitialiser tout le scroll infini
+  useEffect(() => {
+    if (items.length === 0) return;
+    setVisibleItems((prev) => {
+      if (prev.length === 0) return prev;
+      return prev.map((visibleItem) => {
+        const updated = items.find((i) => i.id === visibleItem.id);
+        return updated || visibleItem;
+      });
+    });
+  }, [items]);
+
   // Configuration de l'Observer
   useEffect(() => {
     if (!hasMore || loadingMore) {

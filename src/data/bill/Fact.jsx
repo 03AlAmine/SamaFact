@@ -923,9 +923,6 @@ const InvoiceEditor = () => {
   const location        = useLocation();
   const windowWidth     = useWindowWidth();
 
-  // Breakpoints en JS (cohérent avec le CSS)
-  const isMobile    = windowWidth <= 900;
-  const isCollapsed = windowWidth > 900 && windowWidth <= 1280;
   // L'aperçu latéral n'est visible qu'au-delà de 1100 px
   const previewCanBeSide = windowWidth > 1100;
 

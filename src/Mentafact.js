@@ -115,17 +115,12 @@ const MentafactInner = ({ companyId }) => {
 
 
   const {
-    sendingEmails,  // ← Vient du hook useEmailSender
+    sendingEmails,
     sendEmail,
-    EmailModal
+    EmailModal,
   } = useEmailSender(companyId, async (entityType, entityId, email) => {
-
-    // Forcer le rechargement des données si nécessaire
     if (entityType === "client") {
-      await fetchClients(true); // Force le rechargement
-    } else {
-      // Pour les employés, le listener onSnapshot devrait déjà mettre à jour
-      // Mais on peut forcer si besoin
+      await fetchClients(true);
     }
   });
   // Modifier les fonctions d'envoi pour utiliser sendEmail
@@ -357,7 +352,7 @@ const MentafactInner = ({ companyId }) => {
             allFactures={allFactures}
             sendingEmails={sendingEmails}
             onSendEmail={handleSendInvoiceEmail}
-            
+
           />
         );
       case "payrolls":
@@ -447,7 +442,6 @@ const MentafactInner = ({ companyId }) => {
         </div>
       </NotificationProvider>
       <EmailModal />
-
       <button className="floating-up-button" onClick={smoothScrollToTop}>
         <FaArrowUp className="button-icon" />
         <span className="button-text">Up</span>

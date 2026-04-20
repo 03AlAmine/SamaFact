@@ -20,10 +20,10 @@ export const CompanyModal = ({
     ];
 
     const availableSignatures = [
-        'signature_lis.webp',
-        'signature_ncs.webp',
+        'signature_lis.png',
+        'signature_ncs.png',
         'signature_samatech.png',
-        'signature_default.png',
+        'signature_mf.png'
     ];
 
     const handleSubmit = (e) => {

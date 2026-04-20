@@ -124,11 +124,39 @@ export const emailService = {
     try {
       if (onProgress) onProgress('generating_pdf');
 
+      // Le bulletin Firestore est stocké à plat (voir payrollService.preparePayrollData).
+      // On reconstruit les sous-objets attendus par generatePayrollPdfBlob.
+      const employee = {
+        nom: payroll.employeeName || '',
+        prenom: '',
+        matricule: payroll.employeeMatricule || '',
+        poste: payroll.employeePosition || '',
+        adresse: payroll.employeeAddresse || '',
+        categorie: payroll.employeeCategorie || '',
+        dateEmbauche: payroll.dateEmbauche || '',
+        typeContrat: payroll.typeContrat || 'CDI',
+        nbreJoursConges: payroll.nbreJoursConges || 0,
+        dateDepart: payroll.dateDepart || null,
+        nbreofParts: payroll.nbreofParts || 1,
+        salaireBase: payroll.remuneration?.salaireBase || 0,
+      };
+
+      const payrollData = {
+        numero: payroll.numero || '',
+        periode: payroll.periode || {},
+        remuneration: payroll.remuneration || {},
+        primes: payroll.primes || {},
+        retenues: payroll.retenues || {},
+      };
+
+      const calculations = payroll.calculations || {};
+      const companyInfo = payroll.companyInfo || {};
+
       const pdfBlob = await generatePayrollPdfBlob(
-        payroll.employee,
-        payroll.formData,
-        payroll.calculations,
-        payroll.companyInfo
+        employee,
+        payrollData,
+        calculations,
+        companyInfo
       );
 
       if (!pdfBlob || pdfBlob.size === 0) {
@@ -317,9 +345,9 @@ const buildInvoiceEmailHtml = (document, type) => {
           <p>Veuillez trouver ci-joint votre ${type} en pièce jointe.</p>
           <div class="attachment-notice"><p>📎 <strong>Pièce jointe :</strong> ${type}_${document.numero}.pdf</p></div>
           <div class="details">
-            <div class="detail-row"><span class="detail-label">📅 Date d'émission</span><span class="detail-value">${document.date}</span></div>
-            ${document.dateEcheance ? `<div class="detail-row"><span class="detail-label">⏰ Date d'échéance</span><span class="detail-value">${document.dateEcheance}</span></div>` : ''}
-            <div class="detail-row"><span class="detail-label">💰 Montant ${type === 'devis' ? 'total' : 'TTC'}</span><span class="detail-value amount">${amount} FCFA</span></div>
+            <div class="detail-row"><span class="detail-label">📅 Date d'émission: </span><span class="detail-value">${document.date}</span></div>
+            ${document.dateEcheance ? `<div class="detail-row"><span class="detail-label">⏰ Date d'échéance: </span><span class="detail-value">${document.dateEcheance}</span></div>` : ''}
+            <div class="detail-row"><span class="detail-label">💰 Montant ${type === 'devis' ? 'total' : 'TTC'} </span><span class="detail-value amount">${amount} FCFA</span></div>
           </div>
           <p style="margin-top: 20px; color: #6c757d;">Merci de votre confiance.<br><br>Cordialement,<br><strong>L'équipe commerciale</strong></p>
         </div>

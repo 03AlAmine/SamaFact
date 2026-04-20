@@ -130,7 +130,7 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
         }
     };*/
 
-    // Dans PayrollPDF.js, ajoutez cette fonction
+    // Calcul des congés basé sur la période du bulletin (pas la date d'aujourd'hui)
     const calculateSoldeConges = () => {
         try {
             if (!employee?.dateEmbauche) return 0;
@@ -149,23 +149,28 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
 
             if (isNaN(dateEmbauche.getTime())) return 0;
 
-            const aujourdHui = new Date();
-            const anneeCourante = aujourdHui.getFullYear();
+            // ✅ Utiliser la date de fin de période du bulletin, pas aujourd'hui
+            // Ainsi un bulletin de janvier calculera les congés de janvier
+            const dateBulletin = formData?.periode?.au
+                ? new Date(formData.periode.au)
+                : new Date();
 
-            // Calculer les mois depuis le début de l'année OU depuis l'embauche si c'est dans l'année
-            const debutAnnee = new Date(anneeCourante, 0, 1);
+            const anneeBulletin = dateBulletin.getFullYear();
+
+            // Début de l'année du bulletin OU date d'embauche si plus récente
+            const debutAnnee = new Date(anneeBulletin, 0, 1);
             const dateDebut = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
 
-            // Mois écoulés dans l'année en cours
+            // Mois écoulés dans l'année du bulletin jusqu'à la période du bulletin
             const moisEcoules = Math.max(0,
-                (aujourdHui.getFullYear() - dateDebut.getFullYear()) * 12 +
-                (aujourdHui.getMonth() - dateDebut.getMonth())
+                (dateBulletin.getFullYear() - dateDebut.getFullYear()) * 12 +
+                (dateBulletin.getMonth() - dateDebut.getMonth())
             );
 
-            // Congés accumulés dans l'année (2 jours par mois)
+            // 2 jours de congés par mois écoulé
             const congesAccumulesAnnee = moisEcoules * 2;
 
-            // Congés utilisés (total ou spécifique à l'année)
+            // Congés utilisés
             const congesUtilises = parseInt(employee.joursCongesUtilisesAnnee || employee.joursCongesUtilises || 0);
 
             return Math.max(0, congesAccumulesAnnee - congesUtilises);
@@ -218,48 +223,35 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                     </View>
                 </View>
 
-                {/* Employee Info */}
+                {/* Employee Info - 2 lignes alignées : labels / valeurs */}
                 <View style={styles.employeeInfo}>
-                    <View>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Prénom & Nom: </Text>
-                            {employee.prenom} {employee.nom}
-                        </Text>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Date embauche: </Text>
-                            {formatDate(employee.dateEmbauche)}
-                        </Text>
+                    {/* Ligne 1 : Labels */}
+                    <View style={styles.employeeInfoRow}>
+                        <Text style={[styles.employeeInfoPre, { flex: 1.2 }]}>Prénom & Nom</Text>
+                        <Text style={[styles.employeeInfoPre, { flex: 1 }]}>Matricule</Text>
+                        <Text style={[styles.employeeInfoPre, { flex: 1 }]}>Poste</Text>
+                        <Text style={[styles.employeeInfoPre, { flex: 0.7 }]}>Catégorie</Text>
                     </View>
-                    <View>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Matricule: </Text>
-                            {employee.matricule}
-                        </Text>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Nbres Parts: </Text>
-                            {employee.nbreofParts || 1}
-                        </Text>
-
+                    {/* Ligne 2 : Valeurs */}
+                    <View style={styles.employeeInfoRow}>
+                        <Text style={[styles.employeeInfoValue, { flex: 1.2 }]} numberOfLines={1}>{employee.prenom} {employee.nom}</Text>
+                        <Text style={[styles.employeeInfoValue, { flex: 1 }]}>{employee.matricule}</Text>
+                        <Text style={[styles.employeeInfoValue, { flex: 1 }]} numberOfLines={2}>{employee.poste}</Text>
+                        <Text style={[styles.employeeInfoValue, { flex: 0.7 }]}>{employee.categorie}</Text>
                     </View>
-                    <View>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Poste: </Text>
-                            {employee.poste}
-                        </Text>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>J_Congés/Mois: </Text>
-                            {calculateSoldeConges()} jours</Text>
+                    {/* Ligne 3 : Labels */}
+                    <View style={[styles.employeeInfoRow, { marginTop: 6 }]}>
+                        <Text style={[styles.employeeInfoPre, { flex: 1.2 }]}>Date embauche</Text>
+                        <Text style={[styles.employeeInfoPre, { flex: 1 }]}>Nbres Parts</Text>
+                        <Text style={[styles.employeeInfoPre, { flex: 1 }]}>J_Congés/Mois</Text>
+                        <Text style={[styles.employeeInfoPre, { flex: 0.7 }]}>Adresse</Text>
                     </View>
-                    <View>
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Catégorie: </Text>
-                            {employee.categorie}
-                        </Text>
-
-                        <Text style={styles.employeeInfoLine}>
-                            <Text style={styles.employeeInfoPre}>Adresse: </Text>
-                            {employee.adresse}
-                        </Text>
+                    {/* Ligne 4 : Valeurs */}
+                    <View style={styles.employeeInfoRow}>
+                        <Text style={[styles.employeeInfoValue, { flex: 1.2 }]}>{formatDate(employee.dateEmbauche)}</Text>
+                        <Text style={[styles.employeeInfoValue, { flex: 1 }]}>{employee.nbreofParts || 1}</Text>
+                        <Text style={[styles.employeeInfoValue, { flex: 1 }]}>{calculateSoldeConges()} jours</Text>
+                        <Text style={[styles.employeeInfoValue, { flex: 0.7 }]} numberOfLines={2}>{employee.adresse}</Text>
                     </View>
                 </View>
 

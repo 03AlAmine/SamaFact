@@ -1,11 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { clientService } from "../services/clientService";
 import { useAuth } from "../auth/AuthContext";
 import { useAudit, AUDIT_ACTIONS } from "./AuditContext";
-
-// ─── Cache en mémoire (5 minutes) ────────────────────────────────────────────
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const clientCache = { data: null, ts: 0, companyId: null };
 
 const ClientContext = createContext(null);
 
@@ -15,7 +11,8 @@ export const ClientProvider = ({ children, companyId }) => {
 
   // ── État ──────────────────────────────────────────────────────────────────
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const unsubRef = useRef(null);
 
   const [client, setClient] = useState({
     nom: "", adresse: "", email: "", telephone: "",
@@ -30,46 +27,41 @@ export const ClientProvider = ({ children, companyId }) => {
   const [clientDevis, setClientDevis] = useState([]);
   const [clientAvoirs, setClientAvoirs] = useState([]);
 
-  // ── Chargement avec cache ─────────────────────────────────────────────────
-  const fetchClients = useCallback(async (force = false) => {
+  // ── Listener temps réel (onSnapshot) ─────────────────────────────────────
+  useEffect(() => {
     if (!companyId) return;
 
-    const now = Date.now();
-    const cacheHit =
-      !force &&
-      clientCache.companyId === companyId &&
-      clientCache.data !== null &&
-      now - clientCache.ts < CACHE_TTL;
-
-    // 🔥 Si on force le rechargement, on vide d'abord le cache
-    if (force) {
-      clientCache.data = null;
-      clientCache.ts = 0;
-    }
-
-    if (cacheHit && !force) {
-      setClients(clientCache.data);
-      return;
-    }
-
     setLoading(true);
-    try {
-      const data = await clientService.getClientsOnce(companyId);
-      clientCache.data = data;
-      clientCache.ts = Date.now();
-      clientCache.companyId = companyId;
-      setClients(data);
-    } catch (err) {
-      console.error("Erreur chargement clients:", err);
-    } finally {
-      setLoading(false);
+
+    // Désabonner l'ancien listener s'il existe
+    if (unsubRef.current) {
+      unsubRef.current();
+      unsubRef.current = null;
     }
+
+    const unsub = clientService.getClients(companyId, (data) => {
+      setClients(data);
+      setLoading(false);
+    });
+
+    if (typeof unsub === "function") {
+      unsubRef.current = unsub;
+    }
+
+    return () => {
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
+    };
   }, [companyId]);
 
-  const invalidateCache = useCallback(() => {
-    clientCache.data = null;
-    clientCache.ts = 0;
+  // Conservé pour compatibilité avec les appels existants (import, email, etc.)
+  const fetchClients = useCallback(() => {
+    // Avec onSnapshot, Firestore met à jour automatiquement — rien à faire
   }, []);
+
+
 
   // ── Handlers CRUD avec AUDIT ────────────────────────────────────────────────
   const handleChange = useCallback(
@@ -103,7 +95,6 @@ export const ClientProvider = ({ children, companyId }) => {
     if (result.success) {
       alert(result.message);
 
-      // ✅ AUDIT: Création client
       await logAction({
         action: AUDIT_ACTIONS.CREATE_CLIENT,
         targetType: 'client',
@@ -113,12 +104,11 @@ export const ClientProvider = ({ children, companyId }) => {
       });
 
       setClient({ nom: "", adresse: "", email: "", telephone: "", societe: "", type: "client", anciensNoms: [] });
-      invalidateCache();
-      setClients((prev) => [...prev, result.client]);
+      // onSnapshot met à jour clients automatiquement
     } else {
       alert(result.message);
     }
-  }, [companyId, client, invalidateCache, logAction]);
+  }, [companyId, client, logAction]);
 
   const handleUpdate = useCallback(async (e) => {
     e.preventDefault();
@@ -143,7 +133,6 @@ export const ClientProvider = ({ children, companyId }) => {
       };
       const result = await clientService.updateClient(companyId, editingClient.id, updatedClient);
       if (result.success) {
-        // ✅ AUDIT: Modification client
         await logAction({
           action: AUDIT_ACTIONS.UPDATE_CLIENT,
           targetType: 'client',
@@ -153,8 +142,7 @@ export const ClientProvider = ({ children, companyId }) => {
           after: updatedClient,
         });
 
-        invalidateCache();
-        setClients((prev) => prev.map((c) => (c.id === editingClient.id ? updatedClient : c)));
+        // onSnapshot met à jour clients automatiquement
         if (selectedClient?.id === editingClient.id) setSelectedClient(updatedClient);
         alert(`Client "${updatedClient.nom}" mis à jour avec succès ✅`);
         if (isNameChanged) {
@@ -173,7 +161,7 @@ export const ClientProvider = ({ children, companyId }) => {
       console.error("Erreur mise à jour client:", err);
       alert("Erreur lors de la mise à jour du client");
     }
-  }, [companyId, editingClient, clients, selectedClient, currentUser?.uid, invalidateCache, logAction]);
+  }, [companyId, editingClient, clients, selectedClient, currentUser?.uid, logAction]);
 
   const handleDeleteClient = useCallback(async (clientId) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) return false;
@@ -183,7 +171,6 @@ export const ClientProvider = ({ children, companyId }) => {
 
       const result = await clientService.deleteClient(companyId, clientId);
       if (result.success) {
-        // ✅ AUDIT: Suppression client
         await logAction({
           action: AUDIT_ACTIONS.DELETE_CLIENT,
           targetType: 'client',
@@ -192,13 +179,8 @@ export const ClientProvider = ({ children, companyId }) => {
           before: clientToDelete,
         });
 
-        // 🔥 SOLUTION: Invalider le cache ET mettre à jour l'état local immédiatement
-        invalidateCache();
-
-        // Mettre à jour l'état local en filtrant le client supprimé
-        setClients(prev => prev.filter(c => c.id !== clientId));
-
-        // Si le client supprimé était sélectionné, nettoyer la sélection
+        // onSnapshot retire le client automatiquement de la liste
+        // Nettoyer la sélection si c'était le client sélectionné
         if (selectedClient?.id === clientId) {
           setSelectedClient(null);
           setClientFactures([]);
@@ -220,7 +202,8 @@ export const ClientProvider = ({ children, companyId }) => {
       alert(errorMessage);
       return false;
     }
-  }, [companyId, clients, selectedClient, invalidateCache, logAction]);
+  }, [companyId, clients, selectedClient, logAction]);
+
   const handleEdit = useCallback((clientToEdit) => {
     const currentClient = clients.find((c) => c.id === clientToEdit.id);
     if (currentClient && currentClient.nom !== clientToEdit.nom) {
@@ -280,7 +263,6 @@ export const ClientProvider = ({ children, companyId }) => {
           const result = await clientService.addClient(companyId, c);
           if (result.success) {
             importedCount++;
-            // ✅ AUDIT: Import client (log générique)
             await logAction({
               action: AUDIT_ACTIONS.CREATE_CLIENT,
               targetType: 'client',
@@ -294,8 +276,7 @@ export const ClientProvider = ({ children, companyId }) => {
           console.error("Erreur import client:", err);
         }
       }
-      invalidateCache();
-      await fetchClients(true);
+      // onSnapshot met à jour la liste automatiquement
       setImportProgress(`${importedCount}/${clientsToImport.length} clients importés avec succès`);
     } catch (err) {
       console.error("Erreur import:", err);
@@ -303,7 +284,7 @@ export const ClientProvider = ({ children, companyId }) => {
     } finally {
       if (e.target) e.target.value = "";
     }
-  }, [companyId, fetchClients, invalidateCache, logAction]);
+  }, [companyId, logAction]);
 
   const value = {
     clients,

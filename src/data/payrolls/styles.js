@@ -95,19 +95,30 @@ export const styles = StyleSheet.create({
         fontFamily: 'Helvetica-Oblique'
     },
     employeeInfo: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,  // Réduit de 20
-        padding: 10,  // Réduit de 15
+        flexDirection: 'column',
+        marginBottom: 10,
+        padding: 10,
         backgroundColor: 'rgba(101, 220, 143, 0.1)',
         borderRadius: 4,
         borderLeft: '3px solid #218838'
     },
+    employeeInfoRow: {
+        flexDirection: 'row',
+        marginBottom: 2,
+    },
     employeeInfoLine: {
-        marginBottom: 4
+        marginBottom: 4,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
     },
     employeeInfoPre: {
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontSize: 7.5,
+        color: '#000000',
+    },
+    employeeInfoValue: {
+        fontSize: 8,
+        color: '#111',
     },
     remunerationSection: {
         marginBottom: 6,
