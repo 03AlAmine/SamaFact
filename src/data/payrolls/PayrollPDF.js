@@ -162,9 +162,10 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
             const dateDebut = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
 
             // Mois écoulés dans l'année du bulletin jusqu'à la période du bulletin
+            // +1 pour inclure le mois de début (janvier = 1 mois, pas 0)
             const moisEcoules = Math.max(0,
                 (dateBulletin.getFullYear() - dateDebut.getFullYear()) * 12 +
-                (dateBulletin.getMonth() - dateDebut.getMonth())
+                (dateBulletin.getMonth() - dateDebut.getMonth()) + 1
             );
 
             // 2 jours de congés par mois écoulé

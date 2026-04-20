@@ -624,17 +624,22 @@ const PayrollForm = () => {
         if (!employee?.dateEmbauche) return 0;
 
         const dateEmbauche = new Date(employee.dateEmbauche);
-        const aujourdHui = new Date();
-        const anneeCourante = aujourdHui.getFullYear();
 
-        // Début de l'année ou date d'embauche si plus récente
-        const debutAnnee = new Date(anneeCourante, 0, 1);
+        // Utiliser la date de fin de période du bulletin, pas aujourd'hui
+        const dateBulletin = formData?.periode?.au
+            ? new Date(formData.periode.au)
+            : new Date();
+
+        const anneeBulletin = dateBulletin.getFullYear();
+
+        // Début de l'année du bulletin ou date d'embauche si plus récente
+        const debutAnnee = new Date(anneeBulletin, 0, 1);
         const dateDebut = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
 
-        // Mois écoulés
+        // Mois écoulés (+1 pour inclure le mois de début)
         const moisEcoules = Math.max(0,
-            (aujourdHui.getFullYear() - dateDebut.getFullYear()) * 12 +
-            (aujourdHui.getMonth() - dateDebut.getMonth())
+            (dateBulletin.getFullYear() - dateDebut.getFullYear()) * 12 +
+            (dateBulletin.getMonth() - dateDebut.getMonth()) + 1
         );
 
         const congesAccumules = moisEcoules * 2;
