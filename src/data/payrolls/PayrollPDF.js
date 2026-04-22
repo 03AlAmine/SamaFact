@@ -342,29 +342,30 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                             <Text style={[styles.tableCell, styles.headerCell, { flex: 1 }]}>Arrondi</Text>
                         </View>
 
-                        {/* Valeurs */}
+                        {/* Valeurs (Montants en FCFA) */}
                         <View style={styles.tableRow}>
-                            {["432 000", "1 296 000", formData.retenues.trimf || "0", formData.retenues.ir || "0", "", "", "", ""].map((val, i) => (
+                            {[
+                                formatCurrency(calculations.detailsCotisations?.ipresRG || 0).replace(' FCFA', ''),
+                                formatCurrency(calculations.detailsCotisations?.ipresRC || 0).replace(' FCFA', ''),
+                                formData.retenues.trimf || "0",
+                                formData.retenues.ir || "0",
+                                formData.retenues.retenueSalaire || "0",
+                                formData.retenues.avances || "0",
+                                formData.retenues.qpartipm || "0",
+                                "-"
+                            ].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
-
 
                         {/* Pourcentages */}
                         <View style={styles.tableRow}>
-                            {["5,6", "2,4", "", "", "", "", "", ""].map((val, i) => (
+                            {["5,6%", "2,4%", "", "", "", "", "", ""].map((val, i) => (
                                 <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
                             ))}
                         </View>
 
-                        {/* Montants */}
-                        <View style={styles.tableRow}>
-                            {["4 220", "-", "-", "-", formData.retenues.retenueSalaire || "0", formData.retenues.avances || "0", formData.retenues.qpartipm || "0", "-"].map((val, i) => (
-                                <Text key={i} style={[styles.tableCell, val === "" && styles.emptyCell]}>{val}</Text>
-                            ))}
-                        </View>
-
-                        {/* Total - fusionner les colonnes */}
+                        {/* Total */}
                         <View style={styles.sectionTotalRow}>
                             <Text style={styles.sectionTotalLabel}>Total Retenues</Text>
                             <Text style={styles.sectionTotalValue}>{formatCurrency(calculations.totalRetenuesPris)}</Text>
@@ -428,7 +429,6 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                 <View style={styles.socialContributionsSection}>
                     <Text style={styles.sectionTitle}> COTISATIONS SALARIALES | PATRONALES  </Text>
 
-                    {/* Header simplifié */}
                     <View style={[styles.tableRow, styles.headerRow]}>
                         <Text style={[styles.tableCell, { flex: 1 }]}>Organisme</Text>
                         <Text style={[styles.tableCell, { flex: 1 }]}>Salarial</Text>
@@ -436,61 +436,73 @@ const PayrollPDF = ({ employee = {}, formData = {}, calculations = {}, companyIn
                         <Text style={[styles.tableCell, { flex: 1 }]}>Total</Text>
                     </View>
 
-                    {/* IPRES - Version compacte */}
+                    {/* IPRES */}
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>IPRES</Text>
-                        <Text style={styles.tableCell}>4 220 (5,6%)</Text>
-                        <Text style={styles.tableCell}>6 330 (8,4%)</Text>
-                        <Text style={styles.tableCell}>10 551</Text>
+                        <Text style={styles.tableCell}>
+                            {formatCurrency(calculations.detailsCotisations?.ipresRG || 0)} (5,6%)
+                        </Text>
+                        <Text style={styles.tableCell}>
+                            {formatCurrency(calculations.detailsCotisations?.ipresRGP || 0)} (8,4%)
+                        </Text>
+                        <Text style={styles.tableCell}>
+                            {formatCurrency((calculations.detailsCotisations?.ipresRG || 0) + (calculations.detailsCotisations?.ipresRGP || 0))}
+                        </Text>
                     </View>
 
-                    {/* CSS - Version compacte */}
+                    {/* CSS (Allocations familiales + Accident travail) */}
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>CSS</Text>
                         <Text style={styles.tableCell}>-</Text>
-                        <Text style={styles.tableCell}>5 040 (7% + 1%)</Text>
-                        <Text style={styles.tableCell}>5 040</Text>
+                        <Text style={styles.tableCell}>
+                            {formatCurrency((calculations.detailsCotisations?.allocationFamiliale || 0) + (calculations.detailsCotisations?.accidentTravail || 0))} (7% + 1%)
+                        </Text>
+                        <Text style={styles.tableCell}>
+                            {formatCurrency((calculations.detailsCotisations?.allocationFamiliale || 0) + (calculations.detailsCotisations?.accidentTravail || 0))}
+                        </Text>
                     </View>
 
-                    {/* IPM - Version compacte */}
+                    {/* IPM */}
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>IPM</Text>
                         <Text style={styles.tableCell}>{formatCurrency(formData.retenues.qpartipm)}</Text>
                         <Text style={styles.tableCell}>{formatCurrency(formData.retenues.qpartipm)}</Text>
                         <Text style={styles.tableCell}>{formatCurrency(calculations.tooqpartipm)}</Text>
-
                     </View>
 
-                    {/* Retenues fiscales - Version compacte */}
+                    {/* Retenues fiscales */}
                     <View style={styles.tableRow}>
                         <Text style={styles.tableCell}>Fiscales</Text>
                         <Text style={styles.tableCell}>{formatCurrency(formData.retenues.trimf)} (TRIMF)</Text>
                         <Text style={styles.tableCell}>{formatCurrency(formData.retenues.ir)} (IR)</Text>
-                        <Text style={styles.tableCell}>{formatCurrency(formData.retenues.cfce)} (C.F.C.E)</Text>
-                        <Text style={styles.tableCell}>{formatCurrency(calculations.totalfiscales)}</Text>
+                        <Text style={styles.tableCell}>{formatCurrency(calculations.detailsCotisations?.cfce || 0)} (C.F.C.E)</Text>
                     </View>
 
-                    {/* Séparateur visuel */}
+                    {/* Total Fiscales */}
+                    <View style={[styles.tableRow, { marginTop: 2 }]}>
+                        <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>Total Fiscales</Text>
+                        <Text style={styles.tableCell}></Text>
+                        <Text style={styles.tableCell}></Text>
+                        <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>{formatCurrency(calculations.totalfiscales)}</Text>
+                    </View>
 
-                    {/* Section employé/employeur optimisée */}
+                    {/* Section employé/employeur */}
                     <View style={[styles.tableRow, styles.splitRow]}>
                         <View style={styles.splitColumn}>
                             <Text style={styles.splitHeader}>Cotisations salariales</Text>
                             <Text style={styles.splitValue}>{formatCurrency(calculations.cotisationsEmp)}</Text>
                         </View>
                         <View style={styles.verticalDivider}></View>
-
                         <View style={styles.splitColumn}>
                             <Text style={styles.splitHeader}>Cotisations patronales</Text>
                             <Text style={styles.splitValue}>{formatCurrency(calculations.cotisationsEmployeur)}</Text>
                         </View>
-
                     </View>
 
-                    {/* Total - Version mise en valeur */}
+                    {/* Total général */}
                     <View style={[styles.tableRow, styles.grandTotalRow]}>
                         <Text style={styles.grandTotalLabel}>TOTAL COTISATIONS</Text>
-                        <Text style={styles.grandTotalValue}>{formatCurrency(calculations.cotisationsTotales)} </Text>
+                        <Text style={styles.grandTotalValue}>{formatCurrency(calculations.cotisationsTotales)}</Text>
                     </View>
                 </View>
 
