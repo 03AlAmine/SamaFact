@@ -1,364 +1,422 @@
+// EmployeeDetailsModal.js
 import React, { useMemo } from "react";
 import {
-    FaFileSignature, FaUser, FaCalendarAlt, FaIdCard, FaBuilding,
-    FaMoneyBillWave, FaCheckCircle, FaFileAlt, FaPercentage, FaChartLine
+  FaUser, FaCalendarAlt, FaIdCard, FaBuilding, FaMoneyBillWave,
+  FaCheckCircle, FaPercentage, FaChartLine, FaEnvelope, FaPhone,
+  FaMapMarkerAlt, FaBriefcase, FaUsers, FaFileInvoiceDollar,
+  FaPlane, FaUtensils, FaCar, FaShieldAlt, FaPlaneArrival,
+  FaClipboardList, FaClock, FaChartBar, FaAward, FaStar,
+  FaRegClock, FaHandHoldingUsd, FaUserCheck, FaChartPie, FaTimes,
+  FaCalculator, FaReceipt
 } from "react-icons/fa";
-import { Modal, Button } from "antd";
+import { Modal, Tag, Progress, Divider, Row, Col, Tooltip } from "antd";
 
-const EmployeeDetailsModalBase = ({
-    isVisible,
-    onCancel,
-    employee
-}) => {
-    // Calcul des congés accumulés depuis l'embauche (total)
-    const congesAccumules = useMemo(() => {
-        if (!employee?.dateEmbauche) return employee?.joursConges || 0;
-        const dateEmbauche = new Date(employee.dateEmbauche);
-        const aujourdHui = new Date();
-        const moisTotaux = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12
-            + (aujourdHui.getMonth() - dateEmbauche.getMonth());
-        return Math.max(0, moisTotaux * 2 - (employee.joursCongesUtilises || 0));
-    }, [employee?.dateEmbauche, employee?.joursConges, employee?.joursCongesUtilises]);
-
-    // Calcul des congés pour l'année en cours
-    const congesEnCours = useMemo(() => {
-        if (!employee?.dateEmbauche) return 0;
-        const dateEmbauche = new Date(employee.dateEmbauche);
-        const aujourdHui = new Date();
-        const debutAnnee = new Date(aujourdHui.getFullYear(), 0, 1);
-        const dateDebutPeriode = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
-        if (dateDebutPeriode > aujourdHui) return 0;
-        const moisEcoules = (aujourdHui.getFullYear() - dateDebutPeriode.getFullYear()) * 12
-            + (aujourdHui.getMonth() - dateDebutPeriode.getMonth());
-        return Math.max(0, moisEcoules * 2);
-    }, [employee?.dateEmbauche]);
-
-    const congesUtilisesAnnee = employee?.joursCongesUtilisesAnnee || 0;
-    const soldeConges = useMemo(() => Math.max(0, congesEnCours - congesUtilisesAnnee),
-        [congesEnCours, congesUtilisesAnnee]);
-
-    // Calcul du salaire net estimé
-    const salaireNet = useMemo(() => {
-        const salaireBase = parseFloat(employee?.salaireBase || 0);
-        const sursalaire = parseFloat(employee?.sursalaire || 0);
-        const ipm = parseFloat(employee?.ipm || 0);
-        const transport = parseFloat(employee?.indemniteTransport || 0);
-        const panier = parseFloat(employee?.primePanier || 0);
-        const responsabilite = parseFloat(employee?.indemniteResponsabilite || 0);
-        const deplacement = parseFloat(employee?.indemniteDeplacement || 0);
-        const net = (salaireBase + sursalaire) - ipm + transport + panier + responsabilite + deplacement;
-        return net > 0 ? net : 0;
-    }, [employee?.salaireBase, employee?.sursalaire, employee?.ipm,
-        employee?.indemniteTransport, employee?.primePanier,
-        employee?.indemniteResponsabilite, employee?.indemniteDeplacement]);
-
-    return (
-        <Modal
-            title={
-                <div className="employee-modal__header">
-                    <FaFileSignature className="employee-modal__icon" />
-                    <span>Détails de {employee?.prenom} {employee?.nom}</span>
-                </div>
-            }
-            open={isVisible}
-            onCancel={onCancel}
-            footer={[
-                <Button
-                    key="back"
-                    onClick={onCancel}
-                    className="employee-modal__close-btn"
-                >
-                    Fermer
-                </Button>
-            ]}
-            width={750}
-            className="employee-modal"
-        >
-            {employee && (
-                <div className="employee-modal__content">
-                    <div className="employee-details">
-                        {/* Section informations principales */}
-                        <div className="employee-details__main">
-                            <div className="employee-details__row">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaUser className="employee-detail__icon" />
-                                        Nom complet
-                                    </span>
-                                    <span className="employee-detail__value">
-                                        {employee.prenom} {employee.nom}
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaCalendarAlt className="employee-detail__icon" />
-                                        Date d'embauche
-                                    </span>
-                                    <span className="employee-detail__value employee-detail__value--date">
-                                        {new Date(employee.dateEmbauche).toLocaleDateString('fr-FR')}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="employee-details__row">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaIdCard className="employee-detail__icon" />
-                                        Matricule
-                                    </span>
-                                    <span className="employee-detail__value">
-                                        {employee.matricule}
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaBuilding className="employee-detail__icon" />
-                                        Département
-                                    </span>
-                                    <span className="employee-detail__value">
-                                        {employee.departement || 'Non spécifié'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="employee-details__row">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaCheckCircle className="employee-detail__icon" />
-                                        Type de contrat
-                                    </span>
-                                    <span className={`employee-detail__value employee-detail__value--${employee.typeContrat?.toLowerCase()}`}>
-                                        {employee.typeContrat}
-                                    </span>
-                                </div>
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        Catégorie
-                                    </span>
-                                    <span className="employee-detail__value">
-                                        {employee.categorie || 'Non spécifié'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section Rémunération */}
-                        <div className="employee-section">
-                            <h4 className="employee-section__title">
-                                <FaMoneyBillWave className="employee-section__icon" />
-                                Rémunération
-                            </h4>
-
-                            <div className="employee-details__grid">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        Salaire de base
-                                    </span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.salaireBase?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaChartLine className="employee-detail__icon" />
-                                        Sursalaire
-                                    </span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.sursalaire?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">
-                                        <FaPercentage className="employee-detail__icon" />
-                                        IPM (Impôt)
-                                    </span>
-                                    <span className="employee-detail__value employee-detail__value--amount employee-detail__value--tax">
-                                        {employee.ipm?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail highlight">
-                                    <span className="employee-detail__label">
-                                        Salaire net estimé
-                                    </span>
-                                    <span className="employee-detail__value employee-detail__value--amount employee-detail__value--highlight">
-                                        {salaireNet.toLocaleString('fr-FR')} FCFA
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section Primes et indemnités */}
-                        <div className="employee-section">
-                            <h4 className="employee-section__title">
-                                Primes et indemnités
-                            </h4>
-
-                            <div className="employee-details__grid">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Transport</span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.indemniteTransport?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Panier</span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.primePanier?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Responsabilité</span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.indemniteResponsabilite?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Déplacement</span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.indemniteDeplacement?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section Statistiques */}
-                        <div className="employee-section">
-                            <h4 className="employee-section__title">
-                                <FaFileAlt className="employee-section__icon" />
-                                Statistiques
-                            </h4>
-
-                            <div className="employee-details__grid">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Nombre de parts</span>
-                                    <span className="employee-detail__value">
-                                        {employee.nbreofParts || 1}
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Nombre de bulletins</span>
-                                    <span className="employee-detail__value">
-                                        {employee.payrolls?.length || 0}
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Dernier bulletin</span>
-                                    <span className="employee-detail__value employee-detail__value--date">
-                                        {employee.payrolls?.length > 0
-                                            ? new Date(employee.payrolls[0].periode).toLocaleDateString('fr-FR')
-                                            : 'Aucun'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section Suivi des congés et absences */}
-                        <div className="employee-section">
-                            <h4 className="employee-section__title">
-                                <FaCalendarAlt className="employee-section__icon" />
-                                Suivi des congés et absences
-                            </h4>
-
-                            <div className="employee-details__grid">
-                                <div className="employee-detail highlight">
-                                    <span className="employee-detail__label">Congés accumulés (total)</span>
-                                    <span className="employee-detail__value employee-detail__value--highlight">
-                                        {congesAccumules} jours
-                                    </span>
-                                    <small className="employee-detail__hint">
-                                        Depuis l'embauche
-                                    </small>
-                                </div>
-
-                                <div className="employee-detail highlight">
-                                    <span className="employee-detail__label">Congés en cours</span>
-                                    <span className="employee-detail__value employee-detail__value--highlight">
-                                        {congesEnCours} jours
-                                    </span>
-                                    <small className="employee-detail__hint">
-                                        Année {new Date().getFullYear()}
-                                    </small>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Congés utilisés (année)</span>
-                                    <span className="employee-detail__value">
-                                        {employee.joursCongesUtilisesAnnee || 0} jours
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail highlight">
-                                    <span className="employee-detail__label">Solde congés</span>
-                                    <span className="employee-detail__value employee-detail__value--highlight">
-                                        {soldeConges} jours
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Jours d'absence</span>
-                                    <span className="employee-detail__value">
-                                        {employee.joursAbsence || 0} jours
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Avance sur salaire</span>
-                                    <span className="employee-detail__value employee-detail__value--amount">
-                                        {employee.avanceSalaire?.toLocaleString('fr-FR') || '0'} FCFA
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section Informations de contact */}
-                        <div className="employee-section">
-                            <h4 className="employee-section__title">
-                                Informations de contact
-                            </h4>
-
-                            <div className="employee-details__grid">
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Email</span>
-                                    <span className="employee-detail__value">
-                                        {employee.email || 'Non spécifié'}
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Téléphone</span>
-                                    <span className="employee-detail__value">
-                                        {employee.telephone || 'Non spécifié'}
-                                    </span>
-                                </div>
-
-                                <div className="employee-detail">
-                                    <span className="employee-detail__label">Adresse</span>
-                                    <span className="employee-detail__value">
-                                        {employee.adresse || 'Non spécifiée'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </Modal>
-    );
+// Helper pour formater les montants
+const formatAmount = (amount) => {
+  if (!amount && amount !== 0) return "0 FCFA";
+  return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
 };
 
-export const EmployeeDetailsModal = React.memo(
-  EmployeeDetailsModalBase,
-  (prev, next) =>
-    prev.isVisible === next.isVisible &&
-    prev.employee?.id === next.employee?.id
+// Helper pour formater les dates
+const formatDate = (date) => {
+  if (!date) return "Non définie";
+  return new Date(date).toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// Composant pour afficher une métrique avec icône
+const MetricCard = ({ icon, label, value, color, suffix = "", tooltip = "" }) => (
+  <Tooltip title={tooltip}>
+    <div className="employee-metric-card" style={{ borderLeftColor: color }}>
+      <div className="employee-metric-icon" style={{ background: `${color}15`, color }}>
+        {icon}
+      </div>
+      <div className="employee-metric-content">
+        <span className="employee-metric-label">{label}</span>
+        <span className="employee-metric-value">{value}{suffix}</span>
+      </div>
+    </div>
+  </Tooltip>
 );
+
+// Composant pour la section info
+const InfoSection = ({ title, icon, children, color }) => (
+  <div className="employee-info-section">
+    <div className="employee-section-header" style={{ borderBottomColor: color }}>
+      <div className="employee-section-icon" style={{ background: `${color}15`, color }}>
+        {icon}
+      </div>
+      <h3 className="employee-section-title">{title}</h3>
+    </div>
+    <div className="employee-section-content">
+      {children}
+    </div>
+  </div>
+);
+
+// Composant pour un champ d'information
+const InfoField = ({ label, value, icon, color = "#4361ee" }) => (
+  <div className="employee-info-field">
+    <div className="employee-info-field-icon" style={{ color, background: `${color}10` }}>
+      {icon}
+    </div>
+    <div className="employee-info-field-content">
+      <span className="employee-info-field-label">{label}</span>
+      <span className="employee-info-field-value">{value || "Non renseigné"}</span>
+    </div>
+  </div>
+);
+
+export const EmployeeDetailsModal = ({ isVisible, onCancel, employee }) => {
+  // Calcul des congés
+  const congesStats = useMemo(() => {
+    if (!employee) return { accumulated: 0, currentYear: 0, used: 0, remaining: 0, totalUsed: 0 };
+
+    const dateEmbauche = employee.dateEmbauche ? new Date(employee.dateEmbauche) : null;
+    const aujourdHui = new Date();
+    let accumulated = employee.joursConges || 0;
+    let currentYear = 0;
+    let totalUsed = employee.joursCongesUtilises || 0;
+    
+    if (dateEmbauche) {
+      const moisTotaux = (aujourdHui.getFullYear() - dateEmbauche.getFullYear()) * 12 +
+        (aujourdHui.getMonth() - dateEmbauche.getMonth());
+      accumulated = Math.max(0, moisTotaux * 2.5);
+      
+      const debutAnnee = new Date(aujourdHui.getFullYear(), 0, 1);
+      const dateDebutPeriode = dateEmbauche > debutAnnee ? dateEmbauche : debutAnnee;
+      if (dateDebutPeriode <= aujourdHui) {
+        const moisEcoules = (aujourdHui.getFullYear() - dateDebutPeriode.getFullYear()) * 12 +
+          (aujourdHui.getMonth() - dateDebutPeriode.getMonth());
+        currentYear = Math.max(0, moisEcoules * 2.5);
+      }
+    }
+    
+    const used = employee.joursCongesUtilisesAnnee || 0;
+    const remaining = Math.max(0, currentYear - used);
+    
+    return { accumulated: Math.floor(accumulated), currentYear: Math.floor(currentYear), used, remaining, totalUsed };
+  }, [employee]);
+
+  // Calcul du salaire net avec IR
+  const salaireDetails = useMemo(() => {
+    if (!employee) return { brut: 0, netAvantImpots: 0, ir: 0, netApresImpots: 0 };
+    
+    const salaireBase = parseFloat(employee.salaireBase || 0);
+    const sursalaire = parseFloat(employee.sursalaire || 0);
+    const ipm = parseFloat(employee.ipm || 0);
+    const ir = parseFloat(employee.ir || 0);
+    const transport = parseFloat(employee.indemniteTransport || 0);
+    const panier = parseFloat(employee.primePanier || 0);
+    const responsabilite = parseFloat(employee.indemniteResponsabilite || 0);
+    const deplacement = parseFloat(employee.indemniteDeplacement || 0);
+    
+    const brut = salaireBase + sursalaire;
+    const netAvantImpots = brut - ipm + transport + panier + responsabilite + deplacement;
+    const netApresImpots = Math.max(0, netAvantImpots - ir);
+    
+    return { brut, ipm, ir, netAvantImpots, netApresImpots };
+  }, [employee]);
+
+  // Calcul du pourcentage de congés utilisés
+  const congesPercentage = useMemo(() => {
+    if (congesStats.currentYear === 0) return 0;
+    return Math.min(100, Math.round((congesStats.used / congesStats.currentYear) * 100));
+  }, [congesStats]);
+
+  if (!employee) return null;
+
+  const contratColors = {
+    CDI: "#10b981",
+    CDD: "#f59e0b",
+    CTT: "#8b5cf6",
+    Stage: "#3b82f6",
+    Freelance: "#ec4899"
+  };
+
+  const contratColor = contratColors[employee.typeContrat] || "#64748b";
+
+  return (
+    <Modal
+      open={isVisible}
+      onCancel={onCancel}
+      footer={null}
+      width={950}
+      className="employee-details-modal premium"
+      closeIcon={<FaTimes />}
+      style={{ top: 20 }}
+    >
+      {/* En-tête avec gradient */}
+      <div className="employee-modal-header-premium">
+        <div className="employee-modal-header-bg" />
+        <div className="employee-modal-avatar">
+          <span>
+            {employee.prenom?.charAt(0).toUpperCase()}
+            {employee.nom?.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className="employee-modal-header-info">
+          <h2 className="employee-modal-name">{employee.prenom} {employee.nom}</h2>
+          <div className="employee-modal-badges">
+            <Tag color={contratColor} className="employee-type-tag">
+              <FaCheckCircle /> {employee.typeContrat || "CDI"}
+            </Tag>
+            <Tag color="blue" className="employee-matricule-tag">
+              <FaIdCard /> Matricule: {employee.matricule || "N/A"}
+            </Tag>
+          </div>
+          <p className="employee-modal-position">
+            <FaBriefcase /> {employee.poste || "Poste non défini"}
+            {employee.departement && ` · ${employee.departement}`}
+          </p>
+        </div>
+      </div>
+
+      <div className="employee-modal-content">
+        {/* Métriques clés */}
+        <div className="employee-metrics-grid">
+          <MetricCard 
+            icon={<FaMoneyBillWave />} 
+            label="Salaire brut" 
+            value={formatAmount(salaireDetails.brut)} 
+            color="#10b981"
+            tooltip="Salaire brut mensuel (base + sursalaire)"
+          />
+          <MetricCard 
+            icon={<FaChartLine />} 
+            label="Salaire net" 
+            value={formatAmount(salaireDetails.netApresImpots)} 
+            color="#4361ee"
+            tooltip="Salaire net après IPM, primes et IR"
+          />
+          <MetricCard 
+            icon={<FaCalendarAlt />} 
+            label="Ancienneté" 
+            value={employee.dateEmbauche ? 
+              `${Math.floor((new Date() - new Date(employee.dateEmbauche)) / (1000 * 60 * 60 * 24 * 365.25))} ans` : 
+              "N/A"} 
+            color="#f59e0b"
+            tooltip="Depuis la date d'embauche"
+          />
+          <MetricCard 
+            icon={<FaStar />} 
+            label="Catégorie" 
+            value={employee.categorie || "Non définie"} 
+            color="#8b5cf6"
+            tooltip="Catégorie professionnelle"
+          />
+        </div>
+
+        <Divider style={{ margin: "16px 0" }} />
+
+        {/* Grille d'informations */}
+        <Row gutter={[24, 24]}>
+          {/* Colonne gauche - Informations personnelles */}
+          <Col xs={24} md={12}>
+            <InfoSection title="Informations personnelles" icon={<FaUser />} color="#4361ee">
+              <InfoField label="Nom complet" value={`${employee.prenom} ${employee.nom}`} icon={<FaUser />} />
+              <InfoField label="Date d'embauche" value={formatDate(employee.dateEmbauche)} icon={<FaCalendarAlt />} />
+              <InfoField label="Matricule" value={employee.matricule} icon={<FaIdCard />} />
+              <InfoField label="Département" value={employee.departement || "Non défini"} icon={<FaBuilding />} />
+              <InfoField label="Poste" value={employee.poste || "Non défini"} icon={<FaBriefcase />} />
+              <InfoField label="Type de contrat" value={employee.typeContrat || "CDI"} icon={<FaFileInvoiceDollar />} />
+              <InfoField label="Nombre de parts" value={employee.nbreofParts || "1"} icon={<FaUsers />} />
+            </InfoSection>
+
+            <InfoSection title="Contact" icon={<FaEnvelope />} color="#10b981" style={{ marginTop: 24 }}>
+              <InfoField label="Email" value={employee.email} icon={<FaEnvelope />} />
+              <InfoField label="Téléphone" value={employee.telephone || "Non renseigné"} icon={<FaPhone />} />
+              <InfoField label="Adresse" value={employee.adresse || "Non renseignée"} icon={<FaMapMarkerAlt />} />
+            </InfoSection>
+          </Col>
+
+          {/* Colonne droite - Rémunération et primes */}
+          <Col xs={24} md={12}>
+            <InfoSection title="Rémunération détaillée" icon={<FaCalculator />} color="#10b981">
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <div className="employee-salary-item">
+                    <span className="employee-salary-label">Salaire de base</span>
+                    <span className="employee-salary-value">{formatAmount(employee.salaireBase)}</span>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="employee-salary-item">
+                    <span className="employee-salary-label">Sursalaire</span>
+                    <span className="employee-salary-value accent">{formatAmount(employee.sursalaire)}</span>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="employee-salary-item">
+                    <span className="employee-salary-label">Salaire brut</span>
+                    <span className="employee-salary-value">{formatAmount(salaireDetails.brut)}</span>
+                  </div>
+                </Col>
+              </Row>
+              
+              <Divider style={{ margin: "16px 0" }} />
+              
+              <div className="employee-deductions-title">
+                <FaReceipt /> Déductions et taxes
+              </div>
+              <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+                <Col span={12}>
+                  <div className="employee-salary-item deduction">
+                    <span className="employee-salary-label">IPM (Impôt minimum)</span>
+                    <span className="employee-salary-value danger">{formatAmount(salaireDetails.ipm)}</span>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="employee-salary-item deduction ir-item">
+                    <span className="employee-salary-label">IR (Impôt sur le Revenu)</span>
+                    <span className="employee-salary-value danger">- {formatAmount(salaireDetails.ir)}</span>
+                  </div>
+                </Col>
+              </Row>
+              
+              <Divider style={{ margin: "16px 0" }} />
+              
+              <div className="employee-net-summary">
+                <Row gutter={[16, 16]}>
+                  <Col span={12}>
+                    <div className="employee-salary-item">
+                      <span className="employee-salary-label">Net avant impôts</span>
+                      <span className="employee-salary-value">{formatAmount(salaireDetails.netAvantImpots)}</span>
+                    </div>
+                  </Col>
+                  <Col span={12}>
+                    <div className="employee-salary-item highlight">
+                      <span className="employee-salary-label">Net à payer</span>
+                      <span className="employee-salary-value success">{formatAmount(salaireDetails.netApresImpots)}</span>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+            </InfoSection>
+
+            <InfoSection title="Primes et indemnités" icon={<FaUserCheck />} color="#8b5cf6" style={{ marginTop: 24 }}>
+              <Row gutter={[12, 12]}>
+                <Col span={12}>
+                  <div className="employee-prime-item">
+                    <FaCar className="prime-icon" />
+                    <div>
+                      <span className="prime-label">Transport</span>
+                      <span className="prime-value">{formatAmount(employee.indemniteTransport)}</span>
+                    </div>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="employee-prime-item">
+                    <FaUtensils className="prime-icon" />
+                    <div>
+                      <span className="prime-label">Panier</span>
+                      <span className="prime-value">{formatAmount(employee.primePanier)}</span>
+                    </div>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="employee-prime-item">
+                    <FaShieldAlt className="prime-icon" />
+                    <div>
+                      <span className="prime-label">Responsabilité</span>
+                      <span className="prime-value">{formatAmount(employee.indemniteResponsabilite)}</span>
+                    </div>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="employee-prime-item">
+                    <FaPlaneArrival className="prime-icon" />
+                    <div>
+                      <span className="prime-label">Déplacement</span>
+                      <span className="prime-value">{formatAmount(employee.indemniteDeplacement)}</span>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+              
+              <div className="employee-primes-total">
+                <span>Total primes mensuelles</span>
+                <strong>
+                  {formatAmount(
+                    (parseFloat(employee.indemniteTransport || 0) +
+                     parseFloat(employee.primePanier || 0) +
+                     parseFloat(employee.indemniteResponsabilite || 0) +
+                     parseFloat(employee.indemniteDeplacement || 0))
+                  )}
+                </strong>
+              </div>
+            </InfoSection>
+          </Col>
+        </Row>
+
+        {/* Section Congés et absences */}
+        <InfoSection title="Suivi des congés et absences" icon={<FaRegClock />} color="#f59e0b">
+          <div className="employee-leave-stats">
+            <div className="employee-leave-card">
+              <div className="leave-stat">
+                <span className="leave-label">Congés accumulés</span>
+                <span className="leave-value">{congesStats.accumulated} <small>jours</small></span>
+                <span className="leave-hint">Depuis l'embauche</span>
+              </div>
+              <div className="leave-stat">
+                <span className="leave-label">Congés (année en cours)</span>
+                <span className="leave-value">{congesStats.currentYear} <small>jours</small></span>
+                <span className="leave-hint">{new Date().getFullYear()}</span>
+              </div>
+              <div className="leave-stat">
+                <span className="leave-label">Utilisés (cette année)</span>
+                <span className="leave-value warning">{congesStats.used} <small>jours</small></span>
+              </div>
+              <div className="leave-stat">
+                <span className="leave-label">Solde disponible</span>
+                <span className="leave-value success">{congesStats.remaining} <small>jours</small></span>
+              </div>
+            </div>
+            
+            <div className="employee-progress-section">
+              <div className="progress-header">
+                <span>Progression des congés {new Date().getFullYear()}</span>
+                <span className="progress-percent">{congesPercentage}%</span>
+              </div>
+              <Progress 
+                percent={congesPercentage} 
+                strokeColor="#f59e0b"
+                trailColor="#e2e8f0"
+                size="small"
+                showInfo={false}
+              />
+              <div className="employee-absence-info">
+                <div className="absence-item">
+                  <FaClipboardList />
+                  <span>Jours d'absence: <strong>{employee.joursAbsence || 0}</strong> jours</span>
+                </div>
+                <div className="absence-item">
+                  <FaHandHoldingUsd />
+                  <span>Avance sur salaire: <strong>{formatAmount(employee.avanceSalaire)}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </InfoSection>
+
+        {/* Note de bas de page */}
+        <div className="employee-modal-footer-note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>
+            Les montants sont exprimés en FCFA. Le salaire net à payer correspond au salaire brut moins l'IPM et l'IR, 
+            plus les primes et indemnités.
+          </span>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+export default EmployeeDetailsModal;

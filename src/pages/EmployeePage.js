@@ -7,7 +7,7 @@ import {
 } from "react-icons/fa";
 import empty_employee from '../assets/empty_employe.png';
 
-import { EmployeeDetailsModal } from '../components/dialogs/EmployeeModal';
+import EmployeeDetailsModal from '../components/dialogs/EmployeeModal';
 import { Modal, Button } from "antd";
 import '../css/EmployeePage.css';
 import '../css/EmployeeModal.css';
@@ -212,9 +212,17 @@ const EmployeeForm = ({
                     type="number"
                     value={formData.ipm || 0}
                     onChange={isEditing ? onEditChange : onChange}
-                    min="0"
-                    step="0.01"
+                    min=""
                     placeholder="Impôt sur le revenu"
+                />
+                <FormField
+                    label="IR (Impôt sur le Revenu)"
+                    name="ir"
+                    type="number"
+                    value={formData.ir || 100}
+                    onChange={isEditing ? onEditChange : onChange}
+                    min="100"
+                    placeholder="IR mensuel"
                 />
                 <FormField
                     label="Sursalaire"

@@ -17,7 +17,7 @@ export const EmployeeProvider = ({ children, companyId, activeTab }) => {
   const [employee, setEmployee] = useState({
     nom: "", prenom: "", adresse: "", categorie: "", poste: "",
     departement: "", dateEmbauche: "", typeContrat: "CDI",
-    salaireBase: 0, ipm: 0, sursalaire: 0, avances: 0,
+    salaireBase: 0, ipm: 0, ir: 0, sursalaire: 0, avances: 0,
     indemniteTransport: 26000, primePanier: 0, indemniteResponsabilite: 0,
     indemniteDeplacement: 0, joursConges: 0, joursAbsence: 0,
     avanceSalaire: 0, joursCongesUtilises: 0,
@@ -264,6 +264,7 @@ export const EmployeeProvider = ({ children, companyId, activeTab }) => {
             salaireBase: parseFloat(rowData["salairebase"] || 0),
             sursalaire: parseFloat(rowData["sursalaire"] || 0),
             ipm: parseFloat(rowData["ipm"] || 0),
+            ir: parseFloat(rowData["ir"] || 0),
             categorie: (rowData["categorie"] || "").toString().trim(),
             nbreofParts: parseInt(rowData["nbreparts"] || 1, 10),
             indemniteTransport: parseFloat(rowData["indemnitetransport"] || 0),

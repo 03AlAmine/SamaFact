@@ -1,467 +1,628 @@
-/* ===== EMPLOYEE MODAL - VERSION PREMIUM ===== */
+/* EmployeeDetailsModal.css - Style moderne et premium */
 
-.employee-modal .ant-modal-content {
-  border-radius: 24px !important;
+/* ============================================================
+   EMPLOYEE DETAILS MODAL - PREMIUM STYLES
+   ============================================================ */
+
+/* Modal principal */
+.employee-details-modal.premium .ant-modal-content {
+  border-radius: 28px;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-  border: 1px solid var(--border-color, #e2e8f0) !important;
-  background: var(--card-bg, #ffffff) !important;
-  backdrop-filter: blur(10px);
+  background: transparent;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
 }
 
-.employee-modal .ant-modal-header {
-  padding: 1.5rem 2rem !important;
-  background: linear-gradient(135deg, 
-    rgba(var(--bg-secondary-rgb, 30, 41, 59), 0.95), 
-    rgba(var(--primary-color-rgb, 67, 97, 238), 0.95)
-  ) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 24px 24px 0 0 !important;
+.employee-details-modal.premium .ant-modal-body {
+  padding: 0;
+  background: var(--bg-primary, #ffffff);
+}
+
+/* En-tête avec gradient */
+.employee-modal-header-premium {
   position: relative;
-}
-
-.employee-modal .ant-modal-header::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 2rem;
-  right: 2rem;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.3), 
-    transparent
-  );
-}
-
-.employee-modal .ant-modal-title {
-  color: white !important;
-  font-size: 1.5rem !important;
-  font-weight: 700 !important;
-}
-
-.employee-modal .ant-modal-close {
-  color: white !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  width: 40px !important;
-  height: 40px !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.3s ease !important;
-}
-
-.employee-modal .ant-modal-close:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  transform: rotate(90deg) !important;
-}
-
-.employee-modal .ant-modal-close-x {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  font-size: 1.2rem !important;
-}
-
-.employee-modal .ant-modal-body {
-  padding: 2rem !important;
-  background: linear-gradient(
-    145deg,
-    rgba(var(--bg-primary-rgb, 248, 249, 250), 0.8),
-    rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.9)
-  ) !important;
-}
-
-.employee-modal .ant-modal-footer {
-  padding: 1.25rem 2rem !important;
-  border-top: 1px solid var(--border-color, #e2e8f0) !important;
-  background: var(--bg-secondary, #f8fafc) !important;
-}
-
-/* En-tête du modal */
-.employee-modal__header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 1.5rem;
-  font-weight: 700;
+  padding: 16px 16px 12px;
+  background: linear-gradient(135deg, rgba(4, 7, 177, 0.714), transparent);
+  background-size: 200% 200%;
+  animation: gradientShift 10s ease infinite;
   color: white;
-}
-
-.employee-modal__icon {
-  font-size: 1.8rem;
-  color: var(--secondary-color, #ffc107);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  animation: pulse 2s infinite;
-}
-
-
-
-.employee-modal__close-btn {
-  background: linear-gradient(135deg, #6b7280, #4b5563) !important;
-  border: none !important;
-  color: white !important;
-  font-weight: 600 !important;
-  padding: 0.5rem 1.5rem !important;
-  height: auto !important;
-  border-radius: 10px !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-}
-
-.employee-modal__close-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
-  background: linear-gradient(135deg, #4b5563, #374151) !important;
-}
-
-/* Contenu du modal */
-.employee-modal__content {
-  max-height: 70vh;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.employee-modal__content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.employee-modal__content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 4px;
-}
-
-.employee-modal__content::-webkit-scrollbar-thumb {
-  background: var(--primary-color, #4361ee);
-  border-radius: 4px;
-}
-
-.employee-modal__content::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark, #3a5a8c);
-}
-
-
-.employee-details__main {
-  background: var(--bg-primary, white);
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-}
-
-.employee-details__row {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.employee-details__row:last-child {
-  margin-bottom: 0;
-}
-
-.employee-detail {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  padding: 0 0.5rem;
-}
-
-.employee-detail:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  right: -0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 60%;
-  width: 1px;
-  background: var(--border-color, #e2e8f0);
-}
-
-.employee-detail__label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-light, #6c757d);
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.employee-detail__icon {
-  color: var(--primary-color, #4361ee);
-  font-size: 0.85rem;
-  transition: transform 0.3s ease;
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-.employee-detail:hover .employee-detail__icon {
-  transform: scale(1.2);
-}
-
-.employee-detail__value {
-  display: inline-block;
-  font-size: 0.95rem;
-  color: var(--text-dark, #1a1a2e);
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  background: var(--bg-secondary, #f8fafc);
-  border-radius: 30px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s ease;
-  line-height: 1.4;
-}
-
-.employee-detail:hover .employee-detail__value {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  border-color: var(--primary-light, #6b8cae);
-}
-
-/* Variantes de valeurs */
-.employee-detail__value--date {
-  font-family: 'Courier New', monospace;
-  background: var(--bg-primary, white);
-  color: var(--text-dark, #1a1a2e);
-  border-left: 3px solid var(--primary-color, #4361ee);
-  border-radius: 30px 30px 30px 30px;
-}
-
-.employee-detail__value--amount {
-  color: #10b981;
-  background: linear-gradient(to right, rgba(16, 185, 129, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(16, 185, 129, 0.2);
-  font-weight: 600;
-}
-
-.employee-detail__value--tax {
-  color: #ef4444;
-  background: linear-gradient(to right, rgba(239, 68, 68, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(239, 68, 68, 0.2);
-  font-weight: 600;
-}
-
-.employee-detail__value--highlight {
-  color: var(--primary-color, #4361ee);
-  background: linear-gradient(to right, rgba(67, 97, 238, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: var(--primary-color, #4361ee);
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-/* Variantes par type de contrat */
-.employee-detail__value--cdi {
-  color: #10b981;
-  background: linear-gradient(to right, rgba(16, 185, 129, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(16, 185, 129, 0.3);
-  font-weight: 600;
-}
-
-.employee-detail__value--cdd {
-  color: #f59e0b;
-  background: linear-gradient(to right, rgba(245, 158, 11, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(245, 158, 11, 0.3);
-  font-weight: 600;
-}
-
-.employee-detail__value--ctt {
-  color: #8b5cf6;
-  background: linear-gradient(to right, rgba(139, 92, 246, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(139, 92, 246, 0.3);
-  font-weight: 600;
-}
-
-.employee-detail__value--stage {
-  color: #3b82f6;
-  background: linear-gradient(to right, rgba(59, 130, 246, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(59, 130, 246, 0.3);
-  font-weight: 600;
-}
-
-.employee-detail__value--freelance {
-  color: #ec4899;
-  background: linear-gradient(to right, rgba(236, 72, 153, 0.05), var(--bg-secondary, #f8fafc));
-  border-color: rgba(236, 72, 153, 0.3);
-  font-weight: 600;
-}
-
-/* Sections */
-.employee-section {
-  background: var(--bg-primary, white);
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.employee-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  border-color: var(--primary-light, #6b8cae);
-}
-
-.employee-section::before {
-  content: '';
+.employee-modal-header-bg {
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--primary-color, #4361ee);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-.employee-section:hover::before {
-  opacity: 1;
-}
-
-.employee-section__title {
+.employee-modal-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.1rem;
+  justify-content: center;
+  font-size: 32px;
   font-weight: 700;
-  color: var(--text-dark, #1a1a2e);
-  margin: 0 0 1.25rem 0;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color, #e2e8f0);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
 }
 
-.employee-section__icon {
-  color: var(--primary-color, #4361ee);
-  font-size: 1rem;
-  background: rgba(67, 97, 238, 0.1);
-  padding: 0.5rem;
-  border-radius: 8px;
+.employee-modal-avatar:hover {
+  transform: scale(1.05) rotate(5deg);
 }
 
-.employee-details__grid {
+.employee-modal-header-info {
+  flex: 1;
+}
+
+.employee-modal-name {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff, rgba(255,255,255,0.8));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.employee-modal-badges {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.employee-type-tag,
+.employee-matricule-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(5px);
+}
+
+.employee-type-tag {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.employee-matricule-tag {
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.employee-modal-position {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: white !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.3s ease !important;
+}
+
+.employee-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: rotate(90deg);
+}
+
+/* Contenu principal */
+.employee-modal-content {
+  padding: 24px 32px 32px;
+}
+
+/* Grille des métriques */
+.employee-metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 16px;
+  margin-bottom: 8px;
 }
 
-/* Élément highlight */
-.highlight {
-  background: linear-gradient(135deg, 
-    rgba(67, 97, 238, 0.05), 
-    rgba(255, 193, 7, 0.05)
-  ) !important;
-  border: 1px solid rgba(67, 97, 238, 0.2) !important;
+.employee-metric-card {
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color, #e2e8f0);
+  cursor: pointer;
 }
 
-.highlight .employee-detail__value {
-  border-color: var(--primary-color, #4361ee);
-  background: white;
+.employee-metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-/* Hint texte */
-.employee-detail__hint {
+.employee-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.employee-metric-card:hover .employee-metric-icon {
+  transform: scale(1.1);
+}
+
+.employee-metric-content {
+  flex: 1;
+}
+
+.employee-metric-label {
   display: block;
-  font-size: 0.7rem;
-  color: var(--text-light, #6c757d);
-  margin-top: 0.25rem;
-  font-style: italic;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
-
-
-.employee-detail {
-  animation: fadeIn 0.3s ease forwards;
+.employee-metric-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark, #1e293b);
 }
 
-.employee-detail:nth-child(1) { animation-delay: 0.1s; }
-.employee-detail:nth-child(2) { animation-delay: 0.2s; }
-.employee-detail:nth-child(3) { animation-delay: 0.3s; }
-.employee-detail:nth-child(4) { animation-delay: 0.4s; }
-.employee-detail:nth-child(5) { animation-delay: 0.5s; }
+/* Sections d'information */
+.employee-info-section {
+  background: var(--card-bg, #ffffff);
+  border-radius: 20px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.employee-info-section:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.employee-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg-secondary, #f8fafc);
+  border-bottom: 2px solid;
+}
+
+.employee-section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.employee-section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark, #1e293b);
+}
+
+.employee-section-content {
+  padding: 20px;
+}
+
+/* Champ d'information */
+.employee-info-field {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.employee-info-field:last-child {
+  border-bottom: none;
+}
+
+.employee-info-field-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.employee-info-field-content {
+  flex: 1;
+}
+
+.employee-info-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-light, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.employee-info-field-value {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-dark, #1e293b);
+  word-break: break-word;
+}
+
+/* Éléments de salaire */
+.employee-salary-item {
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.employee-salary-item:hover {
+  transform: translateY(-2px);
+  background: var(--bg-primary, #ffffff);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.employee-salary-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-light, #64748b);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.employee-salary-value {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #1e293b);
+}
+
+.employee-salary-value.accent {
+  color: #f59e0b;
+}
+
+.employee-salary-value.danger {
+  color: #ef4444;
+}
+
+.employee-salary-value.success {
+  color: #10b981;
+}
+
+.employee-salary-item.highlight {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Éléments de prime */
+.employee-prime-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 14px;
+  transition: all 0.3s ease;
+}
+
+.employee-prime-item:hover {
+  background: var(--bg-primary, #ffffff);
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.prime-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 8px;
+}
+
+.prime-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-light, #64748b);
+}
+
+.prime-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark, #1e293b);
+}
+
+/* Section congés */
+.employee-leave-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.employee-leave-card {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.03));
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.leave-stat {
+  text-align: center;
+  padding: 8px;
+}
+
+.leave-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-light, #64748b);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.leave-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-dark, #1e293b);
+}
+
+.leave-value small {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.leave-value.warning {
+  color: #f59e0b;
+}
+
+.leave-value.success {
+  color: #10b981;
+}
+
+.leave-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--text-light, #64748b);
+  margin-top: 4px;
+}
+
+.employee-progress-section {
+  padding: 16px;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 16px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark, #1e293b);
+  margin-bottom: 8px;
+}
+
+.progress-percent {
+  color: #f59e0b;
+}
+
+.employee-absence-info {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.absence-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-medium, #475569);
+  background: var(--bg-primary, #ffffff);
+  padding: 8px 16px;
+  border-radius: 30px;
+}
+
+.absence-item svg {
+  color: #ef4444;
+}
+
+/* Footer note */
+.employee-modal-footer-note {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-light, #64748b);
+}
+
+.employee-modal-footer-note svg {
+  flex-shrink: 0;
+  color: #4361ee;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
-  .employee-modal .ant-modal-content {
-    margin: 16px;
-  }
-
-  .employee-details__row {
+  .employee-modal-header-premium {
+    padding: 24px 20px;
     flex-direction: column;
-    gap: 1rem;
+    text-align: center;
   }
 
-  .employee-detail:not(:last-child)::after {
-    display: none;
+  .employee-modal-avatar {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
   }
 
-  .employee-details__grid {
-    grid-template-columns: 1fr 1fr;
+  .employee-modal-name {
+    font-size: 22px;
   }
 
-  .employee-modal .ant-modal-header {
-    padding: 1.25rem !important;
+  .employee-modal-badges {
+    justify-content: center;
   }
 
-  .employee-modal .ant-modal-body {
-    padding: 1.25rem !important;
+  .employee-modal-position {
+    justify-content: center;
   }
 
-  .employee-modal .ant-modal-footer {
-    padding: 1rem 1.25rem !important;
+  .employee-modal-content {
+    padding: 20px;
   }
 
-  .employee-modal__header {
-    font-size: 1.2rem;
+  .employee-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
-  .employee-section__title {
-    font-size: 1rem;
+  .employee-leave-card {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .employee-absence-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .absence-item {
+    justify-content: center;
   }
 }
 
-@media (max-width: 480px) {
-  .employee-details__grid {
+@media (max-width: 576px) {
+  .employee-modal-content {
+    padding: 16px;
+  }
+
+  .employee-leave-card {
     grid-template-columns: 1fr;
   }
 
-  .employee-detail__value {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.9rem;
+  .employee-section-header {
+    padding: 12px 16px;
   }
 
-  .employee-section {
-    padding: 1rem;
+  .employee-section-title {
+    font-size: 16px;
   }
 
-  .employee-details__main {
-    padding: 1rem;
+  .employee-section-content {
+    padding: 16px;
+  }
+
+  .employee-info-field {
+    padding: 10px 0;
   }
 }
+/* Styles supplémentaires pour l'IR et les déductions */
+.employee-deductions-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark, #1e293b);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
 
-/* Mode sombre support */
-@media (prefers-color-scheme: dark) {
-  .employee-modal .ant-modal-content {
-    background: var(--bg-primary, #1e293b) !important;
-  }
+.employee-deductions-title svg {
+  color: #ef4444;
+  font-size: 14px;
+}
 
-  .employee-details__main,
-  .employee-section {
-    background: var(--bg-secondary, #0f172a);
-  }
+.employee-salary-item.deduction {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.03));
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
 
-  .employee-detail__value {
-    background: var(--bg-primary, #1e293b);
-    color: var(--text-dark, #f1f5f9);
-  }
+.employee-salary-item.deduction:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.05));
+}
 
-  .employee-section__title {
-    color: var(--text-dark, #f1f5f9);
-  }
+.employee-salary-item.ir-item .employee-salary-value.danger {
+  font-weight: 700;
+}
+
+.employee-net-summary {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.02));
+  border-radius: 16px;
+  padding: 8px;
+}
+
+.employee-primes-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dark, #1e293b);
+}
+
+.employee-primes-total strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: #8b5cf6;
 }

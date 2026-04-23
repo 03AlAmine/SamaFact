@@ -196,6 +196,7 @@ export const employeeService = {
         status: 'active',
         companyCode: matricule.split('-')[0],
         ipm: parseFloat(employeeData.ipm || 0),
+        ir: parseFloat(employeeData.ir || 0),
         sursalaire: parseFloat(employeeData.sursalaire || 0),
         avances: parseFloat(employeeData.avances || 0),
         indemniteDeplacement: parseFloat(employeeData.indemniteDeplacement || 0),
@@ -250,6 +251,7 @@ export const employeeService = {
         updatedAt: new Date(),
         fullName: `${employeeData.prenom} ${employeeData.nom}`.toLowerCase(),
         ipm: typeof employeeData.ipm === 'number' ? employeeData.ipm : parseFloat(employeeData.ipm || 0),
+        ir: typeof employeeData.ir === 'number' ? employeeData.ir : parseFloat(employeeData.ir || 0),
         sursalaire: typeof employeeData.sursalaire === 'number' ? employeeData.sursalaire : parseFloat(employeeData.sursalaire || 0),
         avances: typeof employeeData.avances === 'number' ? employeeData.avances : parseFloat(employeeData.avances || 0)
       };

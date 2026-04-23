@@ -313,7 +313,7 @@ const PayrollForm = () => {
 
         const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
         const nbreofParts = selectedEmployee.nbreofParts || 1;
-       // const ir = calculateIR(brutFiscal, nbreofParts);
+        // const ir = calculateIR(brutFiscal, nbreofParts);
         const ir = parseFloat(formData.retenues.ir) || 0; // ✅ Utilise la valeur saisie manuellement
 
 
@@ -374,7 +374,7 @@ const PayrollForm = () => {
                 ...prev.retenues,
                 trimf: trimfValue.toString(),
                 cfce: calculations.detailsCotisations.cfce.toFixed(0) || '0',
-               // ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
+                // ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
             }
         }));
         setLastSavedCalculations(calculations);
@@ -506,7 +506,8 @@ const PayrollForm = () => {
                         ...prev.retenues,
                         avances: selectedEmployee.avances?.toString() || '0',
                         retenueSalaire: selectedEmployee.retenueSalaire?.toString() || '0',
-                        qpartipm: selectedEmployee.ipm?.toString() || '0' // ✅ AJOUTÉ - correspondance ipm -> qpartipm
+                        qpartipm: selectedEmployee.ipm?.toString() || '0', // ✅ AJOUTÉ - correspondance ipm -> qpartipm
+                        ir: selectedEmployee.ir?.toString() || '0',
                     }
                 }));
             }
