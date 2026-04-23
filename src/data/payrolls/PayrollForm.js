@@ -244,11 +244,11 @@ const PayrollForm = () => {
         return Math.round(ir * nbreofParts);
     }, []);
 
-    const calculateTRIMF = useCallback((brutFiscal) => {
-        const brut = parseFloat(brutFiscal) || 0;
-        if (brut < 84000) return 300;
-        if (brut < 167000) return 400;
-        if (brut < 1000000) return 500;
+    const calculateTRIMF = useCallback((baseCotisable) => {
+        const base = parseFloat(baseCotisable) || 0;
+        if (base < 84000) return 300;
+        if (base < 167000) return 400;
+        if (base < 1000000) return 500;
         return 1500;
     }, []);
 
@@ -297,25 +297,31 @@ const PayrollForm = () => {
         const retenueSalaire = parseFloat(formData.retenues.retenueSalaire) || 0;
         const qpartipm = parseFloat(formData.retenues.qpartipm) || 0;
         const avances = parseFloat(formData.retenues.avances) || 0;
-        const trimf = parseFloat(formData.retenues.trimf) || 0;
 
+        // ✅ NOUVEAU : Base cotisable pour les calculs
+        const baseCotisable = salaireBase + avantagesNature;
+
+        // Cotisations calculées sur la BASE COTISABLE (pas sur le brut social)
+        const ipresRG = baseCotisable * 0.056;    // 5,6% salarial
+        const ipresRC = 0;                         // 0% pour non-cadres
+        const cfce = baseCotisable * 0.03;         // 3% CFCE
+
+        // Cotisations patronales sur la BASE COTISABLE
+        const ipresRGP = baseCotisable * 0.084;    // 8,4% patronal
+        const ipresRCP = 0;                         // 0% pour non-cadres
+        const allocationFamiliale = 63000 * 0.07;   // 7% du plafond CSS (63000)
+        const accidentTravail = 63000 * 0.01;       // 1% du plafond CSS
+
+        // TRIMF calculé sur la base cotisable
+        const trimf = calculateTRIMF(baseCotisable);
+
+        // Les anciens calculs restent pour l'affichage
         const brutSocial = salaireBase + sursalaire + indemniteDeplacement + autresIndemnites;
         const brutFiscal = brutSocial + avantagesNature;
 
-        const ipresRG = brutSocial * 0.056;
-        const ipresRC = 0;
-        const cfce = brutFiscal * 0.03;
-
-        const ipresRGP = brutSocial * 0.084;
-        const ipresRCP = 0 * 0.036;
-        const allocationFamiliale = 63000 * 0.07;
-        const accidentTravail = 63000 * 0.01;
-
+        // IR : on utilise la valeur saisie manuellement
         const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
-        const nbreofParts = selectedEmployee.nbreofParts || 1;
-        // const ir = calculateIR(brutFiscal, nbreofParts);
-        const ir = parseFloat(formData.retenues.ir) || 0; // ✅ Utilise la valeur saisie manuellement
-
+        const ir = parseFloat(formData.retenues.ir) || 0;
 
         const totalRetenuesPris = retenueSalaire + qpartipm + avances;
         const totalRetenues = retenueSalaire + qpartipm + avances + ipresRG + ipresRC + trimf + ir;
@@ -332,6 +338,7 @@ const PayrollForm = () => {
         const totalfiscales = trimf + cfce + ir;
 
         return {
+            baseCotisable,    // ✅ Ajouté pour référence
             brutSocial,
             brutFiscal,
             cotisationsEmp: totalCotisationsEmp,
@@ -347,6 +354,7 @@ const PayrollForm = () => {
             tooqpartipm,
             totalfiscales,
             detailsCotisations: {
+                baseCotisable,  // ✅ Ajouté
                 ipresRG,
                 ipresRC,
                 ipresRGP,
@@ -356,25 +364,25 @@ const PayrollForm = () => {
                 trimf,
                 qpartipm,
                 cfce,
-                nbreofParts,
+                nbreofParts: selectedEmployee.nbreofParts || 1,
                 ir
             }
         };
-    }, [formData, selectedEmployeeId, employees, calculateIR]);
+    }, [formData, selectedEmployeeId, employees, calculateIR, calculateTRIMF]);
 
     useEffect(() => {
         if (JSON.stringify(calculations) === JSON.stringify(lastSavedCalculations)) {
             return;
         }
 
-        const trimfValue = calculateTRIMF(calculations.brutFiscal);
+        // Mise à jour automatique uniquement pour TRIMF, CFCE et IR
         setFormData(prev => ({
             ...prev,
             retenues: {
                 ...prev.retenues,
-                trimf: trimfValue.toString(),
+                trimf: calculations.detailsCotisations.trimf.toString(),
                 cfce: calculations.detailsCotisations.cfce.toFixed(0) || '0',
-                // ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
+                ir: prev.retenues.ir || calculations.detailsCotisations.ir.toFixed(0) || '0'  // ✅ Garde la valeur manuelle si elle existe
             }
         }));
         setLastSavedCalculations(calculations);
