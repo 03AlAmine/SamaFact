@@ -246,8 +246,8 @@ const PayrollForm = () => {
 
     const calculateTRIMF = useCallback((brutFiscal) => {
         const brut = parseFloat(brutFiscal) || 0;
-        if (brut <= 85000) return 300;
-        if (brut <= 133000) return 400;
+        if (brut < 84000) return 300;
+        if (brut < 167000) return 400;
         if (brut < 1000000) return 500;
         return 1500;
     }, []);
@@ -313,7 +313,9 @@ const PayrollForm = () => {
 
         const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId) || {};
         const nbreofParts = selectedEmployee.nbreofParts || 1;
-        const ir = calculateIR(brutFiscal, nbreofParts);
+       // const ir = calculateIR(brutFiscal, nbreofParts);
+        const ir = parseFloat(formData.retenues.ir) || 0; // ✅ Utilise la valeur saisie manuellement
+
 
         const totalRetenuesPris = retenueSalaire + qpartipm + avances;
         const totalRetenues = retenueSalaire + qpartipm + avances + ipresRG + ipresRC + trimf + ir;
@@ -372,7 +374,7 @@ const PayrollForm = () => {
                 ...prev.retenues,
                 trimf: trimfValue.toString(),
                 cfce: calculations.detailsCotisations.cfce.toFixed(0) || '0',
-                ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
+               // ir: calculations.detailsCotisations.ir.toFixed(0) || '0'
             }
         }));
         setLastSavedCalculations(calculations);
