@@ -219,9 +219,9 @@ const EmployeeForm = ({
                     label="IR (Impôt sur le Revenu)"
                     name="ir"
                     type="number"
-                    value={formData.ir || 100}
+                    value={formData.ir || 0}
                     onChange={isEditing ? onEditChange : onChange}
-                    min="100"
+                    min="0"
                     placeholder="IR mensuel"
                 />
                 <FormField
